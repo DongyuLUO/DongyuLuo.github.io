@@ -41,53 +41,50 @@
 @import "print";
 
 .paper-box {
-  display: flex;
-  justify-content: left;
-  align-items: flex-start;  // 关键：让高度跟内容自适应
-  flex-direction: row;
-  flex-wrap: wrap;
-  border-bottom: 1px #efefef solid;
-  padding: 2em 0;
-
-  .paper-box-image {
     display: flex;
-    justify-content: center;
-    width: 400px;         // 限制宽度（可改）
-    max-width: 100%;      // 防止溢出
-    order: 2;
+    justify-content: left;
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: wrap;
+    border-bottom: 1px #efefef solid;
+    padding: 2em 0 2em 0;
+    
 
-    img {
-      width: 100%;        // 让图片宽度撑满父容器宽度
-      height: auto;       // 高度自适应，保持图片比例
-      box-shadow: 3px 3px 6px #888;
-      object-fit: contain;
-      display: block;     // 去除图片下方可能空白（inline默认）
+    .paper-box-image{
+        justify-content: center;
+        display: flex;
+        width: 100%;
+        order: 2;
+        img {
+            max-width: 400px;
+            object-fit: cover;
+        }
     }
-  }
+    
+    .paper-box-text{
+        max-width: 100%;
+        order: 1;
+    }
+    
+    @include breakpoint($medium) {
+        .paper-box-image{
+            justify-content: left;
+            min-width: 200px;
+            max-width: 40%;
+            order: 1;
+        }
+        
+        .paper-box-text{
+            justify-content: left;
+            padding-left: 2em;
+            max-width: 60%;
+            order: 2;
+        }
 
-  .paper-box-text {
-    max-width: calc(100% - 400px);
-    order: 1;
-  }
-
-  @include breakpoint($medium) {
-    flex-wrap: nowrap;    // 大屏时横向排列
-
-    .paper-box-image {
-      order: 1;
-      width: 40%;         // 宽度限制用百分比也可以
-      max-width: 400px;
-      min-width: 200px;
     }
 
-    .paper-box-text {
-      order: 2;
-      padding-left: 2em;
-      max-width: 60%;
-    }
-  }
+
 }
-
 
 $scroll_offset : 2em;
 h1:before, .anchor:before { 
