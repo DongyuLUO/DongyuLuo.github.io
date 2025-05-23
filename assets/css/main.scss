@@ -42,20 +42,21 @@
 
 .paper-box {
   display: flex;
-  justify-content: flex-start;  /* 图片靠左 */
-  align-items: center;
-  border-bottom: 1px #efefef solid;
+  align-items: flex-start; /* 顶部对齐 */
+  border-bottom: 1px solid #efefef;
   padding: 2em 0;
+  gap: 2em; /* 图片和文字间距 */
 
   .paper-box-image {
-    position: relative;       /* 让 badge 绝对定位有效 */
-    display: inline-block;    /* 容器紧贴图片大小 */
-    box-shadow: 3px 3px 6px #888;
+    position: relative;
+    flex-shrink: 0; /* 防止图片缩小 */
+    max-width: 400px;
 
-    img {
-      max-width: 400px;      /* 限制最大宽度 */
-      height: auto;          /* 高度自适应，保持比例 */
-      display: block;        /* 去除底部空隙 */
+    img.small-teaser {
+      width: 100%;
+      height: auto;
+      display: block;
+      box-shadow: 3px 3px 6px #888;
       object-fit: cover;
     }
 
@@ -69,7 +70,22 @@
       font-size: 0.8em;
       border-radius: 0.2em;
       z-index: 10;
-      user-select: none;     /* 文字不可选中，更美观 */
+      user-select: none;
+    }
+  }
+
+  .paper-box-text {
+    max-width: calc(100% - 420px); /* 留点空间给图片+间距 */
+    p {
+      margin: 0.5em 0;
+      line-height: 1.4;
+    }
+    a {
+      color: #00369f;
+      text-decoration: none;
+      &:hover {
+        text-decoration: underline;
+      }
     }
   }
 }
