@@ -28,21 +28,56 @@ I am always excited to connect and collaborate with people from diverse backgrou
 
 # Publications 
 
-<div class='paper-box'>
-  <div class='paper-box-image'>
-    <div class="badge">Under review</div>
-    <img src='images/teaser_0.png' alt="sym">
-  </div>
-</div>
+.paper-box {
+  display: flex;
+  align-items: flex-start; /* 顶部对齐 */
+  border-bottom: 1px solid #efefef;
+  padding: 2em 0;
+  gap: 2em; /* 图片和文字间距 */
 
+  .paper-box-image {
+    position: relative;
+    flex-shrink: 0; /* 防止图片缩小 */
+    max-width: 400px;
 
-[ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image](https://openaccess.thecvf.com/content_cvpr_2016/papers/He_Deep_Residual_Learning_CVPR_2016_paper.pdf)
+    img.small-teaser {
+      width: 100%;
+      height: auto;
+      display: block;
+      box-shadow: 3px 3px 6px #888;
+      object-fit: cover;
+    }
 
-**Dongyu Luo<strong>*</strong>**, [Kelin Yu*](https://colinyu1.github.io/), [Amir-Hossein Shahidzadeh](https://amirshahid.github.io/), [Cornelia Fermuler](https://users.umiacs.umd.edu/~fermulcm/), [Yiannis Aloimonos](https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos), [Ruohan Gao](https://ruohangao.github.io/).
+    .badge {
+      position: absolute;
+      top: 0.5em;
+      left: 0.5em;
+      padding: 0.2em 0.6em;
+      background-color: #00369f;
+      color: white;
+      font-size: 0.8em;
+      border-radius: 0.2em;
+      z-index: 10;
+      user-select: none;
+    }
+  }
 
-[**Project**](https://scholar.google.com/citations?view_op=view_citation&hl=zh-CN&user=DhtAFkwAAAAJ&citation_for_view=DhtAFkwAAAAJ:ALROH1vI_8AC) <strong><span class='show_paper_citations' data='DhtAFkwAAAAJ:ALROH1vI_8AC'></span></strong>
-</div>
-</div>
+  .paper-box-text {
+    max-width: calc(100% - 420px); /* 留点空间给图片+间距 */
+    p {
+      margin: 0.5em 0;
+      line-height: 1.4;
+    }
+    a {
+      color: #00369f;
+      text-decoration: none;
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+}
+
 
 
 
