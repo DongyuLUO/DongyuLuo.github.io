@@ -40,8 +40,8 @@ layout: compress
         border: none;
         padding: 0.3em;
         cursor: pointer;
-        width: 3.6rem;  /* 36px */
-        height: 3.6rem;
+        width: 2.8rem;  /* 28px */
+        height: 2.8rem;
         user-select: none;
         color: #000;
         display: flex;
@@ -50,11 +50,11 @@ layout: compress
       }
 
       #theme-toggle svg {
-        width: 36px;
-        height: 36px;
+        width: 28px;
+        height: 28px;
         fill: #000;
         stroke: #000;
-        transform: translateY(-7px);
+        transform: translateY(-3px);
       }
     </style>
   </head>
@@ -65,20 +65,24 @@ layout: compress
     {% include masthead.html %}
 
     <button id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
+      <!-- 默认月亮图标 -->
       <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M21 12.79A9 9 0 0112.21 3a7 7 0 000 14 9 9 0 018.79-4.21z"/>
       </svg>
+
+      <!-- 太阳图标，圆心+8个三角形光芒 -->
       <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
-        <circle cx="12" cy="12" r="5"/>
-        <g stroke-width="2" fill="none">
-          <line x1="12" y1="1" x2="12" y2="3"/>
-          <line x1="12" y1="21" x2="12" y2="23"/>
-          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-          <line x1="1" y1="12" x2="3" y2="12"/>
-          <line x1="21" y1="12" x2="23" y2="12"/>
-          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        <circle cx="12" cy="12" r="5" fill="#000"/>
+        <g fill="#000" stroke="none" transform="translate(12,12)">
+          <!-- 八个三角形，旋转45度间隔 -->
+          <polygon points="0,-7 2,-3  -2,-3" />
+          <polygon points="4.95,-4.95 7,-7 5,-3" transform="rotate(45)" />
+          <polygon points="7,0 3,-2 3,2" transform="rotate(90)" />
+          <polygon points="4.95,4.95 7,7 5,3" transform="rotate(135)" />
+          <polygon points="0,7 2,3 -2,3" transform="rotate(180)" />
+          <polygon points="-4.95,4.95 -7,7 -5,3" transform="rotate(225)" />
+          <polygon points="-7,0 -3,-2 -3,2" transform="rotate(270)" />
+          <polygon points="-4.95,-4.95 -7,-7 -5,-3" transform="rotate(315)" />
         </g>
       </svg>
     </button>
