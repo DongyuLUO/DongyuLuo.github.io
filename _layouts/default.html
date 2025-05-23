@@ -8,101 +8,109 @@ layout: compress
     {% include head.html %}
     {% include head/custom.html %}
 
-  <style>
-    :root {
-      --bg-color: #fff;
-      --text-color: #000;
-      --link-color: #0066cc;
-      --icon-color: #000;
-    }
-  
-    body {
-      background-color: var(--bg-color);
-      color: var(--text-color);
-      transition: background-color 0.3s, color 0.3s;
-    }
-  
-    a {
-      color: var(--link-color);
-    }
-  
-    body.dark-mode {
-      --bg-color: #121212;
-      --text-color: #eee;
-      --link-color: #66aaff;
-      --icon-color: #000;
-    }
-  
-    #theme-toggle {
-      position: fixed;
-      top: calc(1rem - 7px); /* 上移7px */
-      right: 1rem;
-      z-index: 1000;
-      background: rgba(255, 255, 255, 0.9);
-      border: 1px solid #ddd;
-      border-radius: 50%;
-      padding: 0.5em;
-      cursor: pointer;
-      width: 3rem;
-      height: 3rem;
-      user-select: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      transition: background-color 0.3s, border-color 0.3s, transform 0.2s;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    }
-  
-    #theme-toggle:hover {
-      transform: scale(1.1);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    }
-  
-    body.dark-mode #theme-toggle {
-      background: rgba(255, 255, 255, 0.95);
-      border-color: #ccc;
-    }
-  
-    #theme-toggle svg {
-      width: 20px;
-      height: 20px;
-      fill: var(--icon-color);
-      stroke: none;
-      transition: transform 0.3s ease;
-      transform: translateY(-7px); /* 图标上移7px */
-    }
-  
-    #theme-toggle:hover svg {
-      transform: translateY(-7px) rotate(15deg);
-    }
-  </style>
-  
-  <button id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
-    <!-- 更自然的新月形状 -->
-    <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+    <style>
+      :root {
+        --bg-color: #fff;
+        --text-color: #000;
+        --link-color: #0066cc;
+        --icon-color: #000;
+      }
+
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s, color 0.3s;
+      }
+
+      a {
+        color: var(--link-color);
+      }
+
+      body.dark-mode {
+        --bg-color: #121212;
+        --text-color: #eee;
+        --link-color: #66aaff;
+        --icon-color: #000;
+      }
+
+      #theme-toggle {
+        position: fixed;
+        top: calc(1rem - 7px); /* 上移7px */
+        right: 1rem;
+        z-index: 1000;
+        background: rgba(255, 255, 255, 0.9);
+        border: 1px solid #ddd;
+        border-radius: 50%;
+        padding: 0.5em;
+        cursor: pointer;
+        width: 3rem;
+        height: 3rem;
+        user-select: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background-color 0.3s, border-color 0.3s, transform 0.2s;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      #theme-toggle:hover {
+        transform: scale(1.1);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+
+      body.dark-mode #theme-toggle {
+        background: rgba(255, 255, 255, 0.95);
+        border-color: #ccc;
+      }
+
+      #theme-toggle svg {
+        width: 20px;
+        height: 20px;
+        fill: var(--icon-color);
+        stroke: none;
+        transition: transform 0.3s ease;
+      }
+
+      #theme-toggle:hover svg {
+        transform: rotate(15deg);
+      }
+    </style>
+  </head>
+
+  <body>
+
+    {% include browser-upgrade.html %}
+    {% include masthead.html %}
+
+    <button id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
+      <!-- 月亮图标 - 改进的形状 -->
+      <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
       <path fill="#000" d="M21 12.79a9 9 0 1 1-9.21-9.21 7 7 0 1 0 9.21 9.21z"/>
+      <!-- 细节点 -->
       <circle cx="14" cy="8" r="0.8" fill="#666" opacity="0.3"/>
       <circle cx="16" cy="11" r="0.5" fill="#666" opacity="0.3"/>
       <circle cx="13" cy="13" r="0.6" fill="#666" opacity="0.3"/>
     </svg>
-  
-    <!-- 太阳图标 -->
-    <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
-      <circle cx="12" cy="12" r="4" fill="#000"/>
-      <g stroke="#000" stroke-width="2" stroke-linecap="round">
-        <line x1="12" y1="1" x2="12" y2="3"/>
-        <line x1="12" y1="21" x2="12" y2="23"/>
-        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
-        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
-        <line x1="1" y1="12" x2="3" y2="12"/>
-        <line x1="21" y1="12" x2="23" y2="12"/>
-        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
-        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
-      </g>
-      <circle cx="12" cy="12" r="2" fill="#333" opacity="0.3"/>
-    </svg>
-  </button>
 
+      <!-- 太阳图标 - 改进的形状 -->
+      <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
+        <!-- 太阳中心 -->
+        <circle cx="12" cy="12" r="4" fill="#000"/>
+        <!-- 太阳光芒 - 使用更优雅的线条 -->
+        <g stroke="#000" stroke-width="2" stroke-linecap="round">
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </g>
+        <!-- 添加内部光芒效果 -->
+        <circle cx="12" cy="12" r="2" fill="#333" opacity="0.3"/>
+      </svg>
+    </button>
 
     <div id="main" role="main">
       {% include sidebar.html %}
@@ -182,3 +190,6 @@ layout: compress
 
   </body>
 </html>
+
+
+
