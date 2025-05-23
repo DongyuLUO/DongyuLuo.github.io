@@ -17,9 +17,11 @@ redirect_from:
 
 <span class='anchor' id='about-me'></span>
 
-Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus ornare aliquet ipsum, ac tempus justo dapibus sit amet. Suspendisse condimentum, libero vel tempus mattis, risus risus vulputate libero, elementum fermentum mi neque vel nisl. Maecenas facilisis maximus dignissim. Curabitur mattis vulputate dui, tincidunt varius libero luctus eu. Mauris mauris nulla, scelerisque eget massa id, tincidunt congue felis. Sed convallis tempor ipsum rhoncus viverra. Pellentesque nulla orci, accumsan volutpat fringilla vitae, maximus sit amet tortor. Aliquam ultricies odio ut volutpat scelerisque. Donec nisl nisl, porttitor vitae pharetra quis, fringilla sed mi. Fusce pretium dolor ut aliquam consequat. Cras volutpat, tellus accumsan mattis molestie, nisl lacus tempus massa, nec malesuada tortor leo vel quam. Aliquam vel ex consectetur, vehicula leo nec, efficitur eros. Donec convallis non urna quis feugiat.
+I am currently a third-year undergraduate student at the **The University of Hong Kong**, pursuing a Bachelor of Science degree. I am fortunate to be conducting research at the Multisensory Machine Intelligence Lab at the **University of Maryland**, under the guidance of Ph.D. mentor [Kelin Yu](https://colinyu1.github.io/) and [Prof. Ruohan Gao](https://ruohangao.github.io/). I would like to express my deep gratitude to Dr. [Shixiang Tang](https://tangshixiang.github.io/) and Prof. [Wanli Ouyang](https://wlouyang.github.io/) for introducing me to the world of research, especially during the early stages when I had no prior experience.
 
-My research interest includes neural machine translation and computer vision. I have published more than 100 papers at the top international AI conferences with total <a href='https://scholar.google.com/citations?user=DhtAFkwAAAAJ'>google scholar citations <strong><span id='total_cit'>260000+</span></strong></a> (You can also use google scholar badge <a href='https://scholar.google.com/citations?user=DhtAFkwAAAAJ'><img src="https://img.shields.io/endpoint?url={{ url | url_encode }}&logo=Google%20Scholar&labelColor=f6f6f6&color=9cf&style=flat&label=citations"></a>).
+My research interests primarily focus on multisensory intelligence and generative models.
+
+I am always excited to connect and collaborate with people from diverse backgrounds. If you’re interested in my work or would like to collaborate, feel free to reach out via email!
 
 
 # 🔥 News
