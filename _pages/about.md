@@ -19,7 +19,7 @@ redirect_from:
 
 I am currently a third-year undergraduate student at the **The University of Hong Kong**, pursuing a Bachelor of Science degree. I am fortunate to be conducting research at the Multisensory Machine Intelligence Lab at the **University of Maryland**, under the guidance of Ph.D. mentor [Kelin Yu](https://colinyu1.github.io/) and [Prof. Ruohan Gao](https://ruohangao.github.io/). I would like to express my deep gratitude to Dr. [Shixiang Tang](https://tangshixiang.github.io/) and Prof. [Wanli Ouyang](https://wlouyang.github.io/) for introducing me to the world of research, especially during the early stages when I had no prior experience.
 
-My research interests primarily focus on multisensory intelligence and generative models.
+My research interests primarily focus on **multisensory intelligence** and **generative models**.
 
 I am always excited to connect and collaborate with people from diverse backgrounds. If you’re interested in my work or would like to collaborate, feel free to reach out via email!
 
@@ -28,7 +28,7 @@ I am always excited to connect and collaborate with people from diverse backgrou
 
 # Publications 
 
-<div class='paper-box'><div class='paper-box-image'><div><div class="badge">Under review</div><img src='images/teaser_0.png' alt="sym" width="100%"></div></div>
+<div><div class="badge">Under review</div><img src='images/teaser_0.png' alt="sym" width="100%"></div></div>
 <div class='paper-box-text' markdown="1">
 
 [ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image](https://openaccess.thecvf.com/content_cvpr_2016/papers/He_Deep_Residual_Learning_CVPR_2016_paper.pdf)
