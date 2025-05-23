@@ -41,51 +41,50 @@
 @import "print";
 
 .paper-box {
-    display: flex;
-    justify-content: left;
-    align-items: center;
-    flex-direction: row;
-    flex-wrap: wrap;
-    border-bottom: 1px #efefef solid;
-    padding: 2em 0 2em 0;
-    
+  display: flex;
+  justify-content: flex-start;  // 左对齐
+  align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
+  border-bottom: 1px #efefef solid;
+  padding: 2em 0;
 
-    .paper-box-image{
-        justify-content: center;
-        display: flex;
-        width: 100%;
-        order: 2;
-        img {
-            max-width: 400px;
-            box-shadow: 3px 3px 6px #888;
-            object-fit: cover;
-        }
-    }
-    
-    .paper-box-text{
-        max-width: 100%;
-        order: 1;
-    }
-    
-    @include breakpoint($medium) {
-        .paper-box-image{
-            justify-content: left;
-            min-width: 200px;
-            max-width: 40%;
-            order: 1;
-        }
-        
-        .paper-box-text{
-            justify-content: left;
-            padding-left: 2em;
-            max-width: 60%;
-            order: 2;
-        }
+  .paper-box-image {
+    display: inline-block;    // 让容器紧贴图片
+    order: 2;
+    box-shadow: 3px 3px 6px #888;
 
+    img {
+      max-width: 400px;
+      height: auto;            // 高度按比例自适应
+      display: block;          // 去除图片底部空隙
+      object-fit: cover;
+    }
+  }
+
+  .paper-box-text {
+    max-width: 100%;
+    order: 1;
+    padding-left: 2em;
+  }
+
+  @include breakpoint($medium) {
+    .paper-box-image {
+      order: 1;
+      min-width: 200px;
+      max-width: 40%;
+      display: block;        // 响应式时容器改为块级
+      box-shadow: 3px 3px 6px #888;
     }
 
-
+    .paper-box-text {
+      order: 2;
+      max-width: 60%;
+      padding-left: 2em;
+    }
+  }
 }
+
 
 $scroll_offset : 2em;
 h1:before, .anchor:before { 
