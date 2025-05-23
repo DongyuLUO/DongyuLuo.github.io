@@ -7,49 +7,62 @@ layout: compress
   <head>
     {% include head.html %}
     {% include head/custom.html %}
+
     <style>
-      /* 你可以根据需要添加 dark-mode 样式 */
-      body.dark-mode {
-        background-color: #121212;
-        color: #eee;
+      :root {
+        --bg-color: #fff;
+        --text-color: #000;
+        --link-color: #0066cc;
       }
-      /* 按钮样式简洁 */
+
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s, color 0.3s;
+      }
+
+      a {
+        color: var(--link-color);
+      }
+
+      body.dark-mode {
+        --bg-color: #121212;
+        --text-color: #eee;
+        --link-color: #66aaff;
+      }
+
       #theme-toggle {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 1000;
         background: none;
-        border: none;
+        border: 1px solid currentColor;
+        border-radius: 4px;
+        padding: 0.3em 0.6em;
         cursor: pointer;
-        padding: 0;
-        width: 32px;
-        height: 32px;
+        font-size: 0.9rem;
+        user-select: none;
       }
     </style>
   </head>
 
   <body>
+
     {% include browser-upgrade.html %}
     {% include masthead.html %}
 
+    <button id="theme-toggle" aria-label="Toggle light/dark mode">🌙</button>
+
     <div id="main" role="main">
       {% include sidebar.html %}
-    
+
       <article class="page" itemscope itemtype="http://schema.org/CreativeWork">
         {% if page.title %}
           <meta itemprop="headline" content="{{ page.title | markdownify | strip_html | strip_newlines | escape_once }}">
         {% endif %}
         <div class="page__inner-wrap">
           <section class="page__content" itemprop="text">
-            <!-- 主题切换按钮放这里，或者你觉得合适的位置 -->
-            <button id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
-              <!-- 初始隐藏太阳图标，显示月亮图标 -->
-              <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#000" stroke-width="2" viewBox="0 0 24 24" width="24" height="24" style="display:none;">
-                <circle cx="12" cy="12" r="5"/>
-                <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M16.36 16.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M16.36 7.64l1.42-1.42"/>
-              </svg>
-              <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" fill="none" stroke="#000" stroke-width="2" viewBox="0 0 24 24" width="24" height="24">
-                <path d="M21 12.79A9 9 0 0112.21 3 7 7 0 1012 21a9 9 0 009-8.21z"/>
-              </svg>
-            </button>
-
             {{ content }}
           </section>
         </div>
@@ -66,16 +79,22 @@ layout: compress
     <script>
       const toggleBtn = document.getElementById('theme-toggle');
       const body = document.body;
-      const iconSun = document.getElementById('icon-sun');
-      const iconMoon = document.getElementById('icon-moon');
 
-      function updateButtonIcon() {
+      function initTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+          body.classList.add('dark-mode');
+        } else if (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+          body.classList.add('dark-mode');
+        }
+        updateButtonText();
+      }
+
+      function updateButtonText() {
         if (body.classList.contains('dark-mode')) {
-          iconSun.style.display = 'inline';
-          iconMoon.style.display = 'none';
+          toggleBtn.textContent = '☀️';
         } else {
-          iconSun.style.display = 'none';
-          iconMoon.style.display = 'inline';
+          toggleBtn.textContent = '🌙';
         }
       }
 
@@ -86,18 +105,11 @@ layout: compress
         } else {
           localStorage.setItem('theme', 'light');
         }
-        updateButtonIcon();
+        updateButtonText();
       });
-
-      function initTheme() {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-          body.classList.add('dark-mode');
-        }
-        updateButtonIcon();
-      }
 
       initTheme();
     </script>
+
   </body>
 </html>
