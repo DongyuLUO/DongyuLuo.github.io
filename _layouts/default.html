@@ -43,7 +43,7 @@ layout: compress
         width: 3.6rem;  /* 36px */
         height: 3.6rem;
         user-select: none;
-        color: inherit;
+        color: #000;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -52,7 +52,10 @@ layout: compress
       #theme-toggle svg {
         width: 36px;
         height: 36px;
-        fill: currentColor;
+        fill: #000;
+        stroke: #000;
+        /* 上移3px */
+        transform: translateY(-3px);
       }
     </style>
   </head>
@@ -63,13 +66,12 @@ layout: compress
     {% include masthead.html %}
 
     <button id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
-      <!-- 默认月亮图标 -->
       <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M21 12.79A9 9 0 0112.21 3a7 7 0 000 14 9 9 0 018.79-4.21z"/>
       </svg>
       <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
         <circle cx="12" cy="12" r="5"/>
-        <g stroke="currentColor" stroke-width="2" fill="none">
+        <g stroke-width="2" fill="none">
           <line x1="12" y1="1" x2="12" y2="3"/>
           <line x1="12" y1="21" x2="12" y2="23"/>
           <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
