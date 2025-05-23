@@ -49,10 +49,8 @@ I am always excited to connect and collaborate with people from diverse backgrou
 
  ---
 
-<div style="background-color: #f0f0f0; padding: 20px 0; margin-top: 3em; border-top: 1px solid #ccc; text-align: center;">
-  <div style="zoom: 0.7; display: inline-block;">
-    <script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?d=2UxH5y46PqDxZdzjQLYQ-SsZY-4WIBZMvKC7tmJ1H1w&cl=ffffff&w=a"></script>
-  </div>
+<div style="text-align: center; margin-top: 3em; transform: scale(0.7); transform-origin: center;">
+  <script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?d=2UxH5y46PqDxZdzjQLYQ-SsZY-4WIBZMvKC7tmJ1H1w&cl=ffffff&w=a"></script>
 </div>
 
 
