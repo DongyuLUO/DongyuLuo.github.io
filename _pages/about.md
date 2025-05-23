@@ -48,7 +48,7 @@ I am always excited to connect and collaborate with people from diverse backgrou
 
 
  ---
-<hr style="width: 80%; margin: 0 auto; border: 1px solid #ccc;" />
+<hr style="width: 80%; margin: 1.5em auto 0 auto; border: 1px solid #ccc;" />
 
 <div style="text-align: center; margin-top: 0; transform: scale(0.7); transform-origin: center;">
   <script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?d=2UxH5y46PqDxZdzjQLYQ-SsZY-4WIBZMvKC7tmJ1H1w&cl=ffffff&w=a"></script>
