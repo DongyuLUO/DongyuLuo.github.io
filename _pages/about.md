@@ -28,39 +28,17 @@ I am always excited to connect and collaborate with people from diverse backgrou
 
 # Publications 
 
-<div class="paper-box">
-  <div class="paper-box-image">
-    <div>
-      <div class="badge">Under review</div>
-      <img class="small-teaser" src="images/teaser_0.png" alt="sym">
-    </div>
-  </div>
+<div class='paper-box'><div class='paper-box-image'><div><div class="badge">Under review</div><img src='images/teaser_0.png' alt="sym" width="100%"></div></div>
+<div class='paper-box-text' markdown="1">
 
-  <div class="paper-box-text" markdown="1">
-    <p>
-      <a href="https://openaccess.thecvf.com/content_cvpr_2016/papers/He_Deep_Residual_Learning_CVPR_2016_paper.pdf" target="_blank">
-        ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image
-      </a>
-    </p>
+[ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image](https://openaccess.thecvf.com/content_cvpr_2016/papers/He_Deep_Residual_Learning_CVPR_2016_paper.pdf)
 
-    <p>
-      <strong>Dongyu Luo<strong>*</strong></strong>, 
-      <a href="https://colinyu1.github.io/" target="_blank">Kelin Yu*</a>, 
-      <a href="https://amirshahid.github.io/" target="_blank">Amir-Hossein Shahidzadeh</a>, 
-      <a href="https://users.umiacs.umd.edu/~fermulcm/" target="_blank">Cornelia Fermuler</a>, 
-      <a href="https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos" target="_blank">Yiannis Aloimonos</a>, 
-      <a href="https://ruohangao.github.io/" target="_blank">Ruohan Gao</a>.
-    </p>
+**Dongyu Luo<strong>*</strong>**, [Kelin Yu*](https://colinyu1.github.io/), [Amir-Hossein Shahidzadeh](https://amirshahid.github.io/), [Cornelia Fermuler](https://users.umiacs.umd.edu/~fermulcm/), [Yiannis Aloimonos](https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos), [Ruohan Gao](https://ruohangao.github.io/).
 
-    <p>
-      <a href="https://scholar.google.com/citations?view_op=view_citation&hl=zh-CN&user=DhtAFkwAAAAJ&citation_for_view=DhtAFkwAAAAJ:ALROH1vI_8AC" target="_blank"><strong>Project</strong></a>
-      <strong><span class="show_paper_citations" data="DhtAFkwAAAAJ:ALROH1vI_8AC"></span></strong>
-    </p>
-  </div>
+[**Project**](https://scholar.google.com/citations?view_op=view_citation&hl=zh-CN&user=DhtAFkwAAAAJ&citation_for_view=DhtAFkwAAAAJ:ALROH1vI_8AC) <strong><span class='show_paper_citations' data='DhtAFkwAAAAJ:ALROH1vI_8AC'></span></strong>
+
 </div>
-
-
-
+</div>
 
 
 # Experience
