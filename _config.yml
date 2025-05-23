@@ -22,7 +22,6 @@ baidu_site_verification  :  # get baidu_site_verification from https://ziyuan.ba
 author:
   name             : "Dongyu Luo"
   avatar           : "images/me.jpg"
-  location         : "Hong Kong"
   employer         :
   pubmed           : 
   googlescholar    : "https://scholar.google.com/citations?user=NHxZZQ0AAAAJ&hl=en&oi=ao"
