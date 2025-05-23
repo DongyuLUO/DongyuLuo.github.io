@@ -25,7 +25,7 @@ I am always excited to connect and collaborate with people from diverse backgrou
 
 
  
-
+<span class="anchor" id="publications"></span>
 # Publications 
 
 <div class='paper-box'><div class='paper-box-image'><div><div class="badge">Under review</div><img src='images/teaser_0.png' alt="sym" width="100%"></div></div>
@@ -41,7 +41,7 @@ I am always excited to connect and collaborate with people from diverse backgrou
 </div>
 </div>
 
-
+<span class="anchor" id="experience"></span>
 # Experience
 - *2022.08 - 2026.06 (expected)*, Bachelor of Science, The University of Hong Kong
 - *2025.01 - 2025.05*, Exchange, University of Maryland
