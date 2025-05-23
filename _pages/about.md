@@ -28,55 +28,37 @@ I am always excited to connect and collaborate with people from diverse backgrou
 
 # Publications 
 
-.paper-box {
-  display: flex;
-  align-items: flex-start; /* 顶部对齐 */
-  border-bottom: 1px solid #efefef;
-  padding: 2em 0;
-  gap: 2em; /* 图片和文字间距 */
+<div class="paper-box">
+  <div class="paper-box-image">
+    <div>
+      <div class="badge">Under review</div>
+      <img class="small-teaser" src="images/teaser_0.png" alt="sym">
+    </div>
+  </div>
 
-  .paper-box-image {
-    position: relative;
-    flex-shrink: 0; /* 防止图片缩小 */
-    max-width: 400px;
+  <div class="paper-box-text" markdown="1">
+    <p>
+      <a href="https://openaccess.thecvf.com/content_cvpr_2016/papers/He_Deep_Residual_Learning_CVPR_2016_paper.pdf" target="_blank">
+        ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image
+      </a>
+    </p>
 
-    img.small-teaser {
-      width: 100%;
-      height: auto;
-      display: block;
-      box-shadow: 3px 3px 6px #888;
-      object-fit: cover;
-    }
+    <p>
+      <strong>Dongyu Luo<strong>*</strong></strong>, 
+      <a href="https://colinyu1.github.io/" target="_blank">Kelin Yu*</a>, 
+      <a href="https://amirshahid.github.io/" target="_blank">Amir-Hossein Shahidzadeh</a>, 
+      <a href="https://users.umiacs.umd.edu/~fermulcm/" target="_blank">Cornelia Fermuler</a>, 
+      <a href="https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos" target="_blank">Yiannis Aloimonos</a>, 
+      <a href="https://ruohangao.github.io/" target="_blank">Ruohan Gao</a>.
+    </p>
 
-    .badge {
-      position: absolute;
-      top: 0.5em;
-      left: 0.5em;
-      padding: 0.2em 0.6em;
-      background-color: #00369f;
-      color: white;
-      font-size: 0.8em;
-      border-radius: 0.2em;
-      z-index: 10;
-      user-select: none;
-    }
-  }
+    <p>
+      <a href="https://scholar.google.com/citations?view_op=view_citation&hl=zh-CN&user=DhtAFkwAAAAJ&citation_for_view=DhtAFkwAAAAJ:ALROH1vI_8AC" target="_blank"><strong>Project</strong></a>
+      <strong><span class="show_paper_citations" data="DhtAFkwAAAAJ:ALROH1vI_8AC"></span></strong>
+    </p>
+  </div>
+</div>
 
-  .paper-box-text {
-    max-width: calc(100% - 420px); /* 留点空间给图片+间距 */
-    p {
-      margin: 0.5em 0;
-      line-height: 1.4;
-    }
-    a {
-      color: #00369f;
-      text-decoration: none;
-      &:hover {
-        text-decoration: underline;
-      }
-    }
-  }
-}
 
 
 
