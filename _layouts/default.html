@@ -7,6 +7,39 @@ layout: compress
   <head>
     {% include head.html %}
     {% include head/custom.html %}
+    <style>
+      :root {
+        --bg-color: #fff;
+        --text-color: #000;
+        --link-color: #0066cc;
+      }
+      body {
+        background-color: var(--bg-color);
+        color: var(--text-color);
+        transition: background-color 0.3s, color 0.3s;
+      }
+      a {
+        color: var(--link-color);
+      }
+      body.dark-mode {
+        --bg-color: #121212;
+        --text-color: #eee;
+        --link-color: #66aaff;
+      }
+
+      #theme-toggle {
+        position: fixed;
+        top: 1rem;
+        right: 1rem;
+        z-index: 1000;
+        background: none;
+        border: 1px solid currentColor;
+        border-radius: 4px;
+        padding: 0.3em 0.6em;
+        cursor: pointer;
+        font-size: 0.9rem;
+      }
+    </style>
   </head>
 
   <body>
@@ -14,11 +47,15 @@ layout: compress
     {% include browser-upgrade.html %}
     {% include masthead.html %}
 
+    <button id="theme-toggle" aria-label="切换白天黑夜模式">🌙 切换模式</button>
+
     <div id="main" role="main">
       {% include sidebar.html %}
     
       <article class="page" itemscope itemtype="http://schema.org/CreativeWork">
-        {% if page.title %}<meta itemprop="headline" content="{{ page.title | markdownify | strip_html | strip_newlines | escape_once }}">{% endif %}
+        {% if page.title %}
+          <meta itemprop="headline" content="{{ page.title | markdownify | strip_html | strip_newlines | escape_once }}">
+        {% endif %}
         <div class="page__inner-wrap">
           <section class="page__content" itemprop="text">
             {{ content }}
@@ -34,6 +71,45 @@ layout: compress
 
     {% include scripts.html %}
 
+    <script>
+      const toggleBtn = document.getElementById('theme-toggle');
+      const body = document.body;
+
+      // 初始化主题，读取 localStorage 或根据系统偏好自动切换
+      function initTheme() {
+        const savedTheme = localStorage.getItem('theme');
+        if (savedTheme === 'dark') {
+          body.classList.add('dark-mode');
+        } else if (!savedTheme) {
+          if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            body.classList.add('dark-mode');
+          }
+        }
+        updateButtonText();
+      }
+
+      function updateButtonText() {
+        if (body.classList.contains('dark-mode')) {
+          toggleBtn.textContent = '☀️ 切换到白天模式';
+        } else {
+          toggleBtn.textContent = '🌙 切换到黑夜模式';
+        }
+      }
+
+      toggleBtn.addEventListener('click', () => {
+        body.classList.toggle('dark-mode');
+        if (body.classList.contains('dark-mode')) {
+          localStorage.setItem('theme', 'dark');
+        } else {
+          localStorage.setItem('theme', 'light');
+        }
+        updateButtonText();
+      });
+
+      initTheme();
+    </script>
+
   </body>
 </html>
+
 
