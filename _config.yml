@@ -23,7 +23,7 @@ baidu_site_verification  :  # get baidu_site_verification from https://ziyuan.ba
 author:
   name             : "Dongyu Luo"
   avatar           : "images/me.jpg"
-  bio              : "The University of Hong Kong"
+  bio              : "<a href='https://www.hku.hk/' target='_blank'>The University of Hong Kong</a>"
   location         : "Hong Kong"
   employer         :
   pubmed           : 
