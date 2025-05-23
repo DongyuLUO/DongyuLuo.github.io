@@ -44,13 +44,13 @@ I am always excited to connect and collaborate with people from diverse backgrou
 
 # Experience
 - *2022.08 - 2026.06 (expected)*, Bachelor of Science, The University of Hong Kong
-- *2025.01 - 2025.05*， Exchange Student, University of Maryland
+- *2025.01 - 2025.05*, Exchange, University of Maryland
 
 
  ---
 <hr style="width: 80%; margin: 1.5em auto 0 auto; border: 1px solid #ccc;" />
 
-<div style="text-align: center; margin-top: 0; transform: scale(0.7); transform-origin: center;">
+<div style="text-align: center; margin-top: 0; transform: scale(0.5); transform-origin: center;">
   <script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?d=2UxH5y46PqDxZdzjQLYQ-SsZY-4WIBZMvKC7tmJ1H1w&cl=ffffff&w=a"></script>
 </div>
 
