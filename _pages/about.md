@@ -28,8 +28,8 @@ I am always excited to connect and collaborate with people from diverse backgrou
 
 # Publications 
 
-<div><div class="badge">Under review</div><img src='images/teaser_0.png' alt="sym" width="100%"></div></div>
-<div class='paper-box-text' markdown="1">
+<div class="badge">Under review</div>
+<img class="small-teaser" src="images/teaser_0.png" alt="sym">
 
 [ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image](https://openaccess.thecvf.com/content_cvpr_2016/papers/He_Deep_Residual_Learning_CVPR_2016_paper.pdf)
 
