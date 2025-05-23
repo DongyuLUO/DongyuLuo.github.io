@@ -42,45 +42,34 @@
 
 .paper-box {
   display: flex;
-  justify-content: flex-start;  // 左对齐
+  justify-content: flex-start;  /* 图片靠左 */
   align-items: center;
-  flex-direction: row;
-  flex-wrap: wrap;
   border-bottom: 1px #efefef solid;
   padding: 2em 0;
 
   .paper-box-image {
-    display: inline-block;    // 让容器紧贴图片
-    order: 2;
+    position: relative;       /* 让 badge 绝对定位有效 */
+    display: inline-block;    /* 容器紧贴图片大小 */
     box-shadow: 3px 3px 6px #888;
 
     img {
-      max-width: 400px;
-      height: auto;            // 高度按比例自适应
-      display: block;          // 去除图片底部空隙
+      max-width: 400px;      /* 限制最大宽度 */
+      height: auto;          /* 高度自适应，保持比例 */
+      display: block;        /* 去除底部空隙 */
       object-fit: cover;
     }
-  }
 
-  .paper-box-text {
-    max-width: 100%;
-    order: 1;
-    padding-left: 2em;
-  }
-
-  @include breakpoint($medium) {
-    .paper-box-image {
-      order: 1;
-      min-width: 200px;
-      max-width: 40%;
-      display: block;        // 响应式时容器改为块级
-      box-shadow: 3px 3px 6px #888;
-    }
-
-    .paper-box-text {
-      order: 2;
-      max-width: 60%;
-      padding-left: 2em;
+    .badge {
+      position: absolute;
+      top: 0.5em;
+      left: 0.5em;
+      padding: 0.2em 0.6em;
+      background-color: #00369f;
+      color: white;
+      font-size: 0.8em;
+      border-radius: 0.2em;
+      z-index: 10;
+      user-select: none;     /* 文字不可选中，更美观 */
     }
   }
 }
