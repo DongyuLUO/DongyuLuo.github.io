@@ -13,6 +13,8 @@ layout: compress
         --bg-color: #fff;
         --text-color: #000;
         --link-color: #0066cc;
+        --nav-bg-color: #f5f5f5;
+        --nav-text-color: #000;
       }
 
       body {
@@ -25,10 +27,20 @@ layout: compress
         color: var(--link-color);
       }
 
+      /* 导航栏样式，假设 masthead 是导航栏 */
+      .masthead {
+        background-color: var(--nav-bg-color);
+        color: var(--nav-text-color);
+        transition: background-color 0.3s, color 0.3s;
+      }
+
       body.dark-mode {
         --bg-color: #121212;
         --text-color: #eee;
         --link-color: #66aaff;
+
+        --nav-bg-color: #222;
+        --nav-text-color: #ddd;
       }
 
       #theme-toggle {
@@ -36,23 +48,43 @@ layout: compress
         top: 1rem;
         right: 1rem;
         z-index: 1000;
-        background: transparent;
+        background: rgba(255, 255, 255, 0.85);
+        border-radius: 0.3em;
         border: none;
         padding: 0.3em 0.6em;
         cursor: pointer;
-        font-size: 1.2rem;
+        font-size: 1.6rem;
         user-select: none;
-        color: inherit;
+        color: var(--text-color);
+        box-shadow: 0 0 5px rgba(0,0,0,0.1);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 2.8rem;
+        height: 2.8rem;
+        transition: background 0.3s, color 0.3s, box-shadow 0.3s;
+      }
+
+      body.dark-mode #theme-toggle {
+        background: rgba(18, 18, 18, 0.85);
+        box-shadow: 0 0 8px rgba(255, 255, 255, 0.3);
+      }
+
+      #theme-toggle svg {
+        width: 1.5rem;
+        height: 1.5rem;
+        fill: currentColor;
       }
     </style>
   </head>
 
   <body>
-
     {% include browser-upgrade.html %}
     {% include masthead.html %}
 
-    <button id="theme-toggle" aria-label="Toggle light/dark mode">☾</button>
+    <button id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode" type="button">
+      <!-- JS 会插入 SVG 图标 -->
+    </button>
 
     <div id="main" role="main">
       {% include sidebar.html %}
@@ -80,48 +112,65 @@ layout: compress
       const toggleBtn = document.getElementById('theme-toggle');
       const body = document.body;
 
+      // 太阳 SVG
+      const sunSVG = `
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none">
+          <circle cx="12" cy="12" r="5"/>
+          <line x1="12" y1="1" x2="12" y2="4"/>
+          <line x1="12" y1="20" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="6.34" y2="6.34"/>
+          <line x1="17.66" y1="17.66" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="4" y2="12"/>
+          <line x1="20" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="6.34" y2="17.66"/>
+          <line x1="17.66" y1="6.34" x2="19.78" y2="4.22"/>
+        </svg>
+      `;
+
+      // 月亮 SVG
+      const moonSVG = `
+        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="currentColor">
+          <path d="M21 12.79A9 9 0 0111.21 3 7 7 0 1012 21a9 9 0 009-8.21z"/>
+        </svg>
+      `;
+
       function isNightTime() {
         const hour = new Date().getHours();
-        // 夜间时间定义为 20:00 - 06:00
         return hour >= 20 || hour < 6;
+      }
+
+      function setTheme(theme) {
+        if (theme === 'dark') {
+          body.classList.add('dark-mode');
+          toggleBtn.innerHTML = sunSVG;
+          localStorage.setItem('theme', 'dark');
+        } else {
+          body.classList.remove('dark-mode');
+          toggleBtn.innerHTML = moonSVG;
+          localStorage.setItem('theme', 'light');
+        }
       }
 
       function initTheme() {
         const savedTheme = localStorage.getItem('theme');
         if (savedTheme === 'dark') {
-          body.classList.add('dark-mode');
+          setTheme('dark');
         } else if (savedTheme === 'light') {
-          body.classList.remove('dark-mode');
+          setTheme('light');
         } else {
-          if (isNightTime()) {
-            body.classList.add('dark-mode');
-          } else {
-            body.classList.remove('dark-mode');
-          }
-        }
-        updateButtonText();
-      }
-
-      function updateButtonText() {
-        if (body.classList.contains('dark-mode')) {
-          toggleBtn.textContent = '☀'; 
-        } else {
-          toggleBtn.textContent = '☾'; 
+          setTheme(isNightTime() ? 'dark' : 'light');
         }
       }
 
       toggleBtn.addEventListener('click', () => {
-        body.classList.toggle('dark-mode');
         if (body.classList.contains('dark-mode')) {
-          localStorage.setItem('theme', 'dark');
+          setTheme('light');
         } else {
-          localStorage.setItem('theme', 'light');
+          setTheme('dark');
         }
-        updateButtonText();
       });
 
       initTheme();
     </script>
-
   </body>
 </html>
