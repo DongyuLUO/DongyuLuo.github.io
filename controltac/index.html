@@ -1,4 +1,4 @@
-  <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -8,33 +8,125 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image</title>
 
-  <!-- Google tag (gtag.js) -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-NN6JPN6H8K"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-
-  gtag('config', 'G-NN6JPN6H8K');
-</script>
-
   <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro"
         rel="stylesheet">
 
-  <link rel="stylesheet" href="./static/css/bulma.min.css">
-  <link rel="stylesheet" href="./static/css/bulma-carousel.min.css">
-  <link rel="stylesheet" href="./static/css/bulma-slider.min.css">
-  <link rel="stylesheet" href="./static/css/fontawesome.all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
   <link rel="stylesheet"
         href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
-  <link rel="stylesheet" href="./static/css/index.css">
-  <link rel="icon" href="./static/images/favicon.svg">
 
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
-  <script defer src="./static/js/fontawesome.all.min.js"></script>
-  <script src="./static/js/bulma-carousel.min.js"></script>
-  <script src="./static/js/bulma-slider.min.js"></script>
-  <script src="./static/js/index.js"></script>
+  <style>
+    body {
+      font-family: 'Google Sans', 'Noto Sans', sans-serif;
+    }
+
+    .publication-title {
+      font-weight: bold;
+    }
+
+    .name {
+      color: #3273dc;
+      font-weight: bold;
+    }
+
+    /* Mobile-first responsive images */
+    .responsive-image {
+      width: 100%;
+      height: auto;
+      display: block;
+      margin: 0 auto;
+    }
+
+    /* Specific responsive breakpoints for images */
+    @media screen and (max-width: 768px) {
+      /* Mobile devices */
+      .responsive-image {
+        width: 100% !important;
+        max-width: none !important;
+      }
+      
+      .mobile-full-width {
+        width: 100% !important;
+      }
+      
+      .mobile-large {
+        width: 95% !important;
+      }
+      
+      /* Adjust padding for mobile */
+      .mobile-padding {
+        padding-left: 0.5rem !important;
+        padding-right: 0.5rem !important;
+      }
+      
+      /* Make text larger on mobile for better readability */
+      .mobile-text {
+        font-size: 1rem !important;
+      }
+      
+      /* Adjust margins for mobile */
+      .mobile-margin {
+        margin-bottom: 1rem !important;
+      }
+    }
+
+    @media screen and (min-width: 769px) and (max-width: 1023px) {
+      /* Tablet devices */
+      .tablet-large {
+        width: 90% !important;
+      }
+    }
+
+    @media screen and (min-width: 1024px) {
+      /* Desktop devices */
+      .desktop-constrained {
+        width: 80%;
+      }
+    }
+
+    /* Ensure GIFs are properly responsive */
+    .gif-container {
+      text-align: center;
+      margin: 1rem 0;
+    }
+
+    .gif-container img {
+      max-width: 100%;
+      height: auto;
+    }
+
+    /* Table responsiveness */
+    .table-container {
+      overflow-x: auto;
+      margin: 1rem 0;
+    }
+
+    @media screen and (max-width: 768px) {
+      .table-container {
+        font-size: 0.8rem;
+      }
+    }
+
+    /* Better spacing for mobile */
+    @media screen and (max-width: 768px) {
+      .section {
+        padding: 2rem 1rem;
+      }
+      
+      .container {
+        padding: 0 0.5rem;
+      }
+      
+      .title {
+        font-size: 1.5rem !important;
+      }
+      
+      .subtitle {
+        font-size: 1.2rem !important;
+      }
+    }
+  </style>
 </head>
 <body>
 
@@ -57,7 +149,6 @@
   </div>
 </nav>
 
-
 <section class="hero">
   <div class="hero-body">
     <div class="container is-max-desktop">
@@ -66,7 +157,6 @@
           <h1 class="title is-1 publication-title">
             <span class="name">ControlTac</span>: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image
           </h1>
-
 
           <div class="is-size-5 publication-authors">
             <span class="author-block">
@@ -98,7 +188,6 @@
 
           <div class="column has-text-centered">
             <div class="publication-links">
-              <!-- PDF Link. -->
               <span class="link-block">
                 <a href="https://arxiv.org/pdf/2011.12948"
                    class="external-link button is-normal is-rounded is-dark">
@@ -125,9 +214,7 @@
                   <span>Code (Coming Soon)</span>
                 </a>
               </span>
-
             </div>
-
           </div>
         </div>
       </div>
@@ -138,8 +225,8 @@
 <section class="hero teaser">
   <div class="container is-max-desktop">
     <div class="hero-body">
-      <img src="./static/images/teaser.png" alt="Teaser Image" style="width: 100%; height: auto;" />
-      <h2 class="subtitle has-text-left is-size-6">
+      <img src="./static/images/teaser.png" alt="Teaser Image" class="responsive-image mobile-full-width" />
+      <h2 class="subtitle has-text-left is-size-6 mobile-text mobile-margin">
         Starting from a single reference image, <span class="name">ControlTac</span> can generate tens of 
         thousands augmented tactile images with various contact forces and contact positions (Left). 
         These augmented images can then be used for various downstream tasks (Middle) and deployed in 
@@ -149,18 +236,13 @@
   </div>
 </section>
 
-
-
-
-
 <section class="section">
   <div class="container is-max-desktop">
-    <!-- Abstract. -->
     <div class="columns is-centered has-text-centered">
       <div class="column is-four-fifths">
         <h2 class="title is-3">Abstract</h2>
-        <div class="content has-text-justified">
-          <p>
+        <div class="content has-text-justified mobile-padding">
+          <p class="mobile-text">
             Vision-based tactile sensing has been widely used in perception, reconstruction, 
             and robotic manipulation. However, collecting large-scale tactile data remains costly 
             due to the localized nature of sensor-object interactions and inconsistencies across 
@@ -175,67 +257,59 @@
             can effectively augment tactile datasets and lead to consistent gains. 
             Our three real-world experiments further validate the practical utility of our approach.
           </p>
-
         </div>
       </div>
     </div>
-    <!--/ Abstract. -->
-
-    
+  </div>
+</section>
 
 <section class="section">
   <div class="container is-max-desktop">
-    <!-- Framework. -->
     <div class="columns is-centered has-text-centered">
       <div class="column is-full">
         <h2 class="title is-3">Method Overview</h2>
-        <div class="content has-text-justified" style="padding-left: 1rem; padding-right: 1rem;">
-          <p class="has-text-left is-size-6" style="margin-bottom: 1rem;">
+        <div class="content has-text-justified mobile-padding">
+          <p class="has-text-left is-size-6 mobile-text mobile-margin">
             <span class="name">ControlTac</span> consists of two key components:
             a. Force-Control: We input the background-removed tactile image <em>x</em> into the DiT model, conditioned on the 3D contact force <em>ΔF</em>, to generate force-specific tactile variations.
             b. Position-Control: We transfer the pretrained DiT from stage one and fine-tune it using ControlNet, conditioned on a contact mask <em>c</em>, to synthesize realistic tactile images <em>y<sub>B</sub></em> under different contact positions and forces.
           </p>
         </div>
 
-        <figure class="image" style="margin-top: 1.5rem;">
-          <img src="./static/images/framework.png" alt="ControlTac Framework" style="width: 100%; height: auto;">
+        <figure class="image">
+          <img src="./static/images/framework.png" alt="ControlTac Framework" class="responsive-image mobile-full-width">
         </figure>
 
-        <div class="content has-text-left is-size-6" style="margin-top: 1.5rem;">
-          <p>Here, we demonstrate how to annotate the contact mask to represent the contact position.</p>
-          <figure class="image" style="margin-top: 0.75rem;">
-            <img src="./static/images/mask.gif" alt="Contact Mask Annotation GIF" style="width: 80%; height: auto;">
-          </figure>
+        <div class="content has-text-left mobile-padding">
+          <p class="is-size-6 mobile-text mobile-margin">Here, we demonstrate how to annotate the contact mask to represent the contact position.</p>
+          <div class="gif-container">
+            <img src="./static/images/mask.gif" alt="Contact Mask Annotation GIF" class="responsive-image mobile-large tablet-large desktop-constrained">
+          </div>
         </div>
-
       </div>
     </div>
-    <!--/ Framework. -->
   </div>
 </section>
 
-
-
 <section class="section">
   <div class="container is-max-desktop">
-    <!-- Visualization. -->
     <div class="columns is-centered has-text-centered">
       <div class="column is-full">
-        <h2 class="title is-3" style="margin-bottom: 2rem;">Visualization</h2>
+        <h2 class="title is-3">Visualization</h2>
 
-        <h3 class="subtitle is-5 has-text-centered" style="margin-top: 2rem; margin-bottom: 0.75rem;">Qualitative Comparison</h3>
-        <div class="content has-text-justified" style="padding-left: 1rem; padding-right: 1rem; margin-bottom: 2rem;">
-          <p class="has-text-left is-size-6" style="margin-bottom: 1rem;">
+        <h3 class="subtitle is-5 has-text-centered mobile-margin">Qualitative Comparison</h3>
+        <div class="content has-text-justified mobile-padding">
+          <p class="has-text-left is-size-6 mobile-text mobile-margin">
             We conduct a qualitative comparison between <span class="name">ControlTac</span> and other generators and simulators. <span class="name">ControlTac</span> exhibits superior realism, variation, and controllability in the generated tactile images.
           </p>
-          <figure class="image" style="margin-top: 1rem;">
-            <img src="./static/images/vis1.png" alt="Comparison between ControlTac and other generators and simulators." style="width: 80%; height: auto;">
+          <figure class="image">
+            <img src="./static/images/vis1.png" alt="Comparison between ControlTac and other generators and simulators." class="responsive-image mobile-large tablet-large desktop-constrained">
           </figure>
         </div>
 
-        <h3 class="subtitle is-5 has-text-centered" style="margin-bottom: 0.75rem;">Comparison with Baseline Models</h3>
-        <div class="content has-text-justified" style="padding-left: 1rem; padding-right: 1rem; margin-bottom: 2rem;">
-          <p class="has-text-left is-size-6" style="margin-bottom: 1rem;">
+        <h3 class="subtitle is-5 has-text-centered mobile-margin">Comparison with Baseline Models</h3>
+        <div class="content has-text-justified mobile-padding">
+          <p class="has-text-left is-size-6 mobile-text mobile-margin">
             The first column displays 3D previews of six objects, followed by the input tactile image (Ref. Image) 
             in the second column and the Contact Mask in the third column. The fourth column shows the initial force 
             (top) and target force (bottom). Subsequent columns depict the Ground Truth (G.T.) and results from <span class="name">ControlTac</span>, 
@@ -243,50 +317,44 @@
             In part A), we visualize the generated images for comparison; in part B), we visualize the 
             error maps highlighting the differences from the ground-truth tactile image.
           </p>
-          <figure class="image" style="margin-top: 1rem;">
-            <img src="./static/images/vis2.png" alt="Comparison between ControlTac and baseline models." style="width: 100%; height: auto;">
+          <figure class="image">
+            <img src="./static/images/vis2.png" alt="Comparison between ControlTac and baseline models." class="responsive-image mobile-full-width">
           </figure>
         </div>
 
-        <h3 class="subtitle is-5 has-text-centered" style="margin-bottom: 0.75rem;">Force-Controlled and Position-Controlled Generation</h3>
-        <div class="content has-text-justified" style="padding-left: 1rem; padding-right: 1rem; margin-bottom: 2rem;">
-          <p class="has-text-left is-size-6" style="margin-bottom: 1rem;">
+        <h3 class="subtitle is-5 has-text-centered mobile-margin">Force-Controlled and Position-Controlled Generation</h3>
+        <div class="content has-text-justified mobile-padding">
+          <p class="has-text-left is-size-6 mobile-text mobile-margin">
             The figure below showcases the generation results of force-controlled and position-controlled components in <span class="name">ControlTac</span>.
           </p>
-          <figure class="image" style="margin-top: 1rem;">
-            <img src="./static/images/vis3.gif" alt="Generation results of force-controlled and position-controlled components in ControlTac." style="width: 80%; height: auto;">
-          </figure>
+          <div class="gif-container">
+            <img src="./static/images/vis3.gif" alt="Generation results of force-controlled and position-controlled components in ControlTac." class="responsive-image mobile-large tablet-large desktop-constrained">
+          </div>
         </div>
 
-        <h3 class="subtitle is-5 has-text-centered" style="margin-bottom: 0.75rem;">Diversity of Generated Tactile Images</h3>
-        <div class="content has-text-justified" style="padding-left: 1rem; padding-right: 1rem;">
-          <p class="has-text-left is-size-6" style="margin-bottom: 1rem;">
+        <h3 class="subtitle is-5 has-text-centered mobile-margin">Diversity of Generated Tactile Images</h3>
+        <div class="content has-text-justified mobile-padding">
+          <p class="has-text-left is-size-6 mobile-text mobile-margin">
             The figure below clearly demonstrates that <span class="name">ControlTac</span> can generate a diverse range of tactile images from a single reference tactile image.
           </p>
-          <figure class="image" style="margin-top: 1rem;">
-            <img src="./static/images/vis4.gif" alt="ControlTac can generate a diverse range of tactile images from a single reference tactile image." style="width: 100%; height: auto;">
-          </figure>
+          <div class="gif-container">
+            <img src="./static/images/vis4.gif" alt="ControlTac can generate a diverse range of tactile images from a single reference tactile image." class="responsive-image mobile-full-width">
+          </div>
         </div>
-
       </div>
     </div>
-    <!--/ Visualization. -->
   </div>
 </section>
 
-
-
 <section class="section">
   <div class="container is-max-desktop">
-    <!-- Downstream Tasks -->
     <div class="columns is-centered has-text-centered">
       <div class="column is-full">
-        <h2 class="title is-3" style="margin-bottom: 2rem;">Downstream Tasks</h2>
+        <h2 class="title is-3">Downstream Tasks</h2>
 
-        <!-- Force Estimation -->
-        <h3 class="subtitle is-5 has-text-centered" style="margin-top: 2rem; margin-bottom: 0.75rem;">Force Estimation</h3>
-        <div class="content has-text-justified" style="padding: 0 1rem 2rem;">
-          <p class="is-size-6" style="margin-bottom: 1rem;">
+        <h3 class="subtitle is-5 has-text-centered mobile-margin">Force Estimation</h3>
+        <div class="content has-text-justified mobile-padding">
+          <p class="is-size-6 mobile-text mobile-margin">
             The left figure illustrates how the force-controlled component in <span class="name">ControlTac</span> augments 
             1,000 real samples with a larger set of generated tactile images, leading to a substantial reduction in MAE 
             compared to using real data alone. Notably, by incorporating the generated data, the model achieves comparable 
@@ -295,7 +363,7 @@
             training of the force estimator. Moreover, combining a larger quantity of both real and generated data yields the 
             best overall performance, underscoring the realism and utility of the generated samples.
           </p>
-          <p class="is-size-6" style="margin-bottom: 1rem;">
+          <p class="is-size-6 mobile-text mobile-margin">
             Building on the force-controlled component, we further integrate the position-controlled component of 
             <span class="name">ControlTac</span>. To highlight the importance of diverse contact positions in 
             training a robust force estimator, we divide the real dataset by contact angle, since tactile image 
@@ -305,24 +373,23 @@
             even when only a small subset of real images is available—especially in scenarios where the real data covers 
             a narrow range of angles.
           </p>
-          <figure class="image" style="margin-top: 1rem; margin-bottom: 1rem;">
-            <img src="./static/images/force1.png" alt="Comparison between ControlTac and other generators and simulators." style="width: 100%; height: auto;">
+          <figure class="image">
+            <img src="./static/images/force1.png" alt="Force estimation results." class="responsive-image mobile-full-width">
           </figure>
-          <p class="is-size-6" style="margin-bottom: 1rem;">
+          <p class="is-size-6 mobile-text mobile-margin">
             We further validate the effectiveness of <span class="name">ControlTac</span> in real-world pushing 
             experiments. The force estimator trained only with generated tactile data achieves
             comparable performance to the one trained on real tactile data, demonstrating that the generated data is 
             realistic and reliable enough to be used directly for training in practical scenarios.
           </p>
-          <figure class="image" style="margin-top: 1rem; margin-bottom: 1rem;">
-            <img src="./static/images/force2.gif" alt="Real-world pushing experiments." style="width: 80%; height: auto;">
-          </figure>
+          <div class="gif-container">
+            <img src="./static/images/force2.gif" alt="Real-world pushing experiments." class="responsive-image mobile-large tablet-large desktop-constrained">
+          </div>
         </div>
 
-        <!-- Position Estimation -->
-        <h3 class="subtitle is-5 has-text-centered" style="margin-bottom: 0.75rem;">Position Estimation</h3>
-        <div class="content has-text-justified" style="padding: 0 1rem 2rem;">
-          <p class="is-size-6" style="margin-bottom: 1rem;">
+        <h3 class="subtitle is-5 has-text-centered mobile-margin">Position Estimation</h3>
+        <div class="content has-text-justified mobile-padding">
+          <p class="is-size-6 mobile-text mobile-margin">
             As shown in the table below, pose estimators trained on tactile images generated by 
             <span class="name">ControlTac</span> achieve strong performance across all objects, 
             including the unseen T Shape. In particular, using a larger amount of generated data 
@@ -333,54 +400,48 @@
             The results show that using varying force yields better performance, as contact force naturally 
             changes during inference.
           </p>
-          <figure class="image" style="margin-top: 1rem; margin-bottom: 1rem;">
-            <img src="./static/images/pos1.png" alt="Pose estimation comparison." style="width: 60%; height: auto;">
+          <figure class="image">
+            <img src="./static/images/pos1.png" alt="Pose estimation comparison." class="responsive-image mobile-large tablet-large">
           </figure>
-          <p class="is-size-6" style="margin-bottom: 1rem;">
+          <p class="is-size-6 mobile-text mobile-margin">
             To further evaluate the performance of the pose estimator trained with <span class="name">ControlTac</span>-generated data, 
             we conducted a real-time pose tracking experiment. Our model successfully tracked poses at a 
             frequency of 10 Hz, highlighting its practicality in dynamic real-world scenarios.
           </p>
-          <figure class="image" style="margin-top: 1rem; margin-bottom: 1rem;">
-            <img src="./static/images/tracking.gif" alt="Real-time pose tracking." style="width: 100%; height: auto;">
-          </figure>
-          <p class="is-size-6" style="margin-bottom: 1rem;">
+          <div class="gif-container">
+            <img src="./static/images/tracking.gif" alt="Real-time pose tracking." class="responsive-image mobile-full-width">
+          </div>
+          <p class="is-size-6 mobile-text mobile-margin">
             In the Precise Insertion task, the pose estimator trained with <span class="name">ControlTac</span>-generated 
             data achieved success rates of 90% on the cylinder and 85% on the cross. Notably, 
             it also reached an 85% success rate on the unseen T-shape.
           </p>
-          <figure class="image" style="margin-top: 1rem; margin-bottom: 2rem;">
-            <img src="./static/images/insertion.gif" alt="Precise insertion task results." style="width: 60%; height: auto;">
-          </figure>
+          <div class="gif-container">
+            <img src="./static/images/insertion.gif" alt="Precise insertion task results." class="responsive-image mobile-large tablet-large">
+          </div>
         </div>
 
-        <!-- Object Classification -->
-        <h3 class="subtitle is-5 has-text-centered" style="margin-bottom: 0.75rem;">Object Classification</h3>
-        <div class="content has-text-justified" style="padding: 0 1rem 2rem;">
-          <p class="is-size-6" style="margin-bottom: 1rem;">
+        <h3 class="subtitle is-5 has-text-centered mobile-margin">Object Classification</h3>
+        <div class="content has-text-justified mobile-padding">
+          <p class="is-size-6 mobile-text mobile-margin">
             In the object classification task, we found that compared to traditional augmentation methods, using <span class="name">ControlTac</span> for data augmentation yields significantly better performance—whether with a simple CNN classifier, a ViT trained from scratch, or a ViT pretrained on ImageNet.
           </p>
-          <p class="is-size-6" style="font-style: italic; margin-top: 1rem; margin-bottom: 1rem;">
+          <p class="is-size-6 mobile-text mobile-margin" style="font-style: italic;">
             Note: G = geometric augmentation; C = color augmentation; Gen = our ControlTac-based augmentation method.
           </p>
-          <figure class="image" style="margin-top: 1rem;">
-            <img src="./static/images/classification.png" alt="Object classification results." style="width: 100%; height: auto;">
+          <figure class="image">
+            <img src="./static/images/classification.png" alt="Object classification results." class="responsive-image mobile-full-width">
           </figure>
         </div>
-
       </div>
     </div>
-    <!-- /Downstream Tasks -->
   </div>
 </section>
 
-
-
-
 <section class="section" id="BibTeX">
-  <div class="container is-max-desktop content">
+  <div class="container is-max-desktop content mobile-padding">
     <h2 class="title">BibTeX</h2>
-    <pre><code>@article{park2021nerfies,
+    <pre style="font-size: 0.8rem; overflow-x: auto;"><code>@article{park2021nerfies,
   author    = {Park, Keunhong and Sinha, Utkarsh and Barron, Jonathan T. and Bouaziz, Sofien and Goldman, Dan B and Seitz, Steven M. and Martin-Brualla, Ricardo},
   title     = {Nerfies: Deformable Neural Radiance Fields},
   journal   = {ICCV},
@@ -389,24 +450,22 @@
   </div>
 </section>
 
-
 <footer class="footer">
   <div class="container">
     <div class="content has-text-centered">
       <a class="icon-link" href="./static/videos/nerfies_paper.pdf">
         <i class="fas fa-file-pdf"></i>
       </a>
-      <a class="icon-link" href="https://github.com/DongyuLUO" class="external-link" disabled>
+      <a class="icon-link" href="https://github.com/DongyuLUO" class="external-link">
         <i class="fab fa-github"></i>
       </a>
     </div>
     <div class="columns is-centered">
       <div class="column is-8">
-        <div class="content">
+        <div class="content mobile-padding">
           <p style="margin-top: 1rem; font-style: italic;">
             Website template modified from <a href="https://nerfies.github.io/" target="_blank" rel="noopener noreferrer">NeRFies</a>
           </p>
-          
           <p>
             This website is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
           </p>
@@ -415,8 +474,6 @@
     </div>
   </div>
 </footer>
-
-
 
 </body>
 </html>
