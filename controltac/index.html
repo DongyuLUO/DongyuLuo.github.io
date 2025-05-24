@@ -189,11 +189,7 @@
         <div class="content has-text-justified" style="padding-left: 1rem; padding-right: 1rem;">
           <p class="has-text-left is-size-6" style="margin-bottom: 1rem;">
             <span class="name">ControlTac</span> consists of two key components:
-          </p>
-          <p class="has-text-left is-size-6" style="margin-bottom: 0.5rem;">
             <strong>a)</strong> <em>Force-Control</em>: We input the background-removed tactile image <em>x</em> into the DiT model, conditioned on the 3D contact force <em>ΔF</em>, to generate force-specific tactile variations.
-          </p>
-          <p class="has-text-left is-size-6">
             <strong>b)</strong> <em>Position-Control</em>: We transfer the pretrained DiT from stage one and fine-tune it using ControlNet, conditioned on a contact mask <em>c</em>, to synthesize realistic tactile images <em>y<sub>B</sub></em> under different contact positions and forces.
           </p>
         </div>
