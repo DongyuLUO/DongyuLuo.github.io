@@ -27,6 +27,10 @@ body {
   font-family: 'Google Sans', sans-serif;
 }
 
+.name {
+  font-variant: small-caps;
+}
+
 
 .publication-title {
 }
