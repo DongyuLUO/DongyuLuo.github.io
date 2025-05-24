@@ -178,7 +178,46 @@
     </div>
     <!--/ Abstract. -->
 
+    
 
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Framework. -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Method Overview</h2>
+        <div class="content has-text-justified">
+          <p>
+            Vision-based tactile sensing has been widely used in perception, reconstruction, 
+            and robotic manipulation. However, collecting large-scale tactile data remains costly 
+            due to the localized nature of sensor-object interactions and inconsistencies across 
+            sensor instances. Existing approaches to scaling tactile data, such as simulation and
+            free-form tactile generation, often suffer from unrealistic output and poor transferability 
+            to downstream tasks. To address this, we propose <span class="name">ControlTac</span>, a 
+            two-stage controllable framework that generates realistic tactile images conditioned on a 
+            single reference tactile image, contact force, and contact position. With those physical 
+            priors as control input, <span class="name">ControlTac</span> generates physically plausible 
+            and varied tactile images that can be used for effective data augmentation. 
+            Through experiments on three downstream tasks, we demonstrate that <span class="name">ControlTac</span> 
+            can effectively augment tactile datasets and lead to consistent gains. 
+            Our three real-world experiments further validate the practical utility of our approach.
+          </p>
+        </div>
+
+         <figure class="image" style="margin-top: 1.5rem;">
+          <img src="./static/images/framework.png" alt="ControlTac Framework" style="width: 100%; height: auto;">
+          <figcaption class="has-text-left" style="font-size: 1.05rem; margin-top: 0.75rem;">
+            <strong>a)</strong> The Force-Control component of <span class="name">ControlTac</span>. We input the tactile image <em>x</em> without background <em>B</em> into the DiT, which is conditioned on the 3D force <em>ΔF</em>. <br>
+            <strong>b)</strong> The Position-Control component of <span class="name">ControlTac</span>. We copy the DiT from the first stage and finetune it with ControlNet conditioned on the contact mask <em>c</em> for generating realistic tactile image <em>y<sub>B</sub></em> conditioned on different force and contact positions.
+          </figcaption>
+        </figure>
+
+
+      </div>
+    </div>
+    <!--/ Framework. -->
+  </div>
+</section>
 
 
 
