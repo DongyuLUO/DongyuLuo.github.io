@@ -39,6 +39,27 @@
       font-weight: bold;
     }
 
+    /* Enhanced spacing control */
+    .title.is-3 {
+      margin-bottom: 2.5rem !important; /* Increased space after main titles */
+    }
+
+    .subtitle.is-5 {
+      margin-top: 3rem !important; /* Increased space before subtitles */
+      margin-bottom: 0.75rem !important; /* Reduced space after subtitles */
+    }
+
+    /* Reduce top margin of content that follows subtitles */
+    .subtitle.is-5 + .content,
+    .subtitle.is-5 + div {
+      margin-top: 0 !important;
+    }
+
+    .subtitle.is-5 + .content p:first-child,
+    .subtitle.is-5 + div p:first-child {
+      margin-top: 0 !important;
+    }
+
     /* Mobile-first responsive images */
     .responsive-image {
       width: 100%;
@@ -77,6 +98,16 @@
       /* Adjust margins for mobile */
       .mobile-margin {
         margin-bottom: 1rem !important;
+      }
+
+      /* Mobile spacing adjustments */
+      .title.is-3 {
+        margin-bottom: 2rem !important; /* Slightly less space on mobile */
+      }
+
+      .subtitle.is-5 {
+        margin-top: 2rem !important; /* Less space before subtitles on mobile */
+        margin-bottom: 0.5rem !important; /* Even tighter after subtitles on mobile */
       }
     }
 
