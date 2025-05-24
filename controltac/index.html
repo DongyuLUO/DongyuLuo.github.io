@@ -119,7 +119,9 @@
       background-clip: text;
       font-weight: 800;
       text-shadow: none;
+      font-variant: small-caps;
     }
+
 
     .author-block a {
       color: rgba(255, 255, 255, 0.9);
@@ -393,7 +395,7 @@
       display: block;
       border-radius: 12px;
       margin: 0 auto;
-      max-width: 600px; /* 限制最大宽度 */
+      max-width: 600px; 
     }
 
     /* Smooth animations */
@@ -441,7 +443,7 @@
       line-height: 1.8;
       color: var(--text-primary);
       margin-bottom: 1.5rem;
-      max-width: 700px; /* 限制段落宽度 */
+      max-width: 700px;
       margin-left: auto;
       margin-right: auto;
     }
@@ -460,7 +462,7 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      max-width: 600px; /* 限制容器最大宽度 */
+      max-width: 600px; 
     }
 
     .gif-container img, .image-container img {
@@ -482,18 +484,27 @@
       border-radius: 16px;
       margin: 2rem auto;
       padding: 2rem;
-      max-width: 700px; /* 限制最大宽度 */
+      max-width: 700px;
+      text-align: left; 
     }
-
+    
+    #BibTeX h2 {
+      text-align: center; 
+    }
+    
     #BibTeX pre {
       background: white;
-      border: 1px solid var(--border-color);
+      border: 1px solid var(--border-color, #e2e8f0);
       border-radius: 8px;
       padding: 1.5rem;
       font-family: 'JetBrains Mono', monospace;
       font-size: 0.8rem;
       overflow-x: auto;
+      line-height: 1.6;           
+      white-space: pre-wrap;      
+      text-align: left;           
     }
+
 
     /* Footer styling */
     .footer {
@@ -882,19 +893,22 @@
 <!-- BibTeX Section -->
 <section class="section" id="BibTeX">
   <div class="content-wrapper">
-    <div class="columns is-centered has-text-centered">
+    <div class="columns is-centered">
       <div class="column is-four-fifths">
-        <h2 class="section-title">BibTeX</h2>
-        <pre style="background: #f8fafc; border: 1px solid var(--border-color); border-radius: 8px; padding: 1.5rem; font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; overflow-x: auto; margin-top: 1rem;"><code>@article{park2021nerfies,
-  author    = {Park, Keunhong and Sinha, Utkarsh and Barron, Jonathan T. and Bouaziz, Sofien and Goldman, Dan B and Seitz, Steven M. and Martin-Brualla, Ricardo},
-  title     = {Nerfies: Deformable Neural Radiance Fields},
-  journal   = {ICCV},
-  year      = {2021},
+        <h2 class="section-title has-text-centered">BibTeX</h2>
+        <pre><code>@article{park2021nerfies,
+  author  = {Park, Keunhong and Sinha, Utkarsh and Barron, Jonathan T. 
+             and Bouaziz, Sofien and Goldman, Dan B and Seitz, Steven M. 
+             and Martin-Brualla, Ricardo},
+  title   = {Nerfies: Deformable Neural Radiance Fields},
+  journal = {ICCV},
+  year    = {2021},
 }</code></pre>
       </div>
     </div>
   </div>
 </section>
+
 
 <footer class="footer">
   <div class="container">
