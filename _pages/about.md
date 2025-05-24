@@ -24,7 +24,7 @@ My research interests primarily focus on **multisensory intelligence** and **gen
 I am always excited to connect and collaborate with people from diverse backgrounds. If you’re interested in my work or would like to collaborate, feel free to reach out via email!
 
 <span style="color: red;">
-I am currently seeking a Ph.D. opportunity for Fall 2026 and would be grateful for any guidance or opportunity to grow and learn in the field.
+I am currently seeking a Ph.D. opportunity for **Fall 2026** and would be grateful for any guidance or opportunity to grow and learn in the field.
 </span>
 
 
