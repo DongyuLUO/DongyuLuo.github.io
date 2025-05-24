@@ -201,7 +201,7 @@
         <div class="content has-text-left is-size-6" style="margin-top: 1.5rem;">
           <p>Here, we demonstrate how to annotate the contact mask to represent the contact position.</p>
           <figure class="image" style="margin-top: 0.75rem;">
-            <img src="./static/images/mask.gif" alt="Contact Mask Annotation GIF" style="width: 100%; height: auto;">
+            <img src="./static/images/mask.gif" alt="Contact Mask Annotation GIF" style="width: 80%; height: auto;">
           </figure>
         </div>
 
@@ -217,34 +217,45 @@
     <!-- Visualization. -->
     <div class="columns is-centered has-text-centered">
       <div class="column is-full">
-        <h2 class="title is-3">Visualization</h2>
+        <h2 class="title is-3" style="margin-bottom: 2rem;">Visualization</h2>
+
+        <h3 class="subtitle is-5 has-text-left" style="margin-bottom: 0.75rem;">Qualitative Comparison</h3>
+        <div class="content has-text-justified" style="padding-left: 1rem; padding-right: 1rem; margin-bottom: 2rem;">
+          <p class="has-text-left is-size-6" style="margin-bottom: 1rem;">
+            We first conduct a qualitative comparison between <span class="name">ControlTac</span> and other generators and simulators. <span class="name">ControlTac</span> exhibits superior realism, variation, and controllability in the generated tactile images.
+          </p>
+          <figure class="image" style="margin-top: 1rem;">
+            <img src="./static/images/vis1.png" alt="Comparison between ControlTac and other generators and simulators." style="width: 80%; height: auto;">
+          </figure>
+        </div>
+
+        <h3 class="subtitle is-5 has-text-left" style="margin-bottom: 0.75rem;">Comparison with Baseline Models</h3>
+        <div class="content has-text-justified" style="padding-left: 1rem; padding-right: 1rem; margin-bottom: 2rem;">
+          <p class="has-text-left is-size-6" style="margin-bottom: 1rem;">
+            Next, we compare the generation performance of <span class="name">ControlTac</span> with two baseline models, and observe that <span class="name">ControlTac</span> produces significantly better results.
+          </p>
+          <figure class="image" style="margin-top: 1rem;">
+            <img src="./static/images/vis2.png" alt="Comparison between ControlTac and baseline models." style="width: 100%; height: auto;">
+          </figure>
+        </div>
+
+        <h3 class="subtitle is-5 has-text-left" style="margin-bottom: 0.75rem;">Force-Controlled and Position-Controlled Generation</h3>
+        <div class="content has-text-justified" style="padding-left: 1rem; padding-right: 1rem; margin-bottom: 2rem;">
+          <p class="has-text-left is-size-6" style="margin-bottom: 1rem;">
+            The figure below showcases the generation results of force-controlled and position-controlled components in <span class="name">ControlTac</span>.
+          </p>
+          <figure class="image" style="margin-top: 1rem;">
+            <img src="./static/images/vis3.gif" alt="Generation results of force-controlled and position-controlled components in ControlTac." style="width: 80%; height: auto;">
+          </figure>
+        </div>
+
+        <h3 class="subtitle is-5 has-text-left" style="margin-bottom: 0.75rem;">Diversity of Generated Tactile Images</h3>
         <div class="content has-text-justified" style="padding-left: 1rem; padding-right: 1rem;">
           <p class="has-text-left is-size-6" style="margin-bottom: 1rem;">
-            We first conduct a qualitative comparison between <span class="name">ControlTac</span> and other generators and simulators. ControlTac exhibits superior realism, variation, and controllability in the generated tactile images.
+            The figure below clearly demonstrates that <span class="name">ControlTac</span> can generate a diverse range of tactile images from a single reference tactile image.
           </p>
-        </div>
-        <figure class="image" style="margin-top: 1.5rem;">
-          <img src="./static/images/vis1.png" alt="Comparison between ControlTac and other generators and simulators." style="width: 100%; height: auto;">
-        </figure>
-
-        <div class="content has-text-left is-size-6" style="margin-top: 1.5rem;">
-          <p>Next, we compare the generation performance of <span class="name">ControlTac</span> with two baseline models, and observe that <span class="name">ControlTac</span> produces significantly better results.</p>
-          <figure class="image" style="margin-top: 0.75rem;">
-            <img src="./static/images/vis2.png" alt="Comparison between ControlTac and other generators and baseline models." style="width: 100%; height: auto;">
-          </figure>
-        </div>
-
-        <div class="content has-text-left is-size-6" style="margin-top: 1.5rem;">
-          <p>The figure below showcases the generation results of force-controlled and position-controlled components in <span class="name">ControlTac</span>.</p>
-          <figure class="image" style="margin-top: 0.75rem;">
-            <img src="./static/images/vis3.gif" alt="generation results of force-controlled and position-controlled components in ControlTac." style="width: 100%; height: auto;">
-          </figure>
-        </div>
-
-        <div class="content has-text-left is-size-6" style="margin-top: 1.5rem;">
-          <p>The figure below clearly demonstrates that <span class="name">ControlTac</span> can generate a diverse range of tactile images from a single reference tactile image.</p>
-          <figure class="image" style="margin-top: 0.75rem;">
-            <img src="./static/images/vis4.gif" alt="ControlTac can generate a diverse range of tactile images from a single reference tactile image" style="width: 100%; height: auto;">
+          <figure class="image" style="margin-top: 1rem;">
+            <img src="./static/images/vis4.gif" alt="ControlTac can generate a diverse range of tactile images from a single reference tactile image." style="width: 100%; height: auto;">
           </figure>
         </div>
 
@@ -253,6 +264,7 @@
     <!--/ Visualization. -->
   </div>
 </section>
+
 
 
 
