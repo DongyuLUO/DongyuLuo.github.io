@@ -216,32 +216,21 @@
         <h2 class="title is-3">Abstract</h2>
         <div class="content has-text-justified">
           <p>
-            We present the first method capable of photorealistically reconstructing a non-rigidly
-            deforming scene using photos/videos captured casually from mobile phones.
+            Vision-based tactile sensing has been widely used in perception, reconstruction, 
+            and robotic manipulation. However, collecting large-scale tactile data remains costly 
+            due to the localized nature of sensor-object interactions and inconsistencies across 
+            sensor instances. Existing approaches to scaling tactile data, such as simulation and
+            free-form tactile generation, often suffer from unrealistic output and poor transferability 
+            to downstream tasks. To address this, we propose <span class="name">ControlTac</span>, a 
+            two-stage controllable framework that generates realistic tactile images conditioned on a 
+            single reference tactile image, contact force, and contact position. With those physical 
+            priors as control input, <span class="name">ControlTac</span> generates physically plausible 
+            and varied tactile images that can be used for effective data augmentation. 
+            Through experiments on three downstream tasks, we demonstrate that <span class="name">ControlTac</span> 
+            can effectively augment tactile datasets and lead to consistent gains. 
+            Our three real-world experiments further validate the practical utility of our approach.
           </p>
-          <p>
-            Our approach augments neural radiance fields
-            (NeRF) by optimizing an
-            additional continuous volumetric deformation field that warps each observed point into a
-            canonical 5D NeRF.
-            We observe that these NeRF-like deformation fields are prone to local minima, and
-            propose a coarse-to-fine optimization method for coordinate-based models that allows for
-            more robust optimization.
-            By adapting principles from geometry processing and physical simulation to NeRF-like
-            models, we propose an elastic regularization of the deformation field that further
-            improves robustness.
-          </p>
-          <p>
-            We show that <span class="dnerf">Nerfies</span> can turn casually captured selfie
-            photos/videos into deformable NeRF
-            models that allow for photorealistic renderings of the subject from arbitrary
-            viewpoints, which we dub <i>"nerfies"</i>. We evaluate our method by collecting data
-            using a
-            rig with two mobile phones that take time-synchronized photos, yielding train/validation
-            images of the same pose at different viewpoints. We show that our method faithfully
-            reconstructs non-rigidly deforming scenes and reproduces unseen views with high
-            fidelity.
-          </p>
+
         </div>
       </div>
     </div>
