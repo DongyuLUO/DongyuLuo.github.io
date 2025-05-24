@@ -12,7 +12,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   
-  <link href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&family=Noto+Sans:wght@400;500;700&family=Castoro:wght@400&display=swap"
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
 
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css">
@@ -25,109 +25,142 @@
         href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
 
   <style>
+    :root {
+      --primary-blue: #2563eb;
+      --accent-blue: #3b82f6;
+      --light-blue: #dbeafe;
+      --dark-blue: #1e40af;
+      --gradient-start: #667eea;
+      --gradient-end: #764ba2;
+      --text-primary: #1f2937;
+      --text-secondary: #6b7280;
+      --border-color: #e5e7eb;
+      --shadow-soft: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      --shadow-medium: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    }
+
+    * {
+      scroll-behavior: smooth;
+    }
+
     body {
-      font-family: 'Google Sans', 'Noto Sans', sans-serif;
+      font-family: 'Inter', sans-serif;
+      line-height: 1.6;
+      color: var(--text-primary);
+      background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
     }
 
-    .publication-title {
-      font-weight: bold;
-    }
-
-    .name {
-      color: #3273dc;
-      font-variant: small-caps;
-      font-weight: bold;
-    }
-
-    /* Navbar improvements */
+    /* Enhanced navbar with modern styling */
     .navbar {
-      box-shadow: 0 2px 0 0 #f5f5f5;
-      min-height: 3.25rem;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      transition: all 0.3s ease;
     }
 
     .navbar-brand {
-      min-height: 3.25rem;
-    }
-
-    .navbar-burger {
-      height: 3.25rem;
-      width: 3.25rem;
-    }
-
-    .navbar-menu {
-      box-shadow: 0 8px 16px rgba(10, 10, 10, 0.1);
-    }
-
-    /* Center the home icon */
-    .navbar-start {
-      flex-grow: 1;
-      justify-content: center;
+      padding: 0 1rem;
     }
 
     .navbar-item {
-      padding: 0.5rem 1rem;
+      font-weight: 500;
+      transition: all 0.3s ease;
     }
 
     .navbar-item:hover {
-      background-color: #fafafa;
+      background: var(--light-blue);
+      color: var(--primary-blue);
     }
 
-    /* Mobile navbar specific styles */
-    @media screen and (max-width: 1023px) {
-      .navbar-menu {
-        display: none;
-      }
-      
-      .navbar-menu.is-active {
-        display: block;
-      }
-      
-      .navbar-item {
-        padding: 0.75rem 1rem;
-        border-bottom: 1px solid #f5f5f5;
-      }
+    /* Hero section with gradient background */
+    .hero-section {
+      background: linear-gradient(135deg, var(--gradient-start) 0%, var(--gradient-end) 100%);
+      color: white;
+      padding: 4rem 0 3rem;
+      position: relative;
+      overflow: hidden;
     }
 
-    /* Enhanced spacing control */
-    .title.is-3 {
-      margin-bottom: 2.5rem !important; /* Increased space after main titles */
+    .hero-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.15"/><circle cx="10" cy="60" r="0.5" fill="white" opacity="0.15"/><circle cx="90" cy="40" r="0.5" fill="white" opacity="0.15"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+      pointer-events: none;
     }
 
-    .subtitle.is-5 {
-      margin-top: 3rem !important; /* Increased space before subtitles */
-      margin-bottom: 0.75rem !important; /* Reduced space after subtitles */
+    .hero-content {
+      position: relative;
+      z-index: 2;
     }
 
-    /* Reduce top margin of content that follows subtitles */
-    .subtitle.is-5 + .content,
-    .subtitle.is-5 + div {
-      margin-top: 0 !important;
+    .publication-title {
+      font-weight: 700;
+      font-size: 2.5rem;
+      line-height: 1.2;
+      margin-bottom: 2rem;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     }
 
-    .subtitle.is-5 + .content p:first-child,
-    .subtitle.is-5 + div p:first-child {
-      margin-top: 0 !important;
+    .name {
+      background: linear-gradient(45deg, #fbbf24, #f59e0b);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 800;
+      text-shadow: none;
     }
 
-    /* Mobile-first responsive images */
-    .responsive-image {
-      width: 100%;
-      height: auto;
-      display: block;
-      margin: 0 auto;
+    .author-block a {
+      color: rgba(255, 255, 255, 0.9);
+      text-decoration: none;
+      transition: all 0.3s ease;
     }
 
-    /* Video styling */
+    .author-block a:hover {
+      color: white;
+      text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+    }
+
+    /* Video section with enhanced styling */
+    .video-hero {
+      background: white;
+      padding: 3rem 0;
+      position: relative;
+    }
+
+    .video-hero::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+    }
+
     .video-container {
       position: relative;
       width: 100%;
-      max-width: 800px;
+      max-width: 900px;
       margin: 0 auto;
-      background: #f5f5f5;
-      border-radius: 8px;
+      background: #000;
+      border-radius: 16px;
       overflow: hidden;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow-medium);
       aspect-ratio: 16 / 9;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .video-container:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
     }
 
     .video-container iframe {
@@ -137,118 +170,281 @@
       width: 100%;
       height: 100%;
       border: none;
+      border-radius: 16px;
     }
 
-    /* Specific responsive breakpoints for images */
-    @media screen and (max-width: 768px) {
-      /* Mobile devices */
-      .responsive-image {
-        width: 100% !important;
-        max-width: none !important;
-      }
-      
-      .mobile-full-width {
-        width: 100% !important;
-      }
-      
-      .mobile-large {
-        width: 95% !important;
-      }
-      
-      /* Adjust padding for mobile */
-      .mobile-padding {
-        padding-left: 0.5rem !important;
-        padding-right: 0.5rem !important;
-      }
-      
-      /* Make text larger on mobile for better readability */
-      .mobile-text {
-        font-size: 1rem !important;
-      }
-      
-      /* Adjust margins for mobile */
-      .mobile-margin {
-        margin-bottom: 1rem !important;
-      }
-
-      /* Mobile spacing adjustments */
-      .title.is-3 {
-        margin-bottom: 2rem !important; /* Slightly less space on mobile */
-      }
-
-      .subtitle.is-5 {
-        margin-top: 2rem !important; /* Less space before subtitles on mobile */
-        margin-bottom: 0.5rem !important; /* Even tighter after subtitles on mobile */
-      }
-
-      /* Video container mobile adjustments */
-      .video-container {
-        margin: 1rem 0;
-        border-radius: 4px;
-      }
-    }
-
-    @media screen and (min-width: 769px) and (max-width: 1023px) {
-      /* Tablet devices */
-      .tablet-large {
-        width: 90% !important;
-      }
-    }
-
-    @media screen and (min-width: 1024px) {
-      /* Desktop devices */
-      .desktop-constrained {
-        width: 80%;
-      }
-
-      .video-container {
-        margin: 2rem auto;
-      }
-    }
-
-    /* Ensure GIFs are properly responsive */
-    .gif-container {
+    .video-description {
+      max-width: 800px;
+      margin: 2rem auto 0;
+      padding: 0 1rem;
       text-align: center;
-      margin: 1rem 0;
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      line-height: 1.7;
     }
 
-    .gif-container img {
-      max-width: 100%;
+    /* Teaser section with enhanced visual flow */
+    .teaser-section {
+      background: linear-gradient(135deg, #fafafa 0%, #ffffff 100%);
+      padding: 4rem 0;
+      position: relative;
+    }
+
+    .teaser-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+    }
+
+    .teaser-content {
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+      align-items: center;
+    }
+
+    .teaser-image {
+      width: 100%;
+      border-radius: 20px;
+      box-shadow: var(--shadow-medium);
+      transition: transform 0.3s ease;
+    }
+
+    .teaser-image:hover {
+      transform: scale(1.02);
+    }
+
+    .teaser-description {
+      background: white;
+      padding: 2rem;
+      border-radius: 16px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border-color);
+      max-width: 900px;
+      text-align: left;
+    }
+
+    /* Button enhancements */
+    .publication-links {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 2rem;
+    }
+
+    .button.is-rounded {
+      background: rgba(255, 255, 255, 0.2);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      backdrop-filter: blur(10px);
+    }
+
+    .button.is-rounded:hover {
+      background: rgba(255, 255, 255, 0.3);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 15px rgba(0, 0, 0, 0.2);
+    }
+
+    .button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    /* Section styling improvements */
+    .content-section {
+      background: white;
+      margin: 2rem 0;
+      border-radius: 16px;
+      box-shadow: var(--shadow-soft);
+      border: 1px solid var(--border-color);
+    }
+
+    .section-title {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 1.5rem;
+      position: relative;
+    }
+
+    .section-title::after {
+      content: '';
+      position: absolute;
+      bottom: -8px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 60px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gradient-start), var(--gradient-end));
+      border-radius: 2px;
+    }
+
+    /* Enhanced responsive design */
+    @media screen and (max-width: 768px) {
+      .hero-section {
+        padding: 2rem 0 1.5rem;
+      }
+
+      .publication-title {
+        font-size: 1.8rem;
+        margin-bottom: 1.5rem;
+      }
+
+      .video-hero {
+        padding: 2rem 0;
+      }
+
+      .video-container {
+        margin: 0 1rem;
+        border-radius: 12px;
+      }
+
+      .video-description {
+        font-size: 1rem;
+        margin-top: 1.5rem;
+      }
+
+      .teaser-section {
+        padding: 2rem 0;
+      }
+
+      .teaser-description {
+        margin: 0 1rem;
+        padding: 1.5rem;
+      }
+
+      .publication-links {
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .button.is-rounded {
+        width: 200px;
+      }
+
+      .section-title {
+        font-size: 1.5rem;
+      }
+    }
+
+    /* Enhanced image responsiveness */
+    .responsive-image {
+      width: 100%;
       height: auto;
+      display: block;
+      border-radius: 12px;
     }
 
-    /* Table responsiveness */
-    .table-container {
-      overflow-x: auto;
-      margin: 1rem 0;
+    /* Smooth animations */
+    .fade-in {
+      animation: fadeIn 0.8s ease-out;
     }
 
-    @media screen and (max-width: 768px) {
-      .table-container {
-        font-size: 0.8rem;
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
       }
     }
 
-    /* Better spacing for mobile */
-    @media screen and (max-width: 768px) {
-      .section {
-        padding: 2rem 1rem;
-      }
-      
-      .container {
-        padding: 0 0.5rem;
-      }
-      
-      .title {
-        font-size: 1.5rem !important;
-        margin-bottom: 2rem;
-      }
-      
-      .subtitle {
-        margin-top: 2rem;
-        font-size: 1.2rem !important;
-        margin-bottom: -0.5rem;
-      }
+    /* Content sections styling */
+    .abstract-section, .method-section, .visualization-section, .downstream-section {
+      background: white;
+      padding: 3rem 0;
+      position: relative;
+    }
+
+    .abstract-section::before, .method-section::before, .visualization-section::before, .downstream-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--border-color), transparent);
+    }
+
+    .content-wrapper {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 2rem;
+    }
+
+    /* Typography improvements */
+    .content p {
+      font-size: 1.1rem;
+      line-height: 1.8;
+      color: var(--text-primary);
+      margin-bottom: 1.5rem;
+    }
+
+    .subtitle.is-5 {
+      color: var(--primary-blue);
+      font-weight: 600;
+      margin-top: 3rem;
+      margin-bottom: 1rem;
+    }
+
+    /* Enhanced GIF and image containers */
+    .gif-container, .image-container {
+      text-align: center;
+      margin: 2rem 0;
+    }
+
+    .gif-container img, .image-container img {
+      border-radius: 12px;
+      box-shadow: var(--shadow-soft);
+      transition: transform 0.3s ease;
+    }
+
+    .gif-container img:hover, .image-container img:hover {
+      transform: scale(1.02);
+    }
+
+    /* Footer styling */
+    .footer {
+      background: var(--text-primary);
+      color: white;
+      padding: 3rem 0 2rem;
+      margin-top: 4rem;
+    }
+
+    .footer a {
+      color: rgba(255, 255, 255, 0.8);
+      transition: color 0.3s ease;
+    }
+
+    .footer a:hover {
+      color: white;
+    }
+
+    /* BibTeX section */
+    #BibTeX {
+      background: #f8fafc;
+      border-radius: 16px;
+      margin: 2rem 0;
+      padding: 2rem;
+    }
+
+    #BibTeX pre {
+      background: white;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 1.5rem;
+      font-family: 'JetBrains Mono', monospace;
     }
   </style>
 </head>
@@ -274,136 +470,136 @@
   </div>
 </nav>
 
-<section class="hero">
-  <div class="hero-body">
-    <div class="container is-max-desktop">
-      <div class="columns is-centered">
-        <div class="column has-text-centered">
-          <h1 class="title is-1 publication-title">
-            <span class="name">ControlTac</span>: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image
-          </h1>
+<!-- Hero Section with Title and Authors -->
+<section class="hero-section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column has-text-centered hero-content">
+        <h1 class="publication-title fade-in">
+          <span class="name">ControlTac</span>: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image
+        </h1>
 
-          <div class="is-size-5 publication-authors">
-            <span class="author-block">
-              <a href="https://dongyuluo.github.io/">Dongyu Luo*</a><sup>1,2</sup>,</span>
-            <span class="author-block">
-              <a href="https://colinyu1.github.io/">Kelin Yu*</a><sup>1</sup>,</span>
-            <span class="author-block">
-              <a href="https://amirshahid.github.io/">Amir-Hossein Shahidzadeh</a><sup>1</sup>,
-            </span>
-            <br>
-            <span class="author-block">
-              <a href="https://users.umiacs.umd.edu/~fermulcm/">Cornelia Fermuler</a><sup>1</sup>,
-            </span>
-            <span class="author-block">
-              <a href="https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos">Yiannis Aloimonos</a><sup>1</sup>,
-            </span>
-            <span class="author-block">
-              <a href="https://ruohangao.github.io/">Ruohan Gao</a><sup>1</sup>,
-            </span>
-          </div>
+        <div class="is-size-5 publication-authors fade-in">
+          <span class="author-block">
+            <a href="https://dongyuluo.github.io/">Dongyu Luo*</a><sup>1,2</sup>,</span>
+          <span class="author-block">
+            <a href="https://colinyu1.github.io/">Kelin Yu*</a><sup>1</sup>,</span>
+          <span class="author-block">
+            <a href="https://amirshahid.github.io/">Amir-Hossein Shahidzadeh</a><sup>1</sup>,
+          </span>
+          <br>
+          <span class="author-block">
+            <a href="https://users.umiacs.umd.edu/~fermulcm/">Cornelia Fermuler</a><sup>1</sup>,
+          </span>
+          <span class="author-block">
+            <a href="https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos">Yiannis Aloimonos</a><sup>1</sup>,
+          </span>
+          <span class="author-block">
+            <a href="https://ruohangao.github.io/">Ruohan Gao</a><sup>1</sup>,
+          </span>
+        </div>
 
-          <div class="is-size-5 publication-authors">
-            <span class="author-block"><sup>1</sup>University of Maryland,</span>
-            <span class="author-block"><sup>2</sup>The University of Hong Kong</span>
-          </div>
-          <div class="is-size-6 has-text-centered has-text-grey">
-            * Indicates equal contribution
-          </div>
+        <div class="is-size-5 publication-authors">
+          <span class="author-block"><sup>1</sup>University of Maryland,</span>
+          <span class="author-block"><sup>2</sup>The University of Hong Kong</span>
+        </div>
+        <div class="is-size-6 has-text-centered" style="color: rgba(255, 255, 255, 0.8); margin-top: 0.5rem;">
+          * Indicates equal contribution
+        </div>
 
-          <div class="column has-text-centered">
-            <div class="publication-links">
-              <span class="link-block">
-                <a href="https://arxiv.org/pdf/2011.12948"
-                   class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon">
-                      <i class="fas fa-file-pdf"></i>
-                  </span>
-                  <span>Paper</span>
-                </a>
+        <div class="publication-links fade-in">
+          <span class="link-block">
+            <a href="https://arxiv.org/pdf/2011.12948"
+               class="external-link button is-normal is-rounded">
+              <span class="icon">
+                  <i class="fas fa-file-pdf"></i>
               </span>
-              <span class="link-block">
-                <a href="https://arxiv.org/abs/2011.12948"
-                   class="external-link button is-normal is-rounded is-dark">
-                  <span class="icon">
-                      <i class="ai ai-arxiv"></i>
-                  </span>
-                  <span>arXiv</span>
-                </a>
+              <span>Paper</span>
+            </a>
+          </span>
+          <span class="link-block">
+            <a href="https://arxiv.org/abs/2011.12948"
+               class="external-link button is-normal is-rounded">
+              <span class="icon">
+                  <i class="ai ai-arxiv"></i>
               </span>
-              <span class="link-block">
-                <a class="external-link button is-normal is-rounded is-dark" disabled>
-                  <span class="icon">
-                    <i class="fab fa-github"></i>
-                  </span>
-                  <span>Code (Coming Soon)</span>
-                </a>
+              <span>arXiv</span>
+            </a>
+          </span>
+          <span class="link-block">
+            <a class="external-link button is-normal is-rounded" disabled>
+              <span class="icon">
+                <i class="fab fa-github"></i>
               </span>
-            </div>
-          </div>
+              <span>Code (Coming Soon)</span>
+            </a>
+          </span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<section class="section">
+<!-- Video Section - Now at the top -->
+<section class="video-hero fade-in">
   <div class="container is-max-desktop">
-    <div class="columns is-centered has-text-centered">
-      <div class="column is-full">
-        <h2 class="title is-3">Introduction Video</h2>
-        <div class="video-container">
-          <iframe 
-            src="https://www.youtube.com/embed/L6sNBcffjeU" 
-            title="ControlTac Introduction Video"
-            frameborder="0" 
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-            allowfullscreen>
-          </iframe>
-        </div>
-        <div class="content has-text-justified mobile-padding" style="margin-top: 1rem;">
-          <p class="has-text-centered is-size-6 mobile-text mobile-margin">
-            Watch our complete introduction video to understand how <span class="name">ControlTac</span> 
-            generates realistic tactile images with controllable force and position parameters.
-          </p>
-        </div>
+    <div class="has-text-centered">
+      <div class="video-container">
+        <iframe 
+          src="https://www.youtube.com/embed/L6sNBcffjeU" 
+          title="ControlTac Introduction Video"
+          frameborder="0" 
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+          allowfullscreen>
+        </iframe>
+      </div>
+      <div class="video-description">
+        Watch our complete introduction to understand how <span class="name" style="color: var(--primary-blue);">ControlTac</span> 
+        generates realistic tactile images with precise control over contact forces and positions using just a single reference image.
       </div>
     </div>
   </div>
 </section>
 
-<section class="hero teaser">
+<!-- Teaser Section -->
+<section class="teaser-section fade-in">
   <div class="container is-max-desktop">
-    <div class="hero-body">
-      <img src="./static/images/teaser.png" alt="Teaser Image" class="responsive-image mobile-full-width" />
-      <h2 class="subtitle has-text-left is-size-6 mobile-text mobile-margin">
-        Starting from a single reference image, <span class="name">ControlTac</span> can generate tens of 
-        thousands augmented tactile images with various contact forces and contact positions (Left). 
-        These augmented images can then be used for various downstream tasks (Middle) and deployed in 
-        three real-world experiments (Right).
-      </h2>
+    <div class="teaser-content">
+      <img src="./static/images/teaser.png" alt="ControlTac Teaser" class="teaser-image responsive-image" />
+      <div class="teaser-description">
+        <p>
+          <strong>At a Glance:</strong> Starting from a single reference image, <span class="name" style="color: var(--primary-blue);">ControlTac</span> generates thousands of 
+          augmented tactile images with controllable contact forces and positions <em>(Left)</em>. 
+          These generated images prove highly effective for downstream tasks <em>(Middle)</em> and demonstrate practical utility 
+          in real-world robotic experiments <em>(Right)</em>.
+        </p>
+      </div>
     </div>
   </div>
 </section>
 
-<section class="section">
-  <div class="container is-max-desktop">
+<!-- Abstract Section -->
+<section class="abstract-section">
+  <div class="content-wrapper">
     <div class="columns is-centered has-text-centered">
       <div class="column is-four-fifths">
-        <h2 class="title is-3">Abstract</h2>
-        <div class="content has-text-justified mobile-padding">
-          <p class="mobile-text">
+        <h2 class="section-title">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
             Vision-based tactile sensing has been widely used in perception, reconstruction, 
             and robotic manipulation. However, collecting large-scale tactile data remains costly 
             due to the localized nature of sensor-object interactions and inconsistencies across 
             sensor instances. Existing approaches to scaling tactile data, such as simulation and
             free-form tactile generation, often suffer from unrealistic output and poor transferability 
-            to downstream tasks. To address this, we propose <span class="name">ControlTac</span>, a 
+            to downstream tasks.
+          </p>
+          <p>
+            To address this, we propose <span class="name" style="color: var(--primary-blue);">ControlTac</span>, a 
             two-stage controllable framework that generates realistic tactile images conditioned on a 
             single reference tactile image, contact force, and contact position. With those physical 
-            priors as control input, <span class="name">ControlTac</span> generates physically plausible 
+            priors as control input, <span class="name" style="color: var(--primary-blue);">ControlTac</span> generates physically plausible 
             and varied tactile images that can be used for effective data augmentation. 
-            Through experiments on three downstream tasks, we demonstrate that <span class="name">ControlTac</span> 
+            Through experiments on three downstream tasks, we demonstrate that <span class="name" style="color: var(--primary-blue);">ControlTac</span> 
             can effectively augment tactile datasets and lead to consistent gains. 
             Our three real-world experiments further validate the practical utility of our approach.
           </p>
@@ -413,29 +609,28 @@
   </div>
 </section>
 
-<section class="section">
-  <div class="container is-max-desktop">
+<!-- Method Section -->
+<section class="method-section">
+  <div class="content-wrapper">
     <div class="columns is-centered has-text-centered">
       <div class="column is-full">
-        <h2 class="title is-3">Method Overview</h2>
-        <div class="content has-text-justified mobile-padding">
-          <p class="has-text-left is-size-6 mobile-text mobile-margin">
-            <span class="name">ControlTac</span> consists of two key components:
-            a. Force-Control: We input the background-removed tactile image <em>x</em> into the DiT model, conditioned on the 3D contact force <em>ΔF</em>, to generate force-specific tactile variations.
-            b. Position-Control: We transfer the pretrained DiT from stage one and fine-tune it using ControlNet, conditioned on a contact mask <em>c</em>, to synthesize realistic tactile images <em>y<sub>B</sub></em> under different contact positions and forces.
+        <h2 class="section-title">Method Overview</h2>
+        <div class="content has-text-justified">
+          <p>
+            <span class="name" style="color: var(--primary-blue);">ControlTac</span> consists of two key components:
+            <strong>a. Force-Control:</strong> We input the background-removed tactile image <em>x</em> into the DiT model, conditioned on the 3D contact force <em>ΔF</em>, to generate force-specific tactile variations.
+            <strong>b. Position-Control:</strong> We transfer the pretrained DiT from stage one and fine-tune it using ControlNet, conditioned on a contact mask <em>c</em>, to synthesize realistic tactile images <em>y<sub>B</sub></em> under different contact positions and forces.
           </p>
         </div>
 
-        <figure class="image">
-          <img src="./static/images/framework.png" alt="ControlTac Framework" class="responsive-image mobile-full-width">
-        </figure>
+        <div class="image-container">
+          <img src="./static/images/framework.png" alt="ControlTac Framework" class="responsive-image">
+        </div>
         
-        <div style="margin-top: 30px;"></div>
-        
-        <div class="content has-text-left mobile-padding" style="margin-bottom: 1.5rem;">
-          <p class="is-size-6 mobile-text mobile-margin">Here, we demonstrate how to annotate the contact mask to represent the contact position.</p>
+        <div class="content has-text-left" style="margin-top: 2rem;">
+          <p>Here, we demonstrate how to annotate the contact mask to represent the contact position.</p>
           <div class="gif-container">
-            <img src="./static/images/mask.gif" alt="Contact Mask Annotation GIF" class="responsive-image mobile-large tablet-large desktop-constrained">
+            <img src="./static/images/mask.gif" alt="Contact Mask Annotation" class="responsive-image" style="max-width: 80%;">
           </div>
         </div>
       </div>
@@ -443,54 +638,55 @@
   </div>
 </section>
 
-<section class="section">
-  <div class="container is-max-desktop">
+<!-- Visualization Section -->
+<section class="visualization-section">
+  <div class="content-wrapper">
     <div class="columns is-centered has-text-centered">
       <div class="column is-full">
-        <h2 class="title is-3">Visualization</h2>
+        <h2 class="section-title">Visualization</h2>
 
-        <h3 class="subtitle is-5 has-text-centered mobile-margin">Qualitative Comparison</h3>
-        <div class="content has-text-justified mobile-padding">
-          <p class="has-text-left is-size-6 mobile-text mobile-margin">
-            We conduct a qualitative comparison between <span class="name">ControlTac</span> and other generators and simulators. <span class="name">ControlTac</span> exhibits superior realism, variation, and controllability in the generated tactile images.
+        <h3 class="subtitle is-5">Qualitative Comparison</h3>
+        <div class="content has-text-justified">
+          <p>
+            We conduct a qualitative comparison between <span class="name" style="color: var(--primary-blue);">ControlTac</span> and other generators and simulators. <span class="name" style="color: var(--primary-blue);">ControlTac</span> exhibits superior realism, variation, and controllability in the generated tactile images.
           </p>
-          <figure class="image">
-            <img src="./static/images/vis1.png" alt="Comparison between ControlTac and other generators and simulators." class="responsive-image mobile-large tablet-large desktop-constrained">
-          </figure>
+          <div class="image-container">
+            <img src="./static/images/vis1.png" alt="Comparison with other methods" class="responsive-image">
+          </div>
         </div>
 
-        <h3 class="subtitle is-5 has-text-centered mobile-margin">Comparison with Baseline Models</h3>
-        <div class="content has-text-justified mobile-padding">
-          <p class="has-text-left is-size-6 mobile-text mobile-margin">
+        <h3 class="subtitle is-5">Comparison with Baseline Models</h3>
+        <div class="content has-text-justified">
+          <p>
             The first column displays 3D previews of six objects, followed by the input tactile image (Ref. Image) 
             in the second column and the Contact Mask in the third column. The fourth column shows the initial force 
-            (top) and target force (bottom). Subsequent columns depict the Ground Truth (G.T.) and results from <span class="name">ControlTac</span>, 
+            (top) and target force (bottom). Subsequent columns depict the Ground Truth (G.T.) and results from <span class="name" style="color: var(--primary-blue);">ControlTac</span>, 
             the hybrid force-position conditional diffusion model (Hybrid), and the separate-control pipeline (Separate). 
             In part A), we visualize the generated images for comparison; in part B), we visualize the 
             error maps highlighting the differences from the ground-truth tactile image.
           </p>
-          <figure class="image">
-            <img src="./static/images/vis2.png" alt="Comparison between ControlTac and baseline models." class="responsive-image mobile-full-width">
-          </figure>
-        </div>
-
-        <h3 class="subtitle is-5 has-text-centered mobile-margin">Force-Controlled and Position-Controlled Generation</h3>
-        <div class="content has-text-justified mobile-padding">
-          <p class="has-text-left is-size-6 mobile-text mobile-margin">
-            The figure below showcases the generation results of force-controlled and position-controlled components in <span class="name">ControlTac</span>.
-          </p>
-          <div class="gif-container">
-            <img src="./static/images/vis3.gif" alt="Generation results of force-controlled and position-controlled components in ControlTac." class="responsive-image mobile-large tablet-large desktop-constrained">
+          <div class="image-container">
+            <img src="./static/images/vis2.png" alt="Baseline comparison" class="responsive-image">
           </div>
         </div>
 
-        <h3 class="subtitle is-5 has-text-centered mobile-margin">Diversity of Generated Tactile Images</h3>
-        <div class="content has-text-justified mobile-padding">
-          <p class="has-text-left is-size-6 mobile-text mobile-margin">
-            The figure below clearly demonstrates that <span class="name">ControlTac</span> can generate a diverse range of tactile images from a single reference tactile image.
+        <h3 class="subtitle is-5">Force-Controlled and Position-Controlled Generation</h3>
+        <div class="content has-text-justified">
+          <p>
+            The figure below showcases the generation results of force-controlled and position-controlled components in <span class="name" style="color: var(--primary-blue);">ControlTac</span>.
           </p>
           <div class="gif-container">
-            <img src="./static/images/vis4.gif" alt="ControlTac can generate a diverse range of tactile images from a single reference tactile image." class="responsive-image mobile-full-width">
+            <img src="./static/images/vis3.gif" alt="Force and position control demonstration" class="responsive-image" style="max-width: 80%;">
+          </div>
+        </div>
+
+        <h3 class="subtitle is-5">Diversity of Generated Tactile Images</h3>
+        <div class="content has-text-justified">
+          <p>
+            The figure below clearly demonstrates that <span class="name" style="color: var(--primary-blue);">ControlTac</span> can generate a diverse range of tactile images from a single reference tactile image.
+          </p>
+          <div class="gif-container">
+            <img src="./static/images/vis4.gif" alt="Diversity demonstration" class="responsive-image">
           </div>
         </div>
       </div>
@@ -498,153 +694,52 @@
   </div>
 </section>
 
-<section class="section">
-  <div class="container is-max-desktop">
+<!-- Downstream Tasks Section -->
+<section class="downstream-section">
+  <div class="content-wrapper">
     <div class="columns is-centered has-text-centered">
       <div class="column is-full">
-        <h2 class="title is-3">Downstream Tasks</h2>
+        <h2 class="section-title">Downstream Tasks</h2>
 
-        <h3 class="subtitle is-5 has-text-centered mobile-margin">Force Estimation</h3>
-        <div class="content has-text-justified mobile-padding">
-          <p class="is-size-6 mobile-text mobile-margin">
-            The left figure illustrates how the force-controlled component in <span class="name">ControlTac</span> augments 
+        <h3 class="subtitle is-5">Force Estimation</h3>
+        <div class="content has-text-justified">
+          <p>
+            The left figure illustrates how the force-controlled component in <span class="name" style="color: var(--primary-blue);">ControlTac</span> augments 
             1,000 real samples with a larger set of generated tactile images, leading to a substantial reduction in MAE 
             compared to using real data alone. Notably, by incorporating the generated data, the model achieves comparable 
-            performance to training on the full real dataset (20,000 images) using only 8,000 real samples. This demonstrates 
-            that the generated data effectively enrich the force distribution at each contact position, thereby enhancing the 
-            training of the force estimator. Moreover, combining a larger quantity of both real and generated data yields the 
-            best overall performance, underscoring the realism and utility of the generated samples.
+            performance to training on the full real dataset (20,000 images) using only 8,000 real samples.
           </p>
-          <p class="is-size-6 mobile-text mobile-margin">
-            Building on the force-controlled component, we further integrate the position-controlled component of 
-            <span class="name">ControlTac</span>. To highlight the importance of diverse contact positions in 
-            training a robust force estimator, we divide the real dataset by contact angle, since tactile image 
-            appearance varies across different contact angles. The right figure presents the MAE of force estimation 
-            under different training conditions. The results show that incorporating position-controlled generation 
-            effectively compensates for limited angular diversity in real data, significantly improving performance 
-            even when only a small subset of real images is available—especially in scenarios where the real data covers 
-            a narrow range of angles.
-          </p>
-          <figure class="image">
-            <img src="./static/images/force1.png" alt="Force estimation results." class="responsive-image mobile-full-width">
-          </figure>
-          <p class="is-size-6 mobile-text mobile-margin">
-            We further validate the effectiveness of <span class="name">ControlTac</span> in real-world pushing 
+          <div class="image-container">
+            <img src="./static/images/force1.png" alt="Force estimation results" class="responsive-image">
+          </div>
+          <p>
+            We further validate the effectiveness of <span class="name" style="color: var(--primary-blue);">ControlTac</span> in real-world pushing 
             experiments. The force estimator trained only with generated tactile data achieves
-            comparable performance to the one trained on real tactile data, demonstrating that the generated data is 
-            realistic and reliable enough to be used directly for training in practical scenarios.
+            comparable performance to the one trained on real tactile data.
           </p>
           <div class="gif-container">
-            <img src="./static/images/force2.gif" alt="Real-world pushing experiments." class="responsive-image mobile-large tablet-large desktop-constrained">
+            <img src="./static/images/force2.gif" alt="Real-world pushing experiments" class="responsive-image" style="max-width: 70%;">
           </div>
         </div>
 
-        <h3 class="subtitle is-5 has-text-centered mobile-margin">Position Estimation</h3>
-        <div class="content has-text-justified mobile-padding">
-          <p class="is-size-6 mobile-text mobile-margin">
-            As shown in the table below, pose estimators trained on tactile images generated by 
-            <span class="name">ControlTac</span> achieve strong performance across all objects, 
-            including the unseen T Shape. In particular, using a larger amount of generated data 
-            leads to better results than using real data alone, as it is sufficiently realistic 
-            and covers a much wider range of contact positions and forces. We also compare the 
-            performance of the pose estimator using varying forces versus a fixed force (denoted 
-            as fixed in the table below, where the fixed force is set to the median value of 6.5 N). 
-            The results show that using varying force yields better performance, as contact force naturally 
-            changes during inference.
+        <h3 class="subtitle is-5">Position Estimation</h3>
+        <div class="content has-text-justified">
+          <p>
+            Pose estimators trained on tactile images generated by 
+            <span class="name" style="color: var(--primary-blue);">ControlTac</span> achieve strong performance across all objects, 
+            including the unseen T Shape. Using a larger amount of generated data 
+            leads to better results than using real data alone, as it covers a much wider range of 
+            contact positions and forces.
           </p>
-          <figure class="image">
-            <img src="./static/images/pos1.png" alt="Pose estimation comparison." class="responsive-image mobile-large tablet-large" style="max-width: 40%; height: auto;">
-          </figure>
-          <p class="is-size-6 mobile-text mobile-margin">
-            To further evaluate the performance of the pose estimator trained with <span class="name">ControlTac</span>-generated data, 
-            we conducted a real-time pose tracking experiment. Our model successfully tracked poses at a 
-            frequency of 10 Hz, highlighting its practicality in dynamic real-world scenarios.
+          <div class="image-container">
+            <img src="./static/images/pos1.png" alt="Position estimation results" class="responsive-image" style="max-width: 50%;">
+          </div>
+          <p>
+            Real-time pose tracking experiment demonstrates practical utility at 10 Hz frequency:
           </p>
           <div class="gif-container">
-            <img src="./static/images/tracking.gif" alt="Real-time pose tracking." class="responsive-image mobile-full-width">
+            <img src="./static/images/tracking.gif" alt="Real-time pose tracking" class="responsive-image">
           </div>
-          <p class="is-size-6 mobile-text mobile-margin">
-            In the Precise Insertion task, the pose estimator trained with <span class="name">ControlTac</span>-generated 
-            data achieved success rates of 90% on the cylinder and 85% on the cross. Notably, 
-            it also reached an 85% success rate on the unseen T-shape.
-          </p>
-          <div class="gif-container">
-            <img src="./static/images/insertion.gif" alt="Precise insertion task results." class="responsive-image mobile-large tablet-large" style="max-width: 40%; height: auto;">
-          </div>
-        </div>
-
-        <h3 class="subtitle is-5 has-text-centered mobile-margin">Object Classification</h3>
-        <div class="content has-text-justified mobile-padding">
-          <p class="is-size-6 mobile-text mobile-margin">
-            In the object classification task, we found that compared to traditional augmentation methods, using <span class="name">ControlTac</span> for data augmentation yields significantly better performance—whether with a simple CNN classifier, a ViT trained from scratch, or a ViT pretrained on ImageNet.
-          </p>
-          <p class="is-size-6 mobile-text mobile-margin" style="font-style: italic;">
-            Note: G = geometric augmentation; C = color augmentation; Gen = our <span class="name" style="color: black;">ControlTac</span>
--based augmentation method.
-          </p>
-          <figure class="image">
-            <img src="./static/images/classification.png" alt="Object classification results." class="responsive-image mobile-full-width">
-          </figure>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
-
-<section class="section" id="BibTeX">
-  <div class="container is-max-desktop content mobile-padding">
-    <h2 class="title">BibTeX</h2>
-    <pre style="font-size: 0.8rem; overflow-x: auto;"><code>@article{park2021nerfies,
-  author    = {Park, Keunhong and Sinha, Utkarsh and Barron, Jonathan T. and Bouaziz, Sofien and Goldman, Dan B and Seitz, Steven M. and Martin-Brualla, Ricardo},
-  title     = {Nerfies: Deformable Neural Radiance Fields},
-  journal   = {ICCV},
-  year      = {2021},
-}</code></pre>
-  </div>
-</section>
-
-<footer class="footer">
-  <div class="container">
-    <div class="content has-text-centered">
-      <a class="icon-link" href="./static/videos/nerfies_paper.pdf">
-        <i class="fas fa-file-pdf"></i>
-      </a>
-      <a class="icon-link" href="https://github.com/DongyuLUO" class="external-link">
-        <i class="fab fa-github"></i>
-      </a>
-    </div>
-    <div class="columns is-centered">
-      <div class="column is-8">
-        <div class="content mobile-padding">
-          <p style="margin-top: 1rem; font-style: italic;">
-            Website template modified from <a href="https://nerfies.github.io/" target="_blank" rel="noopener noreferrer">NeRFies</a>
-          </p>
-        </div>
-      </div>
-    </div>
-  </div>
-</footer>
-
-<script>
-  // Navbar burger functionality for mobile
-  document.addEventListener('DOMContentLoaded', () => {
-    // Get all "navbar-burger" elements
-    const navbarBurgers = Array.prototype.slice.call(document.querySelectorAll('.navbar-burger'), 0);
-
-    // Add a click event on each of them
-    navbarBurgers.forEach(el => {
-      el.addEventListener('click', () => {
-        // Get the target from the "data-target" attribute
-        const target = el.dataset.target;
-        const targetElement = document.getElementById(target);
-
-        // Toggle the "is-active" class on both the "navbar-burger" and the "navbar-menu"
-        el.classList.toggle('is-active');
-        targetElement.classList.toggle('is-active');
-      });
-    });
-  });
-</script>
-
-</body>
-</html>
+          <p>
+            In the Precise Insertion task, our approach achieved success rates of 90% on the cylinder, 
+            85% on the cross, and notably 85% on the unseen T-shape:
