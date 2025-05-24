@@ -192,8 +192,8 @@
         <div class="content has-text-justified" style="padding-left: 1rem; padding-right: 1rem;">
           <p class="has-text-left is-size-6" style="margin-bottom: 1rem;">
             <span class="name">ControlTac</span> consists of two key components:
-            <strong>a.</strong> <em>Force-Control:</em> We input the background-removed tactile image <em>x</em> into the DiT model, conditioned on the 3D contact force <em>ΔF</em>, to generate force-specific tactile variations.
-            <strong>b.</strong> <em>Position-Control:</em> We transfer the pretrained DiT from stage one and fine-tune it using ControlNet, conditioned on a contact mask <em>c</em>, to synthesize realistic tactile images <em>y<sub>B</sub></em> under different contact positions and forces.
+            a. Force-Control: We input the background-removed tactile image <em>x</em> into the DiT model, conditioned on the 3D contact force <em>ΔF</em>, to generate force-specific tactile variations.
+            b. Position-Control: We transfer the pretrained DiT from stage one and fine-tune it using ControlNet, conditioned on a contact mask <em>c</em>, to synthesize realistic tactile images <em>y<sub>B</sub></em> under different contact positions and forces.
           </p>
         </div>
 
@@ -240,7 +240,7 @@
             in the second column and the Contact Mask in the third column. The fourth column shows the initial force 
             (top) and target force (bottom). Subsequent columns depict the Ground Truth (G.T.) and results from <span class="name">ControlTac</span>, 
             the hybrid force-position conditional diffusion model (Hybrid), and the separate-control pipeline (Separate). 
-            In part <strong>A)</strong>, we visualize the generated images for comparison; in part <strong>B)</strong>, we visualize the 
+            In part A), we visualize the generated images for comparison; in part B), we visualize the 
             error maps highlighting the differences from the ground-truth tactile image.
           </p>
           <figure class="image" style="margin-top: 1rem;">
@@ -306,7 +306,7 @@
             a narrow range of angles.
           </p>
           <figure class="image" style="margin-top: 1rem; margin-bottom: 1rem;">
-            <img src="./static/images/force1.png" alt="Comparison between ControlTac and other generators and simulators." style="width: 80%; height: auto;">
+            <img src="./static/images/force1.png" alt="Comparison between ControlTac and other generators and simulators." style="width: 100%; height: auto;">
           </figure>
           <p class="is-size-6" style="margin-bottom: 1rem;">
             We further validate the effectiveness of <span class="name">ControlTac</span> in real-world pushing 
@@ -314,7 +314,7 @@
             comparable performance to the one trained on real tactile data, demonstrating that the generated data is 
             realistic and reliable enough to be used directly for training in practical scenarios.
           </p>
-          <figure class="image" style="margin-top: 1rem; margin-bottom: 2rem;">
+          <figure class="image" style="margin-top: 1rem; margin-bottom: 1rem;">
             <img src="./static/images/force2.gif" alt="Real-world pushing experiments." style="width: 80%; height: auto;">
           </figure>
         </div>
@@ -334,7 +334,7 @@
             changes during inference.
           </p>
           <figure class="image" style="margin-top: 1rem; margin-bottom: 1rem;">
-            <img src="./static/images/pos1.png" alt="Pose estimation comparison." style="width: 100%; height: auto;">
+            <img src="./static/images/pos1.png" alt="Pose estimation comparison." style="width: 60%; height: auto;">
           </figure>
           <p class="is-size-6" style="margin-bottom: 1rem;">
             To further evaluate the performance of the pose estimator trained with <span class="name">ControlTac</span>-generated data, 
@@ -350,7 +350,7 @@
             it also reached an 85% success rate on the unseen T-shape.
           </p>
           <figure class="image" style="margin-top: 1rem; margin-bottom: 2rem;">
-            <img src="./static/images/insertion.gif" alt="Precise insertion task results." style="width: 100%; height: auto;">
+            <img src="./static/images/insertion.gif" alt="Precise insertion task results." style="width: 60%; height: auto;">
           </figure>
         </div>
 
@@ -364,7 +364,7 @@
             Note: G = geometric augmentation; C = color augmentation; Gen = our ControlTac-based augmentation method.
           </p>
           <figure class="image" style="margin-top: 1rem;">
-            <img src="./static/images/classification.png" alt="Object classification results." style="width: 80%; height: auto;">
+            <img src="./static/images/classification.png" alt="Object classification results." style="width: 100%; height: auto;">
           </figure>
         </div>
 
