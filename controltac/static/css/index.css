@@ -29,6 +29,8 @@ body {
 
 .name {
   font-variant: small-caps;
+  font-weight: bold;
+  color: #363636; 
 }
 
 
