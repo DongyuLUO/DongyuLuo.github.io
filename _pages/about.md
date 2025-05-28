@@ -42,7 +42,7 @@ I am currently seeking a Ph.D. opportunity for **Fall 2026** and would be gratef
 
 [**Project Page**](https://dongyuluo.github.io/controltac/) <strong><span class='show_paper_citations' data='DhtAFkwAAAAJ:ALROH1vI_8AC'></span></strong>
 /
-[**Paper**](https://openaccess.thecvf.com/content_cvpr_2016/papers/He_Deep_Residual_Learning_CVPR_2016_paper.pdf)
+[**Paper**](https://arxiv.org/pdf/2505.20498)
 
 </div>
 </div>
