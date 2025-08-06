@@ -56,7 +56,7 @@ I am currently seeking a Ph.D. opportunity for **Fall 2026** and would be gratef
  ---
  
 <div style="text-align: center; margin-top: -4.5em; transform: scale(0.5); transform-origin: center;">
-  <script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?d=2UxH5y46PqDxZdzjQLYQ-SsZY-4WIBZMvKC7tmJ1H1w&cl=ffffff&w=a"></script>
+  <script type='text/javascript' id='clustrmaps' src='//cdn.clustrmaps.com/map_v2.js?cl=ffffff&w=a&t=n&d=2UxH5y46PqDxZdzjQLYQ-SsZY-4WIBZMvKC7tmJ1H1w&co=050505&cmo=9abedd&cmn=f48b99'></script>
 </div>
 
 
