@@ -1,3 +1,6 @@
+---
+---
+
 /*
  *    Minimal Mistakes Jekyll Theme
  *
@@ -6,12 +9,15 @@
  *  - https://twitter.com/mmistakes
  *
 */
+
 @import "vendor/breakpoint/breakpoint"; // media query mixins
 @import "variables";
 @import "mixins";
 @import "vendor/susy/susy";
+
 @import "reset";
 @import "base";
+
 @import "utilities";
 @import "animations";
 @import "tables";
@@ -21,10 +27,13 @@
 @import "navigation";
 @import "footer";
 @import "syntax";
+
 @import "forms";
+
 @import "page";
 @import "archive";
 @import "sidebar";
+
 @import "vendor/font-awesome/fontawesome";
 @import "vendor/font-awesome/solid";
 @import "vendor/font-awesome/brands";
@@ -34,146 +43,50 @@
 .paper-box {
     display: flex;
     justify-content: left;
-    align-items: flex-start;
+    align-items: center;
     flex-direction: row;
     flex-wrap: wrap;
     border-bottom: 1px #efefef solid;
     padding: 2em 0 2em 0;
-    margin-bottom: 1em;
-    transition: all 0.3s ease;
     
-    &:hover {
-        background-color: #fafafa;
-        border-radius: 8px;
-        padding-left: 1em;
-        padding-right: 1em;
-    }
-    
-    .paper-box-image {
+
+    .paper-box-image{
         justify-content: center;
         display: flex;
         width: 100%;
         order: 2;
-        position: relative;
-        margin-bottom: 1em;
-        
-        > div {
-            position: relative;
-            display: inline-block;
-            width: 100%;
-            max-width: 400px;
-        }
-        
         img {
-            width: 100%;
             max-width: 400px;
             object-fit: cover;
-            border-radius: 6px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-            
-            &:hover {
-                transform: translateY(-2px);
-                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
-            }
         }
     }
     
-    .paper-box-text {
+    .paper-box-text{
         max-width: 100%;
         order: 1;
-        
-        h2, h3, h4 {
-            margin-bottom: 0.5em;
-            color: #2c3e50;
-        }
-        
-        p {
-            margin-bottom: 0.8em;
-            line-height: 1.6;
-        }
-        
-        a {
-            color: #00369f;
-            text-decoration: none;
-            font-weight: 500;
-            transition: color 0.3s ease;
-            
-            &:hover {
-                color: #0056b3;
-                text-decoration: underline;
-            }
-        }
     }
     
     @include breakpoint($medium) {
-        align-items: flex-start;
-        
-        .paper-box-image {
+        .paper-box-image{
             justify-content: left;
             min-width: 200px;
             max-width: 40%;
             order: 1;
-            margin-bottom: 0;
         }
         
-        .paper-box-text {
+        .paper-box-text{
             justify-content: left;
             padding-left: 2em;
             max-width: 60%;
             order: 2;
         }
+
     }
+
+
 }
 
-// Badge system with better positioning
-.badge-container {
-    position: absolute;
-    top: 0.5em;
-    left: 0;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    gap: 0.3em;
-}
-
-.badge {
-    display: inline-block;
-    padding: 0.3em 0.8em;
-    color: white;
-    font-size: 0.75em;
-    font-weight: 600;
-    border-radius: 15px;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-    white-space: nowrap;
-    
-    &:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.25);
-    }
-    
-    // Default badge color
-    background: linear-gradient(135deg, #00369f, #0056b3);
-    
-    // Conference badge
-    &.conference {
-        background: linear-gradient(135deg, #e74c3c, #c0392b);
-    }
-    
-    // Status badge
-    &.status {
-        background: linear-gradient(135deg, #f39c12, #e67e22);
-    }
-    
-    // Oral presentation badge
-    &.oral {
-        background: linear-gradient(135deg, #27ae60, #229954);
-    }
-}
-
-// Scroll offset for anchors
-$scroll_offset: 2em;
+$scroll_offset : 2em;
 h1:before, .anchor:before { 
     content: ''; 
     display: block; 
@@ -183,38 +96,13 @@ h1:before, .anchor:before {
     margin-top: -$scroll_offset;
 }
 
-// Experience section styling
-#experience + ul {
-    li {
-        padding: 0.5em 0;
-        border-left: 3px solid #00369f;
-        padding-left: 1em;
-        margin-bottom: 1em;
-        background: rgba(0, 54, 159, 0.05);
-        border-radius: 0 4px 4px 0;
-        
-        em {
-            color: #00369f;
-            font-weight: 600;
-        }
-    }
-}
-
-// Section headings
-h1 {
-    color: #2c3e50;
-    border-bottom: 2px solid #00369f;
-    padding-bottom: 0.3em;
-    margin-bottom: 1em;
-}
-
-// Highlight for seeking PhD
-span[style*="color: red"] {
-    background: linear-gradient(120deg, rgba(231, 76, 60, 0.1) 0%, rgba(231, 76, 60, 0.05) 100%);
-    padding: 1em;
-    border-left: 4px solid #e74c3c;
-    border-radius: 4px;
-    display: block;
-    margin: 1em 0;
-    font-weight: 500;
+.badge {
+    padding-left: 1rem;
+    padding-right: 1rem;
+    position: absolute;
+    margin-top: .5em;
+    margin-left: -.5em;
+    color: white;
+    background-color: #00369f;
+    font-size: .8em;
 }
