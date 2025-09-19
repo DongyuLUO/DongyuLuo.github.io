@@ -49,15 +49,22 @@
     border-bottom: 1px #efefef solid;
     padding: 2em 0 2em 0;
     
-
     .paper-box-image{
         justify-content: center;
         display: flex;
         width: 100%;
         order: 2;
+        position: relative; /* 添加相对定位作为绝对定位的参考 */
+        
         img {
             max-width: 400px;
             object-fit: cover;
+        }
+        
+        /* 徽章容器 */
+        > div {
+            position: relative;
+            display: inline-block;
         }
     }
     
@@ -80,10 +87,7 @@
             max-width: 60%;
             order: 2;
         }
-
     }
-
-
 }
 
 $scroll_offset : 2em;
@@ -96,13 +100,35 @@ h1:before, .anchor:before {
     margin-top: -$scroll_offset;
 }
 
+/* 优化后的徽章样式 */
 .badge {
-    padding-left: 1rem;
-    padding-right: 1rem;
-    position: absolute;
-    margin-top: .5em;
-    margin-left: -.5em;
+    display: inline-block; /* 改为inline-block，使徽章可以水平排列 */
+    padding: 0.3em 1rem;
+    margin: 0.2em 0.3em 0.2em 0; /* 添加右边距和上下边距 */
     color: white;
     background-color: #00369f;
-    font-size: .8em;
+    font-size: 0.8em;
+    border-radius: 3px; /* 添加圆角让徽章更美观 */
+    white-space: nowrap; /* 防止文字换行 */
+}
+
+/* 如果需要绝对定位的徽章（覆盖在图片上） */
+.badge-overlay {
+    position: absolute;
+    top: 0.5em;
+    left: -0.5em;
+    z-index: 10;
+}
+
+/* 多个绝对定位徽章的排列 */
+.badge-overlay:nth-child(1) {
+    top: 0.5em;
+}
+
+.badge-overlay:nth-child(2) {
+    top: 3em; /* 第二个徽章向下偏移 */
+}
+
+.badge-overlay:nth-child(3) {
+    top: 5.5em; /* 第三个徽章继续向下偏移 */
 }
