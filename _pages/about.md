@@ -33,19 +33,24 @@ I am currently seeking a Ph.D. opportunity for **Fall 2026** and would be gratef
 <span class="anchor" id="publications"></span>
 # Publications 
 
-<div class='paper-box'><div class='paper-box-image'><div><div class="badge">Under review</div><img src='images/teaser_0.png' alt="sym" width="100%"></div></div>
-<div class='paper-box-text' markdown="1">
+<div class='paper-box'>
+  <div class='paper-box-image'>
+    <img src='images/teaser_0.png' alt="sym">
+    <div class="badge">
+      Under review
+      <span class="badge-subtext">ICCV CDEL Workshop 2025 (<span class="oral">Oral</span>)</span>
+    </div>
+  </div>
+  <div class='paper-box-text' markdown="1">
+    **ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image**  
 
-**ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image**
+    **Dongyu Luo<strong>*</strong>**, [Kelin Yu*](https://colinyu1.github.io/), [Amir-Hossein Shahidzadeh](https://amirshahid.github.io/), [Cornelia Fermuler](https://users.umiacs.umd.edu/~fermulcm/), [Yiannis Aloimonos](https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos), [Ruohan Gao](https://ruohangao.github.io/).  
 
-**Dongyu Luo<strong>*</strong>**, [Kelin Yu*](https://colinyu1.github.io/), [Amir-Hossein Shahidzadeh](https://amirshahid.github.io/), [Cornelia Fermuler](https://users.umiacs.umd.edu/~fermulcm/), [Yiannis Aloimonos](https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos), [Ruohan Gao](https://ruohangao.github.io/).
-
-[**Project Page**](https://dongyuluo.github.io/controltac/) <strong><span class='show_paper_citations' data='DhtAFkwAAAAJ:ALROH1vI_8AC'></span></strong>
-/
-[**Paper**](https://arxiv.org/pdf/2505.20498)
-
+    [**Project Page**](https://dongyuluo.github.io/controltac/) <strong><span class='show_paper_citations' data='DhtAFkwAAAAJ:ALROH1vI_8AC'></span></strong> /
+    [**Paper**](https://arxiv.org/pdf/2505.20498)
+  </div>
 </div>
-</div>
+
 
 <span class="anchor" id="experience"></span>
 # Experience
