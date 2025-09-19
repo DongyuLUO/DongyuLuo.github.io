@@ -37,7 +37,7 @@ I am currently seeking a Ph.D. opportunity for **Fall 2026** and would be gratef
   <div class='paper-box-image'>
     <div>
       <a class="badge" href="https://curateddata.github.io/" target="_blank" rel="noopener noreferrer">
-        ICCV CDEL Workshop <span style="color:red;">Oral</span>
+        ICCV CDEL Workshop <span style="color:red;">(Oral)</span>
       </a>
 
       <div class="badge">Under review</div>
