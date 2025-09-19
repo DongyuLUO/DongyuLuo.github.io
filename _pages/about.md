@@ -33,24 +33,19 @@ I am currently seeking a Ph.D. opportunity for **Fall 2026** and would be gratef
 <span class="anchor" id="publications"></span>
 # Publications 
 
-<div class='paper-box'>
-  <div class='paper-box-image'>
-    <img src='images/teaser_0.png' alt="sym">
-    <div class="badge">
-      Under review
-      <span class="badge-subtext">ICCV CDEL Workshop 2025 (<span class="oral">Oral</span>)</span>
-    </div>
-  </div>
-  <div class='paper-box-text' markdown="1">
-    **ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image**  
+<div class='paper-box'><div class='paper-box-image'><div><div class="badge">Under review</div><img src='images/teaser_0.png' alt="sym" width="100%"></div></div>
+<div class='paper-box-text' markdown="1">
 
-    **Dongyu Luo<strong>*</strong>**, [Kelin Yu*](https://colinyu1.github.io/), [Amir-Hossein Shahidzadeh](https://amirshahid.github.io/), [Cornelia Fermuler](https://users.umiacs.umd.edu/~fermulcm/), [Yiannis Aloimonos](https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos), [Ruohan Gao](https://ruohangao.github.io/).  
+**ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image**
 
-    [**Project Page**](https://dongyuluo.github.io/controltac/) <strong><span class='show_paper_citations' data='DhtAFkwAAAAJ:ALROH1vI_8AC'></span></strong> /
-    [**Paper**](https://arxiv.org/pdf/2505.20498)
-  </div>
+**Dongyu Luo<strong>*</strong>**, [Kelin Yu*](https://colinyu1.github.io/), [Amir-Hossein Shahidzadeh](https://amirshahid.github.io/), [Cornelia Fermuler](https://users.umiacs.umd.edu/~fermulcm/), [Yiannis Aloimonos](https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos), [Ruohan Gao](https://ruohangao.github.io/).
+
+[**Project Page**](https://dongyuluo.github.io/controltac/) <strong><span class='show_paper_citations' data='DhtAFkwAAAAJ:ALROH1vI_8AC'></span></strong>
+/
+[**Paper**](https://arxiv.org/pdf/2505.20498)
+
 </div>
-
+</div>
 
 <span class="anchor" id="experience"></span>
 # Experience
@@ -63,6 +58,9 @@ I am currently seeking a Ph.D. opportunity for **Fall 2026** and would be gratef
 <div style="text-align: center; margin-top: -4.5em; transform: scale(0.5); transform-origin: center;">
   <script type='text/javascript' id='clustrmaps' src='//cdn.clustrmaps.com/map_v2.js?cl=ffffff&w=a&t=n&d=2UxH5y46PqDxZdzjQLYQ-SsZY-4WIBZMvKC7tmJ1H1w&co=050505&cmo=9abedd&cmn=f48b99'></script>
 </div>
+
+
+
 
 
 
