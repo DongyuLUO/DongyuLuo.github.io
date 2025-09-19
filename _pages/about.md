@@ -33,7 +33,14 @@ I am currently seeking a Ph.D. opportunity for **Fall 2026** and would be gratef
 <span class="anchor" id="publications"></span>
 # Publications 
 
-<div class='paper-box'><div class='paper-box-image'><div><div class="badge">Under review</div><img src='images/teaser_0.png' alt="sym" width="100%"></div></div>
+<div class='paper-box'>
+  <div class='paper-box-image'>
+    <div>
+      <div class="oral-badge"><span>ICCV</span> <span class="oral">Oral</span></div>
+      <div class="badge">Under review</div>
+      <img src='images/teaser_0.png' alt="sym" width="100%">
+    </div>
+  </div>
 <div class='paper-box-text' markdown="1">
 
 **ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image**
