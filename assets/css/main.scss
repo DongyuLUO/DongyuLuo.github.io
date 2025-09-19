@@ -41,50 +41,64 @@
 @import "print";
 
 .paper-box {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  border-bottom: 1px #efefef solid;
+  padding: 2em 0;
+
+  .paper-box-image {
     display: flex;
-    justify-content: left;
-    align-items: center;
-    flex-direction: row;
-    flex-wrap: wrap;
-    border-bottom: 1px #efefef solid;
-    padding: 2em 0 2em 0;
-    
+    justify-content: center;
+    width: 100%;
+    order: 2;
 
-    .paper-box-image{
-        justify-content: center;
-        display: flex;
-        width: 100%;
-        order: 2;
-        img {
-            max-width: 400px;
-            object-fit: cover;
-        }
+    > div {
+      display: flex;
+      flex-direction: column; // 让 badge 和图片垂直排列
+      align-items: flex-start; // badge 靠左对齐
+      gap: 0.5em; // badge 间距
+      position: relative;
+
+      .badge {
+        display: inline-block;
+        padding: 0.3em 0.6em;
+        background: #eee;
+        border-radius: 4px;
+        font-size: 0.85em;
+        z-index: 1;
+      }
+
+      img {
+        max-width: 400px;
+        object-fit: cover;
+        margin-top: 0.5em; // 避免和 badge 紧贴
+      }
     }
-    
-    .paper-box-text{
-        max-width: 100%;
-        order: 1;
-    }
-    
-    @include breakpoint($medium) {
-        .paper-box-image{
-            justify-content: left;
-            min-width: 200px;
-            max-width: 40%;
-            order: 1;
-        }
-        
-        .paper-box-text{
-            justify-content: left;
-            padding-left: 2em;
-            max-width: 60%;
-            order: 2;
-        }
+  }
 
+  .paper-box-text {
+    max-width: 100%;
+    order: 1;
+  }
+
+  @include breakpoint($medium) {
+    .paper-box-image {
+      justify-content: left;
+      min-width: 200px;
+      max-width: 40%;
+      order: 1;
     }
 
-
+    .paper-box-text {
+      justify-content: left;
+      padding-left: 2em;
+      max-width: 60%;
+      order: 2;
+    }
+  }
 }
+
 
 $scroll_offset : 2em;
 h1:before, .anchor:before { 
