@@ -914,6 +914,45 @@
 
 
 
+<!-- BibTeX Section -->
+<section class="section" id="BibTeX">
+  <div class="content-wrapper">
+    <div class="columns is-centered">
+      <div class="column is-four-fifths">
+        <h2 class="section-title has-text-centered">BibTeX</h2>
+        <pre><code>@article{luo2025controltac,
+  title={ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image},
+  author={Luo, Dongyu and Yu, Kelin and Shahidzadeh, Amir-Hossein and Fermuller, Cornelia and Aloimonos, Yiannis and Gao, Ruohan},
+  journal={arXiv preprint arXiv:2505.20498},
+  year={2025}
+}</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+
+
+<footer class="footer">
+  <div class="container has-text-centered">
+    <div class="content">
+      <a class="icon-link" href="https://arxiv.org/pdf/2505.20498">
+        <i class="fas fa-file-pdf"></i>
+      </a>
+      <a class="icon-link external-link" href="https://github.com/DongyuLUO">
+        <i class="fab fa-github"></i>
+      </a>
+    </div>
+    <div class="content">
+      <p style="margin-top: 1rem; font-style: italic; color: white;">
+        Website template modified from
+        <a href="https://nerfies.github.io/" target="_blank" rel="noopener noreferrer">NeRFies</a>
+      </p>
+    </div>
+  </div>
+</footer>
+
+
 <script>
   // Navbar burger functionality for mobile
   document.addEventListener('DOMContentLoaded', () => {
@@ -931,50 +970,6 @@
         el.classList.toggle('is-active');
         targetElement.classList.toggle('is-active');
       });
-    });
-
-    // Add smooth scrolling and fade-in animations
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
-    };
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('fade-in');
-        }
-      });
-    }, observerOptions);
-
-    // Observe all sections
-    document.querySelectorAll('section').forEach(section => {
-      observer.observe(section);
-    });
-
-    // Add parallax effect to hero section
-    window.addEventListener('scroll', () => {
-      const scrolled = window.pageYOffset;
-      const heroSection = document.querySelector('.hero-section');
-      if (heroSection) {
-        heroSection.style.transform = `translateY(${scrolled * 0.5}px)`;
-      }
-    });
-  });
-
-  // Add loading animation for images
-  document.addEventListener('DOMContentLoaded', () => {
-    const images = document.querySelectorAll('img');
-    images.forEach(img => {
-      img.addEventListener('load', () => {
-        img.style.opacity = '1';
-        img.style.transform = 'scale(1)';
-      });
-      
-      // Set initial styles
-      img.style.opacity = '0';
-      img.style.transform = 'scale(0.95)';
-      img.style.transition = 'opacity 0.5s ease, transform 0.5s ease';
     });
   });
 </script>
