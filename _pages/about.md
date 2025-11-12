@@ -52,7 +52,7 @@ I am currently seeking a Ph.D. opportunity for **Fall 2026** and would be gratef
 
 [**Project Page**](https://dongyuluo.github.io/controltac/) <strong><span class='show_paper_citations' data='DhtAFkwAAAAJ:ALROH1vI_8AC'></span></strong>
 /
-[**Paper**](https://drive.google.com/file/d/1Z-tjm7tt387z0FD-YfZO34Lh3r-8V1Fe/view?usp=sharing)
+[**Paper**](https://drive.google.com/file/d/1KsbKAFvCtOh5PY1YyzKUuy00LY_w-CWq/view?usp=sharing)
 
 </div>
 </div>
