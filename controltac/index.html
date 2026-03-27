@@ -741,9 +741,11 @@
         <div class="content has-text-justified">
           <p>
             <span class="name" style="color: var(--primary-color);">ControlTac</span> consists of two key components:
-            <strong>a. Force-Control:</strong> We input the background-removed tactile image <em>x</em> into the DiT model, conditioned on the 3D contact force <em>ΔF</em>, to generate force-specific tactile variations.
-            <strong>b. Position-Control:</strong> We transfer the pretrained DiT from stage one and fine-tune it using ControlNet, conditioned on a contact mask <em>c</em>, to synthesize realistic tactile images <em>y<sub>B</sub></em> under different contact positions and forces.
-          </p>
+            <strong style="color: #0984e3;">(a) Force-Control Generation</strong>, 
+            where a raw tactile image $x'$ is processed by subtracting the sensor background $B$ to yield a reference image $x$, followed by a generative module that synthesizes an intermediate force-adjusted image $y_{Int}$ conditioned on a target relative 3D force $\Delta F$; 
+            and 
+            <strong style="color: #0984e3;">(b) Pose-Control Generation</strong>, 
+            which extracts a contact mask from the tactile sensor and utilizes a spatial conditioning network to encode this mask as a spatial prior, thereby modulating the generation process to ensure that the final output image $y$ accurately reflects both the desired force and the specific target contact pose.          </p>
         </div>
 
         <div class="image-container">
@@ -784,7 +786,7 @@
 
             Each object is shown with its 3D preview (col. 1), input tactile images (col. 2), and contact masks 
             (col. 3). Col. 4 presents initial (top) and target (bottom) forces. Subsequent columns show the Ground 
-            Truth, \name\ results, and simulator results from
+            Truth, <span class="name" style="color: var(--primary-color);">ControlTac</span> results, and simulator results from
             <a href="https://arxiv.org/pdf/2109.04027.pdf" target="_blank" rel="noopener noreferrer">
               Taxim (Si &amp; Yuan, 2022)
             </a>, along with corresponding 
@@ -890,7 +892,7 @@
             Results show that unfixed force improves performance since it covers the force variations in the real-world scenarios.
           </p>
           <div class="image-container">
-            <img src="./static/images/pos1.png" alt="Pose estimation comparison" class="responsive-image" style="max-width: 50%;">
+            <img src="./static/images/pos1.png" alt="Pose estimation comparison" class="responsive-image" style="max-width: 100%;">
           </div>
           <p>
             To further evaluate the performance of the pose estimator trained with <span class="name" style="color: var(--primary-color);">ControlTac</span>-generated data, 
