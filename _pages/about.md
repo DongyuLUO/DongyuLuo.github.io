@@ -17,9 +17,7 @@ redirect_from:
 
 <span class='anchor' id='about-me'></span>
 
-I am currently a senior undergraduate student at the **The University of Hong Kong**, pursuing a Bachelor of Science degree. I am fortunate to be conducting research at the Multisensory Machine Intelligence Lab at the **University of Maryland**, under the guidance of Ph.D. mentor [Kelin Yu](https://colinyu1.github.io/) and Prof. [Ruohan Gao](https://ruohangao.github.io/). I would like to express my deep gratitude to Dr. [Shixiang Tang](https://tangshixiang.github.io/) and Prof. [Wanli Ouyang](https://wlouyang.github.io/) for introducing me to the world of research, especially during the early stages when I had no prior experience.
-
-My research interests primarily focus on **multisensory intelligence** and **generative models**.
+I am currently a senior undergraduate student at the **The University of Hong Kong**, pursuing a Bachelor of Science degree. I am fortunate to be conducting research at the **University of Maryland**, under the guidance of Ph.D. mentor [Kelin Yu](https://colinyu1.github.io/) and Prof. [Ruohan Gao](https://ruohangao.github.io/).
 
 I am always excited to connect and collaborate with people from diverse backgrounds. If you’re interested in my work or would like to collaborate, feel free to reach out via email!
 
@@ -50,8 +48,6 @@ I am currently seeking a Ph.D. opportunity for **Fall 2026** and would be gratef
 
 **Dongyu Luo<strong>*</strong>**, [Kelin Yu*](https://colinyu1.github.io/), [Amir-Hossein Shahidzadeh](https://amirshahid.github.io/), [Cornelia Fermuler](https://users.umiacs.umd.edu/~fermulcm/), [Yiannis Aloimonos](https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos), [Ruohan Gao](https://ruohangao.github.io/).
 
-[**Project Page**](https://dongyuluo.github.io/controltac/) <strong><span class='show_paper_citations' data='DhtAFkwAAAAJ:ALROH1vI_8AC'></span></strong>
-/
 [**Paper**](https://drive.google.com/file/d/1KsbKAFvCtOh5PY1YyzKUuy00LY_w-CWq/view?usp=sharing)
 
 </div>
