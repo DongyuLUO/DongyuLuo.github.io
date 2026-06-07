@@ -565,13 +565,13 @@
   }
   .info-box p { font-size: 0.88rem; margin: 0; }
 
-  /* ── REAL WORLD ── */
+  /* ── REAL WORLD (优化为单列交错流布局) ── */
   #realworld { background: var(--dark-bg); }
 
   .demo-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 64px; /* 加大每个任务之间的间距，显得更具呼吸感 */
     margin-top: 48px;
   }
 
@@ -581,17 +581,31 @@
     border-radius: 4px;
     overflow: hidden;
     transition: border-color 0.3s;
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr; /* 图文左右分栏 */
+    align-items: center;
   }
   .demo-card:hover { border-color: var(--border-bright); }
 
+  /* 使得偶数行的卡片图文顺序颠倒（右图左文），形成高级的交错感 */
+  .demo-card:nth-child(even) {
+    grid-template-columns: 0.9fr 1.1fr;
+  }
+  .demo-card:nth-child(even) .demo-gif {
+    order: 2;
+  }
+
   .demo-gif {
     width: 100%;
-    aspect-ratio: 16/9;
+    height: 100%;
+    min-height: 360px; /* 保证单列大图的视觉张力 */
     background: #F0EEEE;
     position: relative;
     overflow: hidden;
+    align-self: stretch;
   }
   .demo-gif img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  
   .demo-gif-placeholder {
     position: absolute; inset: 0;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -603,10 +617,16 @@
   .demo-gif-placeholder svg { width: 32px; height: 32px; opacity: 0.35; color: var(--crimson-light); }
   .demo-gif-placeholder span { opacity: 0.7; color: var(--text-secondary); }
 
-  .demo-info { padding: 24px 28px 28px; background: #FFF; }
-  .demo-tag { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--crimson-light); margin-bottom: 6px; }
-  .demo-title { font-family: 'Playfair Display', serif; font-size: 1.15rem; font-weight: 700; margin-bottom: 12px; color: var(--text-primary); }
-  .demo-desc { font-size: 0.84rem; color: var(--text-secondary); line-height: 1.75; margin: 0 0 16px; }
+  .demo-info { padding: 40px; background: #FFF; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+  .demo-tag { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--crimson-light); margin-bottom: 8px; }
+  .demo-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); }
+  .demo-desc { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.8; margin: 0 0 20px; }
+
+  /* 针对多出来的图表盒子的优化，使其在宽幅下自适应 */
+  .demo-info .inline-fig-box {
+    margin-top: 24px;
+    max-width: 100%;
+  }
 
   .success-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 0; }
   .success-badge {
@@ -635,7 +655,7 @@
     border: 1px solid var(--border);
   }
   .metric-chip .mval { font-family: 'DM Mono', monospace; font-size: 1.1rem; font-weight: 500; color: var(--crimson-light); line-height: 1.1; }
-  .metric-chip .mlbl { font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.07em; text-transform: uppercase; margin-top: 3px; }
+  .metric-chip .lbl { font-size: 0.65rem; color: var(--text-muted); letter-spacing: 0.07em; text-transform: uppercase; margin-top: 3px; }
 
   /* ── CROSS SENSOR ── */
   #crosssensor { background: var(--panel); border-top: 1px solid var(--border); border-bottom: 1px solid var(--border); }
@@ -731,7 +751,12 @@
     nav .nav-center { position: static; transform: none; }
     nav { justify-content: space-between; }
     section { padding: 72px 24px; }
-    .method-stages, .downstream-grid, .ds-card-content, .demo-grid, .two-col, .two-col-wide, .insight-grid { grid-template-columns: 1fr; gap: 20px; }
+    .method-stages, .downstream-grid, .ds-card-content, .two-col, .two-col-wide, .insight-grid { grid-template-columns: 1fr; gap: 20px; }
+    .demo-card, .demo-card:nth-child(even) { grid-template-columns: 1fr; }
+    .demo-card:nth-child(even) .demo-gif { order: 0; }
+    .demo-gif { min-height: 240px; height: auto; aspect-ratio: 16/9; }
+    .demo-info { padding: 24px; }
+    .demo-grid { gap: 32px; }
   }
 </style>
 </head>
@@ -1265,7 +1290,6 @@
             <div class="metric-chip"><div class="mval">90%</div><div class="lbl">Cylinder SR</div></div>
             <div class="metric-chip"><div class="mval">85%</div><div class="lbl">Cross/T-shape SR</div></div>
             <div class="metric-chip"><div class="mval">75%</div><div class="lbl">Type-C SR</div></div>
-            <div class="metric-chip"><div class="mval">3mm</div><div class="lbl">Tolerance</div></div>
           </div>
         </div>
       </div>
@@ -1283,6 +1307,7 @@
           <div class="demo-tag">Real World · Task 04</div>
           <div class="demo-title">Imitation Learning: Pick &amp; Peg-in-Hole</div>
           <p class="demo-desc">We train ACT-based visuo-tactile policies on a multi-stage Pick and Peg-in-Hole task using third-view RGB, wrist RGB, and tactile inputs. Force-controlled trajectory-level augmentation (1–9× copies per trajectory with random force offsets) significantly improves policy robustness against contact inconsistencies in teleoperated demonstrations. With <strong style="color:var(--text-primary)">70–100 real demonstrations</strong>, tactile augmentation consistently outperforms real-only training; with 100 demos and 9× augmentation, success rate reaches <strong style="color:var(--text-primary)">72%</strong> — a +12 percentage point gain over no augmentation (60%), evaluated across 25 real-robot trials per condition.</p>
+          
           <div class="result-metrics">
             <div class="metric-chip"><div class="mval">72%</div><div class="lbl">Best SR (Aug×9)</div></div>
             <div class="metric-chip"><div class="mval">60%</div><div class="lbl">No Aug Baseline</div></div>
@@ -1292,7 +1317,7 @@
           <div class="inline-fig-box">
             <img src="./static/images/imitation.png" alt="Imitation Learning Success Rate Histogram" onerror="this.style.opacity='0.3';">
             <div class="inline-caption">
-              <strong>Figure 8.</strong> Success rate comparison for Pick & Peg-in-Hole task under different augmentation scales.
+              <strong>Figure 8.</strong> Success rate comparison for Pick &amp; Peg-in-Hole task under different augmentation scales.
             </div>
           </div>
 
