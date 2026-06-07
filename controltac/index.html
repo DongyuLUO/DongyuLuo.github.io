@@ -460,6 +460,14 @@
     color: var(--crimson-light);
     margin-bottom: 12px;
   }
+  .stage-hardware-note {
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-top: 14px;
+    padding-top: 8px;
+    border-top: 1px dashed var(--border);
+    display: block;
+  }
 
   /* comparison grid */
   .comparison-grid {
@@ -545,6 +553,7 @@
   .stat-pill { background: var(--panel); border: 1px solid var(--border); border-radius: 2px; padding: 10px 16px; }
   .stat-pill .val { font-family: 'DM Mono', monospace; font-size: 1.4rem; font-weight: 500; color: var(--crimson-light); line-height: 1; }
   .stat-pill .lbl { font-size: 0.68rem; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px; }
+  .stat-pill .lbl-long { font-size: 0.6rem; color: var(--text-muted); letter-spacing: 0.04em; text-transform: uppercase; margin-top: 4px; line-height: 1.2; }
 
   .bar-chart { margin-top: 20px; width: 100%; }
   .bar-chart .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 0.8rem; width: 100%; }
@@ -964,10 +973,11 @@
         <p>The raw image is background-subtracted and encoded into a compressed latent space via a pre-trained autoencoder. A conditional Diffusion Transformer (with DDIM sampling) takes this latent representation and a <strong>target relative force vector ΔF</strong> to synthesize force-adjusted tactile images with accurate elastomer deformations.</p>
         <p>Background subtraction isolates contact features and mitigates cross-sensor domain gaps arising from different lighting conditions.</p>
         <div class="stat-row">
-          <div class="stat-pill"><div class="val">147M</div><div class="lbl">Parameters</div></div>
-          <div class="stat-pill"><div class="val">20k</div><div class="lbl">Training Images</div></div>
+          <div class="stat-pill"><div class="val">147M</div><div class="lbl-long">Force-Control Stage Params</div></div>
+          <div class="stat-pill"><div class="val">20,000</div><div class="lbl">Training Data</div></div>
           <div class="stat-pill"><div class="val">~21h</div><div class="lbl">Training Time</div></div>
         </div>
+        <span class="stage-hardware-note">Note: Trained on a single A5000 GPU</span>
       </div>
       <div class="stage-card">
         <div class="stage-number">2</div>
@@ -976,10 +986,11 @@
         <p>A compact binary contact mask <em>P</em> serves as a global pose-control signal. Masks are aligned with ground-truth images at <strong>±3 px and ±1°</strong> precision during training, and transformed to arbitrary target poses via 2D rigid transforms at inference.</p>
         <p>Inspired by ControlNet, a frozen force-conditional backbone is augmented with a pose-guided adapter — injecting spatial constraints without disturbing the learned force-deformation mapping.</p>
         <div class="stat-row">
-          <div class="stat-pill"><div class="val">223M</div><div class="lbl">Parameters</div></div>
-          <div class="stat-pill"><div class="val">7k</div><div class="lbl">Training Images</div></div>
+          <div class="stat-pill"><div class="val">223M</div><div class="lbl-long">Total Params (Force + Pose)</div></div>
+          <div class="stat-pill"><div class="val">7,000</div><div class="lbl">Training Data</div></div>
           <div class="stat-pill"><div class="val">~5h</div><div class="lbl">Training Time</div></div>
         </div>
+        <span class="stage-hardware-note">Note: Trained on a single A5000 GPU</span>
       </div>
     </div>
 
@@ -1079,7 +1090,7 @@
           <p style="font-size:0.83rem;">ControlTac achieves <strong>45× lower MSE</strong> than the Simulator on seen objects (23 vs. 1054) and <strong>10× lower MSE</strong> than Sim2Real, while maintaining the highest SSIM across all evaluation sets including completely unseen AnyTouch2 objects.</p>
         </div>
         <div class="info-box" style="margin-top:16px;">
-          <h3 style="font-size:1rem;margin-bottom:10px;">Inference Throughput</h3>
+          <h3 style="font-size:1rem;margin-bottom:10px;">Inference Throughput <span style="font-weight: normal; font-size: 0.8rem; color: var(--text-muted); font-family: 'DM Sans', sans-serif;">(Tested on a single A6000)</span></h3>
           <div class="stat-row" style="margin-top:0;">
             <div class="stat-pill"><div class="val">6.5</div><div class="lbl">imgs/sec (Ours)</div></div>
             <div class="stat-pill"><div class="val">7.0</div><div class="lbl">imgs/sec (Hybrid)</div></div>
@@ -1381,7 +1392,7 @@
     <div class="citation-box reveal" id="bibtex-box">
       <button class="copy-btn" onclick="copyBibtex()">Copy</button><code>@article{luo2025controltac,
   title={ControlTac: Force-and Position-Controlled Tactile Data Augmentation with a Single Reference Image},
-  author={Luo, Dongyu and Yu, Kelin and Shahidzadeh, Amir-Hossein and Ferm{\"u}ller, Cornelia and Aloimonos, Yiannis and Gao, Ruohan},
+  author={Luo, Dongyu and Yu, Kelin og Shahidzadeh, Amir-Hossein og Ferm{\"u}ller, Cornelia og Aloimonos, Yiannis og Gao, Ruohan},
   journal={arXiv preprint arXiv:2505.20498},
   year={2025}
 }</code></div>
