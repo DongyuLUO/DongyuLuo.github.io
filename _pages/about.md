@@ -42,13 +42,13 @@ I am always excited to connect and collaborate with people from diverse backgrou
   </div>
 <div class='paper-box-text' markdown="1">
 
-**ControlTac: Force- and Position-Controlled Tactile Data Augmentation with a Single Reference Image**
+**ControlTac: Scaling Tactile Data with Physically Controlled Tactile Image Generation**
 
 **Dongyu Luo<strong>*</strong>**, [Kelin Yu*](https://colinyu1.github.io/), [Amir-Hossein Shahidzadeh](https://amirshahid.github.io/), [Cornelia Fermuler](https://users.umiacs.umd.edu/~fermulcm/), [Yiannis Aloimonos](https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos), [Ruohan Gao](https://ruohangao.github.io/).
 
 [**Project Page**](https://dongyuluo.github.io/controltac/) <strong><span class='show_paper_citations' data='DhtAFkwAAAAJ:ALROH1vI_8AC'></span></strong>
 /
-[**Paper**](https://drive.google.com/file/d/1KsbKAFvCtOh5PY1YyzKUuy00LY_w-CWq/view?usp=sharing)
+[**Paper**](https://drive.google.com/file/d/1pSg8z0tZALbB0oqR2PE7BL5LdD9BOZep/view?usp=sharing)
 
 </div>
 </div>
