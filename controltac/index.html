@@ -696,6 +696,30 @@
   .scroll-x { overflow-x: auto; }
   .red-line { width: 48px; height: 3px; background: var(--crimson); margin-bottom: 32px; }
 
+  /* 内嵌式图片展示盒样式 */
+  .inline-fig-box {
+    margin-top: 20px;
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .inline-fig-box img {
+    width: 100%;
+    height: auto;
+    display: block;
+  }
+  .inline-fig-box .inline-caption {
+    padding: 10px 14px;
+    background: rgba(10, 10, 10, 0.4);
+    border-top: 1px solid var(--border);
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+  .inline-fig-box .inline-caption strong {
+    color: var(--text-secondary);
+  }
+
   @media (max-width: 900px) {
     nav { padding: 0 24px; }
     nav ul { gap: 16px; }
@@ -1076,6 +1100,14 @@
               </div>
             </div>
             <p style="font-size:0.73rem;color:var(--text-muted);margin-top:10px;">ViT (ImageNet) accuracy on 6 unseen objects. ControlTac achieves 0.99 vs. Simulator's 0.92. Text2Tac performs poorly as free-form generation lacks physical grounding.</p>
+
+            <div class="inline-fig-box">
+              <img src="object.png" alt="Unseen Objects for Classification" onerror="this.style.opacity='0.3';">
+              <div class="inline-caption">
+                <strong>Figure 6.</strong> The unseen objects used for validation in the downstream object classification benchmark.
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -1092,6 +1124,14 @@
             <div class="info-box">
               <p style="font-size:0.83rem;"><strong style="color:var(--text-primary)">Key result:</strong> Supplementing only <strong style="color:var(--crimson-light)">1/3 of the real dataset</strong> with ControlTac data matches <strong style="color:var(--crimson-light)">full-dataset performance</strong>, whereas using that real subset alone yields poor results. ControlTac effectively covers the pose and force variation space that real data struggles to provide at scale.</p>
             </div>
+
+            <div class="inline-fig-box">
+              <img src="force.png" alt="Force Estimation Accuracy Histogram" onerror="this.style.opacity='0.3';">
+              <div class="inline-caption">
+                <strong>Figure 7.</strong> Force estimation performance comparison across different data ratio configurations.
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
@@ -1244,6 +1284,14 @@
             <div class="metric-chip"><div class="mval">60%</div><div class="lbl">No Aug Baseline</div></div>
             <div class="metric-chip"><div class="mval">+12pp</div><div class="lbl">Improvement</div></div>
           </div>
+
+          <div class="inline-fig-box">
+            <img src="imitation.png" alt="Imitation Learning Success Rate Histogram" onerror="this.style.opacity='0.3';">
+            <div class="inline-caption">
+              <strong>Figure 8.</strong> Success rate comparison for Pick & Peg-in-Hole task under different augmentation scales.
+            </div>
+          </div>
+
         </div>
       </div>
 
