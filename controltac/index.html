@@ -671,9 +671,16 @@
     color: var(--text-secondary);
     margin-top: 24px;
     position: relative;
+  }
+  
+  .citation-box code {
+    display: block;
     white-space: pre-wrap;
     word-break: break-all;
+    font-family: inherit;
+    color: inherit;
   }
+
   .copy-btn {
     position: absolute;
     top: 16px; right: 16px;
@@ -1084,7 +1091,7 @@
 
     <div class="divider"></div>
     <div class="section-label reveal">Qualitative Results</div>
-    <h3 class="reveal" style="font-size:1.5rem;margin-bottom:16px;">Visual Comparison Across Objects &amp; Conditions</h3>
+    <div class="reveal" style="font-size:1.5rem;margin-bottom:16px;">Visual Comparison Across Objects &amp; Conditions</div>
 
     <div class="fig-card reveal">
       <img src="./static/images/qualitative.png" alt="Qualitative Generation Results Across Methods" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
@@ -1372,12 +1379,12 @@
     <h2 class="reveal">BibTeX</h2>
 
     <div class="citation-box reveal" id="bibtex-box">
-      <button class="copy-btn" onclick="copyBibtex()">Copy</button>@article{luo2025controltac,
+      <button class="copy-btn" onclick="copyBibtex()">Copy</button><code>@article{luo2025controltac,
   title={ControlTac: Force-and Position-Controlled Tactile Data Augmentation with a Single Reference Image},
   author={Luo, Dongyu and Yu, Kelin and Shahidzadeh, Amir-Hossein and Ferm{\"u}ller, Cornelia and Aloimonos, Yiannis and Gao, Ruohan},
   journal={arXiv preprint arXiv:2505.20498},
   year={2025}
-}</div>
+}</code></div>
   </div>
 </section>
 
@@ -1418,7 +1425,8 @@
 
   function copyBibtex() {
     const box = document.getElementById('bibtex-box');
-    const text = box.innerText.replace('Copy', '').trim();
+    const codeTarget = box.querySelector('code');
+    const text = codeTarget.innerText.trim();
     navigator.clipboard.writeText(text).then(() => {
       const btn = box.querySelector('.copy-btn');
       btn.textContent = 'Copied!';
