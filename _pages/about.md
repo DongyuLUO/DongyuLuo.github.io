@@ -48,7 +48,7 @@ I am always excited to connect and collaborate with people from diverse backgrou
 
 [**Project Page**](https://dongyuluo.github.io/controltac/) <strong><span class='show_paper_citations' data='DhtAFkwAAAAJ:ALROH1vI_8AC'></span></strong>
 /
-[**Paper**](https://drive.google.com/file/d/1pSg8z0tZALbB0oqR2PE7BL5LdD9BOZep/view?usp=sharing)
+[**Paper**](https://drive.google.com/file/d/1_h4rQ5zWz9TnyE3GgjOZFXDt71fJw5GL/view?usp=sharing)
 
 </div>
 </div>
