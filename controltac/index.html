@@ -539,15 +539,6 @@
     align-items: start;
   }
 
-  .ds-icon {
-    width: 40px; height: 40px;
-    background: rgba(139,26,26,0.06);
-    border: 1px solid var(--border-bright);
-    border-radius: 2px;
-    display: flex; align-items: center; justify-content: center;
-    margin-bottom: 20px;
-    font-size: 1.2rem;
-  }
   .ds-tag { font-size: 0.65rem; letter-spacing: 0.18em; text-transform: uppercase; color: var(--crimson-light); margin-bottom: 8px; }
 
   .stat-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 20px; }
@@ -556,7 +547,7 @@
   .stat-pill .lbl { font-size: 0.68rem; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px; }
 
   .bar-chart { margin-top: 20px; width: 100%; }
-  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 0.8rem; width: 100%; }
+  .bar-chart .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 0.8rem; width: 100%; }
   .bar-label { width: 130px; flex-shrink: 0; white-space: nowrap; text-align: left; }
   .bar-track { flex-grow: 1; height: 12px; background: var(--panel-light); border-radius: 2px; overflow: hidden; position: relative; }
   .bar-fill { height: 100%; background: #D0CACA; border-radius: 2px; transition: width 1s ease; }
@@ -597,7 +588,6 @@
   }
   .demo-card:hover { border-color: var(--border-bright); }
 
-  /* 优化：GIF 演示区域改为白色背景 */
   .demo-gif {
     width: 100%;
     max-height: 450px;
@@ -628,7 +618,6 @@
   .demo-gif-placeholder svg { width: 32px; height: 32px; opacity: 0.35; color: var(--crimson-light); }
   .demo-gif-placeholder span { opacity: 0.7; color: var(--text-secondary); }
 
-  /* 优化：文字区域改为浅灰色背景 */
   .demo-info { 
     padding: 32px 40px; 
     background: var(--panel); 
@@ -647,7 +636,6 @@
     align-self: flex-start;
   }
 
-  /* 优化：文字区变成灰色后，内部的数据标签（Metric Chips）改为白色形成精致的反差 */
   .result-metrics {
     display: flex;
     gap: 12px;
@@ -726,7 +714,6 @@
 
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
   
-  /* 全局强制优化的滚动包装层，确保手机端一致对齐且不外溢 */
   .scroll-x { 
     width: 100%; 
     max-width: 100%;
@@ -735,10 +722,9 @@
     -webkit-overflow-scrolling: touch;
   }
   .results-table th, .results-table td {
-    white-space: nowrap; /* 阻止移动端极端断行导致表格错乱 */
+    white-space: nowrap; 
   }
 
-  /* 内嵌式图片展示盒样式 */
   .inline-fig-box {
     margin-top: 20px;
     background: var(--dark-bg);
@@ -765,10 +751,10 @@
     color: var(--text-secondary);
   }
 
-  /* ── 移动端极致对齐优化媒体查询 ── */
+  /* ── 移动端对齐与防溢出修正 ── */
   @media (max-width: 900px) {
     nav { padding: 0 16px; }
-    nav .nav-center { display: none; } /* 移动端隐藏中间图标防止严重拥挤 */
+    nav .nav-center { display: none; } 
     nav ul { 
       gap: 12px; 
       max-width: 65%; 
@@ -779,17 +765,24 @@
     nav ul::-webkit-scrollbar { display: none; }
     nav ul li a { font-size: 0.68rem; letter-spacing: 0.05em; }
     
-    section { padding: 60px 16px; } /* 始终保持边缘间距一致 */
+    section { padding: 60px 16px; } 
     .container { padding: 0; }
     
-    .method-stages, .downstream-grid, .ds-card-content, .two-col, .insight-grid { grid-template-columns: 1fr; gap: 20px; }
+    /* 关键修复：防止子元素过度伸展导致卡片异常变宽 */
+    .method-stages, .downstream-grid, .ds-card-content, .two-col, .insight-grid { 
+      grid-template-columns: minmax(0, 1fr); 
+      gap: 20px; 
+    }
+    .ds-card {
+      padding: 24px 16px;
+    }
+
     .demo-gif { max-height: 300px; }
     .demo-gif img { max-height: 300px; }
     .demo-info { padding: 24px 16px; }
     .demo-grid { gap: 32px; }
     .fig-card.fig2-scaled { max-width: 100%; }
 
-    /* 修复对比矩阵在手机端挤压破型的问题，使其支持舒适的横向拖拽 */
     .comparison-grid {
       grid-template-columns: 130px repeat(4, 85px);
       width: max-content;
@@ -844,15 +837,15 @@
   <p class="affiliation">University of Maryland, College Park</p>
 
   <div class="hero-buttons">
-    <a href="#" class="btn btn-primary">
+    <a href="https://drive.google.com/file/d/1pSg8z0tZALbB0oqR2PE7BL5LdD9BOZep/view?usp=sharing" target="_blank" class="btn btn-primary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Paper
     </a>
-    <a href="#" class="btn btn-outline">
+    <a href="javascript:void(0)" class="btn btn-outline" style="cursor: default;">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
       </svg>
-      Code
+      Incoming Soon
     </a>
   </div>
 
@@ -1152,8 +1145,7 @@
     <div class="downstream-grid reveal">
 
       <div class="ds-card">
-        <div class="ds-icon">🏷️</div>
-        <div class="ds-tag">Task 01 · Discrete</div>
+        <div class="ds-tag">Task 01</div>
         <h3>Object Classification</h3>
         
         <div class="ds-card-content" style="grid-template-columns: 1fr;">
@@ -1196,8 +1188,7 @@
       </div>
 
       <div class="ds-card">
-        <div class="ds-icon">⚖️</div>
-        <div class="ds-tag">Task 02 · Regression</div>
+        <div class="ds-tag">Task 02</div>
         <h3>Force Estimation</h3>
         
         <div class="ds-card-content" style="grid-template-columns: 1fr;">
@@ -1220,13 +1211,12 @@
       </div>
 
       <div class="ds-card">
-        <div class="ds-icon">🎯</div>
-        <div class="ds-tag">Task 03 · Spatial</div>
-        <h3>Contact Pose Estimation</h3>
+        <div class="ds-tag">Task 03</div>
+        <h3>Pose Estimation</h3>
         
         <div class="ds-card-content" style="grid-template-columns: 1fr;">
           <div>
-            <p style="font-size:0.85rem;">2D contact pose estimation (X, Y coordinates and rotation angle θ) generalizes to unknown objects. ControlTac automatically extracts pose labels from 2D contact masks during synthesis, making it effortless to generate large labeled datasets.</p>
+            <p style="font-size:0.85rem;">2D pose estimation (X, Y coordinates and rotation angle θ) generalizes to unknown objects. ControlTac automatically extracts pose labels from 2D contact masks during synthesis, making it effortless to generate large labeled datasets.</p>
             <p style="font-size:0.85rem; margin-top:10px;">Estimators trained solely on ControlTac-generated data achieve strong performance across all objects, outperforming models trained on real data alone — because ControlTac's diverse synthesis effortlessly covers gaps in contact poses and force dynamics.</p>
           </div>
         </div>
@@ -1269,7 +1259,7 @@
               </tbody>
             </table>
           </div>
-          <p style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;">Table 2. Contact pose estimation errors (X/Y in mm, Angle in degrees). ControlTac (unfixed force) outperforms all baselines including models trained on real data, and generalizes to unseen objects on a new sensor instance.</p>
+          <p style="font-size:0.75rem;color:var(--text-muted);margin-top:10px;">Table 2. Pose estimation errors (X/Y in mm, Angle in degrees). ControlTac (unfixed force) outperforms all baselines including models trained on real data, and generalizes to unseen objects on a new sensor instance.</p>
         </div>
       </div>
 
