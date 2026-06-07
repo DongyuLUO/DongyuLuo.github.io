@@ -464,7 +464,7 @@
   /* comparison grid */
   .comparison-grid {
     display: grid;
-    grid-template-columns: 1fr repeat(4, 1fr);
+    grid-template-columns: 1fr repeat(3, 1fr);
     gap: 1px;
     background: var(--border);
     border: 1px solid var(--border);
@@ -768,7 +768,6 @@
     section { padding: 60px 16px; } 
     .container { padding: 0; }
     
-    /* 关键修复：防止子元素过度伸展导致卡片异常变宽 */
     .method-stages, .downstream-grid, .ds-card-content, .two-col, .insight-grid { 
       grid-template-columns: minmax(0, 1fr); 
       gap: 20px; 
@@ -784,7 +783,7 @@
     .fig-card.fig2-scaled { max-width: 100%; }
 
     .comparison-grid {
-      grid-template-columns: 130px repeat(4, 85px);
+      grid-template-columns: 130px repeat(3, 85px);
       width: max-content;
     }
     
@@ -833,7 +832,7 @@
   </h1>
 
   <p class="subtitle-tag">Vision-Based Tactile Sensing &nbsp;·&nbsp; Data Augmentation &nbsp;·&nbsp; Robot Manipulation</p>
-  <p class="authors"><a href="https://dongyuluo.github.io/">Dongyu Luo*</a>, <a href="https://colinyu1.github.io/">Kelin Yu*</a>, <a href="https://amirshahid.github.io/">Amir-Hossein Shahidzadeh</a>, <a href="https://users.umiacs.umd.edu/~fermulcm/">Cornelia Fermuler</a>, <a href="https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos">Yiannis Aloimonos</a>, <a href="https://ruohangao.github.io/">Ruohan Gao</a>.</p>
+  <p class="authors"><strong><a href="https://dongyuluo.github.io/">Dongyu Luo*</a></strong>, <a href="https://colinyu1.github.io/">Kelin Yu*</a>, <a href="https://amirshahid.github.io/">Amir-Hossein Shahidzadeh</a>, <a href="https://users.umiacs.umd.edu/~fermulcm/">Cornelia Fermuler</a>, <a href="https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos">Yiannis Aloimonos</a>, <a href="https://ruohangao.github.io/">Ruohan Gao</a>.</p>
   <p class="affiliation">University of Maryland, College Park</p>
 
   <div class="hero-buttons">
@@ -1373,11 +1372,11 @@
     <h2 class="reveal">BibTeX</h2>
 
     <div class="citation-box reveal" id="bibtex-box">
-      <button class="copy-btn" onclick="copyBibtex()">Copy</button>@article{controltac2026,
-  title   = {ControlTac: Scaling Tactile Data with Physically Controlled Tactile Image Generation},
-  author  = {Luo, Dongyu and Yu, Kelin Savio and Shahidzadeh, Amir-Hossein and Fermuler, Cornelia and Aloimonos, Yiannis and Gao, Ruohan},
-  journal = {Preprint},
-  year    = {2026}
+      <button class="copy-btn" onclick="copyBibtex()">Copy</button>@article{luo2025controltac,
+  title={ControlTac: Force-and Position-Controlled Tactile Data Augmentation with a Single Reference Image},
+  author={Luo, Dongyu and Yu, Kelin and Shahidzadeh, Amir-Hossein and Ferm{\"u}ller, Cornelia and Aloimonos, Yiannis and Gao, Ruohan},
+  journal={arXiv preprint arXiv:2505.20498},
+  year={2025}
 }</div>
   </div>
 </section>
