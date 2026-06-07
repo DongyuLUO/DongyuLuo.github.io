@@ -172,6 +172,13 @@
     animation: fadeDown 0.8s ease 0.2s both;
   }
 
+  .authors-note {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+    animation: fadeDown 0.8s ease 0.25s both;
+  }
+
   .authors {
     font-size: 0.95rem;
     color: var(--text-secondary);
@@ -750,6 +757,14 @@
     width: 100%;
     max-width: 100%;
   }
+  
+  /* 优化样式：限制图7与图8页面比例占60% */
+  .inline-fig-box.scaled-fig-60 {
+    max-width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+  
   .inline-fig-box img {
     width: 100%;
     height: auto;
@@ -797,6 +812,11 @@
     .demo-info { padding: 24px 16px; }
     .demo-grid { gap: 32px; }
     .fig-card.fig2-scaled { max-width: 100%; }
+    
+    /* 移动端恢复满宽，避免小屏显示太窄 */
+    .inline-fig-box.scaled-fig-60 {
+      max-width: 100%;
+    }
 
     .comparison-grid {
       grid-template-columns: 130px repeat(3, 85px);
@@ -848,11 +868,15 @@
   </h1>
 
   <p class="subtitle-tag">Vision-Based Tactile Sensing &nbsp;·&nbsp; Data Augmentation &nbsp;·&nbsp; Robot Manipulation</p>
-  <p class="authors"><strong><a href="https://dongyuluo.github.io/">Dongyu Luo*</a></strong>, <a href="https://colinyu1.github.io/">Kelin Yu*</a>, <a href="https://amirshahid.github.io/">Amir-Hossein Shahidzadeh</a>, <a href="https://users.umiacs.umd.edu/~fermulcm/">Cornelia Fermuler</a>, <a href="https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos">Yiannis Aloimonos</a>, <a href="https://ruohangao.github.io/">Ruohan Gao</a>.</p>
+  
+  <p class="authors"><strong><a href="https://dongyuluo.github.io/">Dongyu Luo*</a></strong>, <strong><a href="https://colinyu1.github.io/">Kelin Yu*</a></strong>, <a href="https://amirshahid.github.io/">Amir-Hossein Shahidzadeh</a>, <a href="https://users.umiacs.umd.edu/~fermulcm/">Cornelia Fermuler</a>, <a href="https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos">Yiannis Aloimonos</a>, <a href="https://ruohangao.github.io/">Ruohan Gao</a>.</p>
+  
+  <p class="authors-note">∗ Co-first authors</p>
+
   <p class="affiliation">University of Maryland, College Park</p>
 
   <div class="hero-buttons">
-    <a href="https://drive.google.com/file/d/1pSg8z0tZALbB0oqR2PE7BL5LdD9BOZep/view?usp=sharing" target="_blank" class="btn btn-primary">
+    <a href="https://drive.google.com/file/d/1_h4rQ5zWz9TnyE3GgjOZFXDt71fJw5GL/view?usp=sharing" target="_blank" class="btn btn-primary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Paper
     </a>
@@ -1211,7 +1235,7 @@
               <p style="font-size:0.83rem;"><strong>Key result:</strong> Supplementing only <strong>1/3 of the real dataset</strong> with ControlTac data matches <strong>full-dataset performance</strong>, whereas using that real subset alone yields poor results. ControlTac effectively covers the pose and force variation space that real data struggles to provide at scale.</p>
             </div>
 
-            <div class="inline-fig-box">
+            <div class="inline-fig-box scaled-fig-60">
               <img src="./static/images/force.png" alt="Force Estimation Accuracy Histogram" onerror="this.style.opacity='0.3';">
               <div class="inline-caption">
                 <strong>Figure 7.</strong> Force estimation performance comparison across different data ratio configurations.
@@ -1289,6 +1313,36 @@
 
       <div class="demo-card reveal">
         <div class="demo-gif">
+          <img src="./static/images/demo_imitation.gif" alt="Imitation Learning Demo"
+               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
+          <div class="demo-gif-placeholder" style="display:none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
+            <span>GIF Demo — Imitation Learning</span>
+          </div>
+        </div>
+        <div class="demo-info">
+          <div class="demo-tag">Real World · Task 01</div>
+          <div class="demo-title">Imitation Learning: Pick &amp; Peg-in-Hole</div>
+          <p class="demo-desc">We train ACT-based visuo-tactile policies on a multi-stage Pick and Peg-in-Hole task using third-view RGB, wrist RGB, and tactile inputs. Force-controlled trajectory-level augmentation (1–9× copies per trajectory with random force offsets) significantly improves policy robustness against contact inconsistencies in teleoperated demonstrations. With <strong>70–100 real demonstrations</strong>, tactile augmentation consistently outperforms real-only training; with 100 demos and 9× augmentation, success rate reaches <strong>72%</strong> — a +12 percentage point gain over no augmentation (60%), evaluated across 25 real-robot trials per condition.</p>
+          
+          <div class="result-metrics">
+            <div class="metric-chip"><div class="mval">72%</div><div class="lbl">Best SR (Aug×9)</div></div>
+            <div class="metric-chip"><div class="mval">60%</div><div class="lbl">No Aug Baseline</div></div>
+            <div class="metric-chip"><div class="mval">+12pp</div><div class="lbl">Improvement</div></div>
+          </div>
+
+          <div class="inline-fig-box scaled-fig-60">
+            <img src="./static/images/imitation.png" alt="Imitation Learning Success Rate Histogram" onerror="this.style.opacity='0.3';">
+            <div class="inline-caption">
+              <strong>Figure 8.</strong> Success rate comparison for Pick &amp; Peg-in-Hole task under different augmentation scales.
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="demo-card reveal">
+        <div class="demo-gif">
           <img src="./static/images/demo_weighting.gif" alt="Object Weighting Demo"
                onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
           <div class="demo-gif-placeholder" style="display:none;">
@@ -1297,7 +1351,7 @@
           </div>
         </div>
         <div class="demo-info">
-          <div class="demo-tag">Real World · Task 01</div>
+          <div class="demo-tag">Real World · Task 02</div>
           <div class="demo-title">Object Weighting</div>
           <p class="demo-desc">A UR5 robot pushes four objects (1 kg metal weight, two water-filled cylinders of 0.50 kg and 0.56 kg, and a 0.63 kg glass bottle) at constant speed. An ATI Axia80 force sensor provides ground truth readings. The estimator trained on ControlTac-generated images — without any real training data from these objects — predicts the pushing force in real time from tactile input alone, achieving accuracy within <strong>0.1 N</strong> of the real-data-trained model. This demonstrates robust generalization across complex and diverse material properties.</p>
           <div class="result-metrics">
@@ -1318,7 +1372,7 @@
           </div>
         </div>
         <div class="demo-info">
-          <div class="demo-tag">Real World · Task 02</div>
+          <div class="demo-tag">Real World · Task 03</div>
           <div class="demo-title">Real-time Pose Tracking</div>
           <p class="demo-desc">We track the 2D contact pose (position + rotation angle) of printed cylinder, cross, and T-shape objects as they undergo continuous, in-hand rotation and translation against the sensor. The pose estimator — trained entirely on ControlTac-generated data — runs at <strong>10 Hz in real time</strong>, smoothly tracking across the full range of poses and dynamic motion. This task highlights ControlTac's practical utility: accurate 10 Hz tactile-based tracking was previously only achievable with large annotated real datasets.</p>
           <div class="result-metrics">
@@ -1339,7 +1393,7 @@
           </div>
         </div>
         <div class="demo-info">
-          <div class="demo-tag">Real World · Task 03</div>
+          <div class="demo-tag">Real World · Task 04</div>
           <div class="demo-title">High-Precision Object Insertion</div>
           <p class="demo-desc">An XArm7 robot equipped with dual GelSight Mini tactile sensors grasps objects at random angles and performs high-precision peg-in-hole insertion with a tight <strong>3 mm tolerance</strong>. The pose estimator — trained on ControlTac data — predicts in-hand object pose from tactile feedback, and the robot compensates for grasping uncertainty by rotating and translating the end-effector to align the object vertically above the hole. ControlTac-trained models achieve up to <strong>90% success rate</strong> across four object types, including a daily-use Type-C USB connector, demonstrating millimeter-level real-world manipulation from single-image augmentation.</p>
           <div class="result-metrics">
@@ -1347,36 +1401,6 @@
             <div class="metric-chip"><div class="mval">85%</div><div class="lbl">Cross/T-shape SR</div></div>
             <div class="metric-chip"><div class="mval">75%</div><div class="lbl">Type-C SR</div></div>
           </div>
-        </div>
-      </div>
-
-      <div class="demo-card reveal">
-        <div class="demo-gif">
-          <img src="./static/images/demo_imitation.gif" alt="Imitation Learning Demo"
-               onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
-          <div class="demo-gif-placeholder" style="display:none;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8" fill="currentColor"/></svg>
-            <span>GIF Demo — Imitation Learning</span>
-          </div>
-        </div>
-        <div class="demo-info">
-          <div class="demo-tag">Real World · Task 04</div>
-          <div class="demo-title">Imitation Learning: Pick &amp; Peg-in-Hole</div>
-          <p class="demo-desc">We train ACT-based visuo-tactile policies on a multi-stage Pick and Peg-in-Hole task using third-view RGB, wrist RGB, and tactile inputs. Force-controlled trajectory-level augmentation (1–9× copies per trajectory with random force offsets) significantly improves policy robustness against contact inconsistencies in teleoperated demonstrations. With <strong>70–100 real demonstrations</strong>, tactile augmentation consistently outperforms real-only training; with 100 demos and 9× augmentation, success rate reaches <strong>72%</strong> — a +12 percentage point gain over no augmentation (60%), evaluated across 25 real-robot trials per condition.</p>
-          
-          <div class="result-metrics">
-            <div class="metric-chip"><div class="mval">72%</div><div class="lbl">Best SR (Aug×9)</div></div>
-            <div class="metric-chip"><div class="mval">60%</div><div class="lbl">No Aug Baseline</div></div>
-            <div class="metric-chip"><div class="mval">+12pp</div><div class="lbl">Improvement</div></div>
-          </div>
-
-          <div class="inline-fig-box">
-            <img src="./static/images/imitation.png" alt="Imitation Learning Success Rate Histogram" onerror="this.style.opacity='0.3';">
-            <div class="inline-caption">
-              <strong>Figure 8.</strong> Success rate comparison for Pick &amp; Peg-in-Hole task under different augmentation scales.
-            </div>
-          </div>
-
         </div>
       </div>
 
