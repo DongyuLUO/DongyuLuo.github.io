@@ -597,10 +597,11 @@
   }
   .demo-card:hover { border-color: var(--border-bright); }
 
+  /* 优化：GIF 演示区域改为白色背景 */
   .demo-gif {
     width: 100%;
     max-height: 450px;
-    background: #F0EEEE;
+    background: #FFFFFF;
     position: relative;
     overflow: hidden;
     display: flex;
@@ -621,15 +622,16 @@
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     gap: 10px; color: var(--text-muted);
     font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase;
-    background: var(--panel-light);
+    background: #FFFFFF;
     border: 1px dashed rgba(139, 26, 26, 0.3);
   }
   .demo-gif-placeholder svg { width: 32px; height: 32px; opacity: 0.35; color: var(--crimson-light); }
   .demo-gif-placeholder span { opacity: 0.7; color: var(--text-secondary); }
 
+  /* 优化：文字区域改为浅灰色背景 */
   .demo-info { 
     padding: 32px 40px; 
-    background: #FFF; 
+    background: var(--panel); 
     display: flex; 
     flex-direction: column; 
     justify-content: transform; 
@@ -645,6 +647,7 @@
     align-self: flex-start;
   }
 
+  /* 优化：文字区变成灰色后，内部的数据标签（Metric Chips）改为白色形成精致的反差 */
   .result-metrics {
     display: flex;
     gap: 12px;
@@ -656,7 +659,7 @@
   .metric-chip {
     display: flex; flex-direction: column;
     padding: 8px 14px;
-    background: var(--panel);
+    background: #FFFFFF;
     border-radius: 2px;
     border: 1px solid var(--border);
   }
@@ -864,7 +867,7 @@
   referrerpolicy="strict-origin-when-cross-origin" 
   allowfullscreen
   style="border: none; display: block; margin: 0; padding: 0;"
-    ></iframe>
+></iframe>
     <div class="video-label">Overview Video</div>
   </div>
 </section>
