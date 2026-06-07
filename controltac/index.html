@@ -16,7 +16,6 @@
     --crimson-light: #C84040;
     --black: #0A0A0A;
     --off-black: #111111;
-    /* 核心修改：改为白色背景及对应的明亮色调配色 */
     --dark-bg: #FFFFFF;
     --panel: #F9F8F8;
     --panel-light: #F0EEEE;
@@ -155,7 +154,7 @@
 
   h1 {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(2.4rem, 5vw, 4rem);
+    font-size: clamp(1.8rem, 5vw, 4rem);
     font-weight: 900;
     line-height: 1.15;
     letter-spacing: -0.01em;
@@ -255,7 +254,7 @@
 
   /* ── SECTIONS ── */
   section { padding: 100px 48px; position: relative; }
-  .container { max-width: 1100px; margin: 0 auto; }
+  .container { max-width: 1100px; margin: 0 auto; width: 100%; }
 
   .section-label {
     font-size: 0.7rem;
@@ -329,8 +328,16 @@
     border-radius: 4px;
     overflow: hidden;
     margin-bottom: 12px;
+    width: 100%;
   }
-  .fig-card img { width: 100%; display: block; height: auto; }
+  .fig-card img { width: 100%; display: block; height: auto; max-width: 100%; }
+  
+  .fig-card.fig2-scaled {
+    max-width: 60%;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
   .fig-container-placeholder {
     background: var(--panel-light);
     padding: 80px 20px;
@@ -465,6 +472,7 @@
     overflow: hidden;
     margin-top: 32px;
     margin-bottom: 12px;
+    width: 100%;
   }
   .cg-cell { background: #FFF; padding: 16px 20px; font-size: 0.85rem; }
   .cg-header { background: var(--panel); font-size: 0.72rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); font-weight: 600; }
@@ -519,6 +527,7 @@
     border-radius: 4px;
     padding: 36px;
     transition: border-color 0.3s, transform 0.3s;
+    width: 100%;
   }
   .ds-card:hover { border-color: var(--border-bright); transform: translateY(-2px); }
   
@@ -546,14 +555,13 @@
   .stat-pill .val { font-family: 'DM Mono', monospace; font-size: 1.4rem; font-weight: 500; color: var(--crimson-light); line-height: 1; }
   .stat-pill .lbl { font-size: 0.68rem; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 4px; }
 
-  .bar-chart { margin-top: 20px; }
-  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 0.8rem; }
-  .bar-label { width: 140px; text-align: right; color: var(--text-secondary); flex-shrink: 0; }
-  .bar-label.ours-label { color: var(--crimson-light); font-weight: 600; }
-  .bar-track { flex: 1; height: 22px; background: var(--panel); border-radius: 2px; overflow: hidden; }
+  .bar-chart { margin-top: 20px; width: 100%; }
+  .bar-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; font-size: 0.8rem; width: 100%; }
+  .bar-label { width: 130px; flex-shrink: 0; white-space: nowrap; text-align: left; }
+  .bar-track { flex-grow: 1; height: 12px; background: var(--panel-light); border-radius: 2px; overflow: hidden; position: relative; }
   .bar-fill { height: 100%; background: #D0CACA; border-radius: 2px; transition: width 1s ease; }
   .bar-fill.ours-bar { background: linear-gradient(90deg, var(--crimson), var(--crimson-light)); }
-  .bar-val { width: 50px; font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; }
+  .bar-val { width: 50px; font-family: 'DM Mono', monospace; font-size: 0.75rem; color: var(--text-muted); flex-shrink: 0; text-align: right; }
   .bar-val.ours-val { color: var(--crimson-light); font-weight: 600; }
 
   .info-box {
@@ -565,46 +573,48 @@
   }
   .info-box p { font-size: 0.88rem; margin: 0; }
 
-  /* ── REAL WORLD (优化为单列交错流布局) ── */
+  /* ── REAL WORLD ── */
   #realworld { background: var(--dark-bg); }
 
   .demo-grid {
     display: flex;
     flex-direction: column;
-    gap: 64px; /* 加大每个任务之间的间距，显得更具呼吸感 */
+    gap: 48px; 
     margin-top: 48px;
+    width: 100%;
   }
 
   .demo-card {
     background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: 6px;
     overflow: hidden;
     transition: border-color 0.3s;
-    display: grid;
-    grid-template-columns: 1.1fr 0.9fr; /* 图文左右分栏 */
-    align-items: center;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
   }
   .demo-card:hover { border-color: var(--border-bright); }
 
-  /* 使得偶数行的卡片图文顺序颠倒（右图左文），形成高级的交错感 */
-  .demo-card:nth-child(even) {
-    grid-template-columns: 0.9fr 1.1fr;
-  }
-  .demo-card:nth-child(even) .demo-gif {
-    order: 2;
-  }
-
   .demo-gif {
     width: 100%;
-    height: 100%;
-    min-height: 360px; /* 保证单列大图的视觉张力 */
+    max-height: 450px;
     background: #F0EEEE;
     position: relative;
     overflow: hidden;
-    align-self: stretch;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--border);
   }
-  .demo-gif img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  
+  .demo-gif img { 
+    max-width: 100%; 
+    max-height: 450px; 
+    object-fit: contain;
+    display: block; 
+  }
   
   .demo-gif-placeholder {
     position: absolute; inset: 0;
@@ -617,26 +627,22 @@
   .demo-gif-placeholder svg { width: 32px; height: 32px; opacity: 0.35; color: var(--crimson-light); }
   .demo-gif-placeholder span { opacity: 0.7; color: var(--text-secondary); }
 
-  .demo-info { padding: 40px; background: #FFF; height: 100%; display: flex; flex-direction: column; justify-content: center; }
+  .demo-info { 
+    padding: 32px 40px; 
+    background: #FFF; 
+    display: flex; 
+    flex-direction: column; 
+    justify-content: transform; 
+  }
   .demo-tag { font-size: 0.65rem; letter-spacing: 0.2em; text-transform: uppercase; color: var(--crimson-light); margin-bottom: 8px; }
   .demo-title { font-family: 'Playfair Display', serif; font-size: 1.4rem; font-weight: 700; margin-bottom: 16px; color: var(--text-primary); }
   .demo-desc { font-size: 0.88rem; color: var(--text-secondary); line-height: 1.8; margin: 0 0 20px; }
 
-  /* 针对多出来的图表盒子的优化，使其在宽幅下自适应 */
   .demo-info .inline-fig-box {
     margin-top: 24px;
     max-width: 100%;
-  }
-
-  .success-badges { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 0; }
-  .success-badge {
-    padding: 3px 10px;
-    background: rgba(139,26,26,0.06);
-    border: 1px solid var(--border-bright);
-    border-radius: 2px;
-    font-size: 0.72rem;
-    font-family: 'DM Mono', monospace;
-    color: var(--crimson-light);
+    width: 100%;
+    align-self: flex-start;
   }
 
   .result-metrics {
@@ -675,6 +681,7 @@
     margin-top: 24px;
     position: relative;
     white-space: pre-wrap;
+    word-break: break-all;
   }
   .copy-btn {
     position: absolute;
@@ -707,7 +714,6 @@
     color: var(--text-muted);
     background: var(--panel);
   }
-  footer span { color: var(--crimson-light); }
 
   @keyframes fadeDown { from { opacity: 0; transform: translateY(-16px); } to { opacity: 1; transform: translateY(0); } }
   @keyframes fadeUp   { from { opacity: 0; transform: translateY(16px);  } to { opacity: 1; transform: translateY(0); } }
@@ -716,9 +722,18 @@
   .reveal.visible { opacity: 1; transform: translateY(0); }
 
   .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; align-items: start; }
-  .two-col-wide { display: grid; grid-template-columns: 3fr 2fr; gap: 48px; align-items: start; }
-  .scroll-x { overflow-x: auto; }
-  .red-line { width: 48px; height: 3px; background: var(--crimson); margin-bottom: 32px; }
+  
+  /* 全局强制优化的滚动包装层，确保手机端一致对齐且不外溢 */
+  .scroll-x { 
+    width: 100%; 
+    max-width: 100%;
+    overflow-x: auto; 
+    display: block;
+    -webkit-overflow-scrolling: touch;
+  }
+  .results-table th, .results-table td {
+    white-space: nowrap; /* 阻止移动端极端断行导致表格错乱 */
+  }
 
   /* 内嵌式图片展示盒样式 */
   .inline-fig-box {
@@ -727,11 +742,14 @@
     border: 1px solid var(--border);
     border-radius: 4px;
     overflow: hidden;
+    width: 100%;
+    max-width: 100%;
   }
   .inline-fig-box img {
     width: 100%;
     height: auto;
     display: block;
+    max-width: 100%;
   }
   .inline-fig-box .inline-caption {
     padding: 10px 14px;
@@ -744,19 +762,41 @@
     color: var(--text-secondary);
   }
 
+  /* ── 移动端极致对齐优化媒体查询 ── */
   @media (max-width: 900px) {
-    nav { padding: 0 24px; }
-    nav ul { gap: 16px; }
-    nav ul li a { font-size: 0.68rem; }
-    nav .nav-center { position: static; transform: none; }
-    nav { justify-content: space-between; }
-    section { padding: 72px 24px; }
-    .method-stages, .downstream-grid, .ds-card-content, .two-col, .two-col-wide, .insight-grid { grid-template-columns: 1fr; gap: 20px; }
-    .demo-card, .demo-card:nth-child(even) { grid-template-columns: 1fr; }
-    .demo-card:nth-child(even) .demo-gif { order: 0; }
-    .demo-gif { min-height: 240px; height: auto; aspect-ratio: 16/9; }
-    .demo-info { padding: 24px; }
+    nav { padding: 0 16px; }
+    nav .nav-center { display: none; } /* 移动端隐藏中间图标防止严重拥挤 */
+    nav ul { 
+      gap: 12px; 
+      max-width: 65%; 
+      overflow-x: auto; 
+      white-space: nowrap;
+      scrollbar-width: none;
+    }
+    nav ul::-webkit-scrollbar { display: none; }
+    nav ul li a { font-size: 0.68rem; letter-spacing: 0.05em; }
+    
+    section { padding: 60px 16px; } /* 始终保持边缘间距一致 */
+    .container { padding: 0; }
+    
+    .method-stages, .downstream-grid, .ds-card-content, .two-col, .insight-grid { grid-template-columns: 1fr; gap: 20px; }
+    .demo-gif { max-height: 300px; }
+    .demo-gif img { max-height: 300px; }
+    .demo-info { padding: 24px 16px; }
     .demo-grid { gap: 32px; }
+    .fig-card.fig2-scaled { max-width: 100%; }
+
+    /* 修复对比矩阵在手机端挤压破型的问题，使其支持舒适的横向拖拽 */
+    .comparison-grid {
+      grid-template-columns: 130px repeat(4, 85px);
+      width: max-content;
+    }
+    
+    .results-table th, .results-table td {
+      padding: 8px 12px;
+      font-size: 0.78rem;
+    }
+    .bar-label { width: 100px; font-size: 0.75rem; }
   }
 </style>
 </head>
@@ -771,9 +811,8 @@
     <a href="https://dongyuluo.github.io/" class="home-link" title="Home">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-        <polyline points="9 22 9 12 15 12 15 22"></polyline>
-      </svg>
-    </a>
+        <polyline points="9 22 9 12 15 12 15 22"></svg>
+      </a>
   </div>
 
   <ul>
@@ -815,7 +854,7 @@
   </div>
 
   <div class="video-wrapper">
-    <iframe src="https://youtu.be/7WzQ9s1cz5M" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+    <iframe width="560" height="315" src="https://www.youtube.com/embed/7WzQ9s1cz5M?si=ALbVQJRghQoFMxUO" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
     <div class="video-label">Overview Video</div>
   </div>
 </section>
@@ -845,7 +884,7 @@
       <div class="section-label" style="justify-content:center;">Abstract</div>
       <h2>Synthesizing Realistic Tactile Images<br>Conditioned on Physical Priors</h2>
       <blockquote class="abstract-text">
-        Vision-based tactile sensing is widely used in perception, reconstruction, and robotic manipulation, yet collecting large-scale tactile data remains costly due to diverse sensor-object interactions and inconsistencies across sensor instances. Existing approaches to scaling tactile data — simulation and free-form tactile generation — often yield unrealistically rendered signals with poor transfer to highly dynamic real-world tasks. We propose <strong style="color:var(--text-primary)">ControlTac</strong>, a two-stage controllable tactile image generation framework that generates realistic tactile images conditioned on a single reference tactile image, contact force, and contact pose. By grounding generation in these important physical priors, ControlTac synthesizes realistic samples across different sensors while effectively capturing task-relevant variations. Across a series of downstream tasks and real-world experiments, the augmented datasets using our approach consistently improve performance and demonstrate practical utility in dynamic real-world settings.
+        Vision-based tactile sensing is widely used in perception, reconstruction, and robotic manipulation, yet collecting large-scale tactile data remains costly due to diverse sensor-object interactions and inconsistencies across sensor instances. Existing approaches to scaling tactile data — simulation and free-form tactile generation — often yield unrealistically rendered signals with poor transfer to highly dynamic real-world tasks. We propose <strong>ControlTac</strong>, a two-stage controllable tactile image generation framework that generates realistic tactile images conditioned on a single reference tactile image, contact force, and contact pose. By grounding generation in these important physical priors, ControlTac synthesizes realistic samples across different sensors while effectively capturing task-relevant variations. Across a series of downstream tasks and real-world experiments, the augmented datasets using our approach consistently improve performance and demonstrate practical utility in dynamic real-world settings.
       </blockquote>
       <div class="keyword-list">
         <span class="keyword">Vision-Based Tactile Sensing</span>
@@ -910,7 +949,7 @@
         <div class="stage-number">1</div>
         <div class="stage-tag">Stage One</div>
         <h3>Force-Control Generation</h3>
-        <p>The raw image is background-subtracted and encoded into a compressed latent space via a pre-trained autoencoder. A conditional Diffusion Transformer (with DDIM sampling) takes this latent representation and a <strong style="color:var(--text-primary)">target relative force vector ΔF</strong> to synthesize force-adjusted tactile images with accurate elastomer deformations.</p>
+        <p>The raw image is background-subtracted and encoded into a compressed latent space via a pre-trained autoencoder. A conditional Diffusion Transformer (with DDIM sampling) takes this latent representation and a <strong>target relative force vector ΔF</strong> to synthesize force-adjusted tactile images with accurate elastomer deformations.</p>
         <p>Background subtraction isolates contact features and mitigates cross-sensor domain gaps arising from different lighting conditions.</p>
         <div class="stat-row">
           <div class="stat-pill"><div class="val">147M</div><div class="lbl">Parameters</div></div>
@@ -922,7 +961,7 @@
         <div class="stage-number">2</div>
         <div class="stage-tag">Stage Two</div>
         <h3>Pose-Control Generation</h3>
-        <p>A compact binary contact mask <em>P</em> serves as a global pose-control signal. Masks are aligned with ground-truth images at <strong style="color:var(--text-primary)">±3 px and ±1°</strong> precision during training, and transformed to arbitrary target poses via 2D rigid transforms at inference.</p>
+        <p>A compact binary contact mask <em>P</em> serves as a global pose-control signal. Masks are aligned with ground-truth images at <strong>±3 px and ±1°</strong> precision during training, and transformed to arbitrary target poses via 2D rigid transforms at inference.</p>
         <p>Inspired by ControlNet, a frozen force-conditional backbone is augmented with a pose-guided adapter — injecting spatial constraints without disturbing the learned force-deformation mapping.</p>
         <div class="stat-row">
           <div class="stat-pill"><div class="val">223M</div><div class="lbl">Parameters</div></div>
@@ -939,39 +978,41 @@
       <p>ControlTac is the only approach achieving all three desiderata: high realism, high variation, and physical controllability.</p>
     </div>
 
-    <div class="comparison-grid reveal">
-      <div class="cg-cell cg-header">Method</div>
-      <div class="cg-cell cg-header">Realism</div>
-      <div class="cg-cell cg-header">Variation</div>
-      <div class="cg-cell cg-header">Controllable</div>
-      <div class="cg-cell cg-header">Cross-Sensor</div>
+    <div class="scroll-x reveal">
+      <div class="comparison-grid">
+        <div class="cg-cell cg-header">Method</div>
+        <div class="cg-cell cg-header">Realism</div>
+        <div class="cg-cell cg-header">Variation</div>
+        <div class="cg-cell cg-header">Controllable</div>
+        <div class="cg-cell cg-header">Cross-Sensor</div>
 
-      <div class="cg-cell cg-row-header">Text2Tac</div>
-      <div class="cg-cell"><span class="cg-val">Low</span></div>
-      <div class="cg-cell"><span class="cg-val">Low</span></div>
-      <div class="cg-cell"><span class="cg-cross">✗</span></div>
-      <div class="cg-cell"><span class="cg-cross">✗</span></div>
+        <div class="cg-cell cg-row-header">Text2Tac</div>
+        <div class="cg-cell"><span class="cg-val">Low</span></div>
+        <div class="cg-cell"><span class="cg-val">Low</span></div>
+        <div class="cg-cell"><span class="cg-cross">✗</span></div>
+        <div class="cg-cell"><span class="cg-cross">✗</span></div>
 
-      <div class="cg-cell cg-row-header">Vis2Tac</div>
-      <div class="cg-cell"><span class="cg-val">Low</span></div>
-      <div class="cg-cell"><span class="cg-val">Medium</span></div>
-      <div class="cg-cell"><span class="cg-cross">✗</span></div>
-      <div class="cg-cell"><span class="cg-cross">✗</span></div>
+        <div class="cg-cell cg-row-header">Vis2Tac</div>
+        <div class="cg-cell"><span class="cg-val">Low</span></div>
+        <div class="cg-cell"><span class="cg-val">Medium</span></div>
+        <div class="cg-cell"><span class="cg-cross">✗</span></div>
+        <div class="cg-cell"><span class="cg-cross">✗</span></div>
 
-      <div class="cg-cell cg-row-header">Simulation</div>
-      <div class="cg-cell"><span class="cg-val">Medium</span></div>
-      <div class="cg-cell"><span class="cg-val">Medium</span></div>
-      <div class="cg-cell"><span class="cg-check">✓</span></div>
-      <div class="cg-cell"><span class="cg-cross">✗</span></div>
+        <div class="cg-cell cg-row-header">Simulation</div>
+        <div class="cg-cell"><span class="cg-val">Medium</span></div>
+        <div class="cg-cell"><span class="cg-val">Medium</span></div>
+        <div class="cg-cell"><span class="cg-check">✓</span></div>
+        <div class="cg-cell"><span class="cg-cross">✗</span></div>
 
-      <div class="cg-cell cg-row-header cg-ours" style="color:var(--crimson-light);">ControlTac (Ours)</div>
-      <div class="cg-cell cg-ours"><span class="cg-val-hi">High</span></div>
-      <div class="cg-cell cg-ours"><span class="cg-val-hi">High</span></div>
-      <div class="cg-cell cg-ours"><span class="cg-check">✓</span></div>
-      <div class="cg-cell cg-ours"><span class="cg-check">✓</span></div>
+        <div class="cg-cell cg-row-header cg-ours" style="color:var(--crimson-light);">ControlTac (Ours)</div>
+        <div class="cg-cell cg-ours"><span class="cg-val-hi">High</span></div>
+        <div class="cg-cell cg-ours"><span class="cg-val-hi">High</span></div>
+        <div class="cg-cell cg-ours"><span class="cg-check">✓</span></div>
+        <div class="cg-cell cg-ours"><span class="cg-check">✓</span></div>
+      </div>
     </div>
 
-    <div class="fig-card reveal" style="margin-top:24px;">
+    <div class="fig-card fig2-scaled reveal" style="margin-top:24px;">
       <img src="./static/images/comparison.png" alt="Visual Comparison Paradigm" onerror="this.style.display='none';this.nextElementSibling.style.display='block';">
       <div class="fig-container-placeholder" style="display:none;">
         [ Figure 2 — Visual Comparison: Text2Tac · Vis2Tac · Simulation · ControlTac ]<br>
@@ -1028,7 +1069,7 @@
       <div>
         <div class="info-box" style="margin-top:0;">
           <h3 style="font-size:1rem;margin-bottom:10px;">Key Takeaways</h3>
-          <p style="font-size:0.83rem;">ControlTac achieves <strong style="color:var(--text-primary)">45× lower MSE</strong> than the Simulator on seen objects (23 vs. 1054) and <strong style="color:var(--text-primary)">10× lower MSE</strong> than Sim2Real, while maintaining the highest SSIM across all evaluation sets including completely unseen AnyTouch2 objects.</p>
+          <p style="font-size:0.83rem;">ControlTac achieves <strong>45× lower MSE</strong> than the Simulator on seen objects (23 vs. 1054) and <strong>10× lower MSE</strong> than Sim2Real, while maintaining the highest SSIM across all evaluation sets including completely unseen AnyTouch2 objects.</p>
         </div>
         <div class="info-box" style="margin-top:16px;">
           <h3 style="font-size:1rem;margin-bottom:10px;">Inference Throughput</h3>
@@ -1151,7 +1192,7 @@
             <p style="font-size:0.85rem;">3D contact force estimation (1–10 N, 0.1 N precision) is the most sensitive regression benchmark given GelSight's high sensitivity to subtle force variations. ControlTac synthesizes 15k–30k images to co-train a force estimator with varying subsets of real data.</p>
 
             <div class="info-box">
-              <p style="font-size:0.83rem;"><strong style="color:var(--text-primary)">Key result:</strong> Supplementing only <strong style="color:var(--crimson-light)">1/3 of the real dataset</strong> with ControlTac data matches <strong style="color:var(--crimson-light)">full-dataset performance</strong>, whereas using that real subset alone yields poor results. ControlTac effectively covers the pose and force variation space that real data struggles to provide at scale.</p>
+              <p style="font-size:0.83rem;"><strong>Key result:</strong> Supplementing only <strong>1/3 of the real dataset</strong> with ControlTac data matches <strong>full-dataset performance</strong>, whereas using that real subset alone yields poor results. ControlTac effectively covers the pose and force variation space that real data struggles to provide at scale.</p>
             </div>
 
             <div class="inline-fig-box">
@@ -1243,7 +1284,7 @@
         <div class="demo-info">
           <div class="demo-tag">Real World · Task 01</div>
           <div class="demo-title">Object Weighting</div>
-          <p class="demo-desc">A UR5 robot pushes four objects (1 kg metal weight, two water-filled cylinders of 0.50 kg and 0.56 kg, and a 0.63 kg glass bottle) at constant speed. An ATI Axia80 force sensor provides ground truth readings. The estimator trained on ControlTac-generated images — without any real training data from these objects — predicts the pushing force in real time from tactile input alone, achieving accuracy within <strong style="color:var(--text-primary)">0.1 N</strong> of the real-data-trained model. This demonstrates robust generalization across complex and diverse material properties.</p>
+          <p class="demo-desc">A UR5 robot pushes four objects (1 kg metal weight, two water-filled cylinders of 0.50 kg and 0.56 kg, and a 0.63 kg glass bottle) at constant speed. An ATI Axia80 force sensor provides ground truth readings. The estimator trained on ControlTac-generated images — without any real training data from these objects — predicts the pushing force in real time from tactile input alone, achieving accuracy within <strong>0.1 N</strong> of the real-data-trained model. This demonstrates robust generalization across complex and diverse material properties.</p>
           <div class="result-metrics">
             <div class="metric-chip"><div class="mval">&lt;0.1N</div><div class="lbl">Force Error</div></div>
             <div class="metric-chip"><div class="mval">4</div><div class="lbl">Object Types</div></div>
@@ -1264,7 +1305,7 @@
         <div class="demo-info">
           <div class="demo-tag">Real World · Task 02</div>
           <div class="demo-title">Real-time Pose Tracking</div>
-          <p class="demo-desc">We track the 2D contact pose (position + rotation angle) of printed cylinder, cross, and T-shape objects as they undergo continuous, in-hand rotation and translation against the sensor. The pose estimator — trained entirely on ControlTac-generated data — runs at <strong style="color:var(--text-primary)">10 Hz in real time</strong>, smoothly tracking across the full range of poses and dynamic motion. This task highlights ControlTac's practical utility: accurate 10 Hz tactile-based tracking was previously only achievable with large annotated real datasets.</p>
+          <p class="demo-desc">We track the 2D contact pose (position + rotation angle) of printed cylinder, cross, and T-shape objects as they undergo continuous, in-hand rotation and translation against the sensor. The pose estimator — trained entirely on ControlTac-generated data — runs at <strong>10 Hz in real time</strong>, smoothly tracking across the full range of poses and dynamic motion. This task highlights ControlTac's practical utility: accurate 10 Hz tactile-based tracking was previously only achievable with large annotated real datasets.</p>
           <div class="result-metrics">
             <div class="metric-chip"><div class="mval">10Hz</div><div class="lbl">Tracking Rate</div></div>
             <div class="metric-chip"><div class="mval">3</div><div class="lbl">Object Shapes</div></div>
@@ -1285,7 +1326,7 @@
         <div class="demo-info">
           <div class="demo-tag">Real World · Task 03</div>
           <div class="demo-title">High-Precision Object Insertion</div>
-          <p class="demo-desc">An XArm7 robot equipped with dual GelSight Mini tactile sensors grasps objects at random angles and performs high-precision peg-in-hole insertion with a tight <strong style="color:var(--text-primary)">3 mm tolerance</strong>. The pose estimator — trained on ControlTac data — predicts in-hand object pose from tactile feedback, and the robot compensates for grasping uncertainty by rotating and translating the end-effector to align the object vertically above the hole. ControlTac-trained models achieve up to <strong style="color:var(--text-primary)">90% success rate</strong> across four object types, including a daily-use Type-C USB connector, demonstrating millimeter-level real-world manipulation from single-image augmentation.</p>
+          <p class="demo-desc">An XArm7 robot equipped with dual GelSight Mini tactile sensors grasps objects at random angles and performs high-precision peg-in-hole insertion with a tight <strong>3 mm tolerance</strong>. The pose estimator — trained on ControlTac data — predicts in-hand object pose from tactile feedback, and the robot compensates for grasping uncertainty by rotating and translating the end-effector to align the object vertically above the hole. ControlTac-trained models achieve up to <strong>90% success rate</strong> across four object types, including a daily-use Type-C USB connector, demonstrating millimeter-level real-world manipulation from single-image augmentation.</p>
           <div class="result-metrics">
             <div class="metric-chip"><div class="mval">90%</div><div class="lbl">Cylinder SR</div></div>
             <div class="metric-chip"><div class="mval">85%</div><div class="lbl">Cross/T-shape SR</div></div>
@@ -1306,7 +1347,7 @@
         <div class="demo-info">
           <div class="demo-tag">Real World · Task 04</div>
           <div class="demo-title">Imitation Learning: Pick &amp; Peg-in-Hole</div>
-          <p class="demo-desc">We train ACT-based visuo-tactile policies on a multi-stage Pick and Peg-in-Hole task using third-view RGB, wrist RGB, and tactile inputs. Force-controlled trajectory-level augmentation (1–9× copies per trajectory with random force offsets) significantly improves policy robustness against contact inconsistencies in teleoperated demonstrations. With <strong style="color:var(--text-primary)">70–100 real demonstrations</strong>, tactile augmentation consistently outperforms real-only training; with 100 demos and 9× augmentation, success rate reaches <strong style="color:var(--text-primary)">72%</strong> — a +12 percentage point gain over no augmentation (60%), evaluated across 25 real-robot trials per condition.</p>
+          <p class="demo-desc">We train ACT-based visuo-tactile policies on a multi-stage Pick and Peg-in-Hole task using third-view RGB, wrist RGB, and tactile inputs. Force-controlled trajectory-level augmentation (1–9× copies per trajectory with random force offsets) significantly improves policy robustness against contact inconsistencies in teleoperated demonstrations. With <strong>70–100 real demonstrations</strong>, tactile augmentation consistently outperforms real-only training; with 100 demos and 9× augmentation, success rate reaches <strong>72%</strong> — a +12 percentage point gain over no augmentation (60%), evaluated across 25 real-robot trials per condition.</p>
           
           <div class="result-metrics">
             <div class="metric-chip"><div class="mval">72%</div><div class="lbl">Best SR (Aug×9)</div></div>
