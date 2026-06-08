@@ -9,89 +9,80 @@ layout: compress
     {% include head/custom.html %}
 
     <style>
+
       :root {
-        --bg-color: #fff;
-        --text-color: #000;
-        --link-color: #0066cc;
-        --icon-color: #000;
+        --bg-main: #ffffff;
+        --text-main: #1c1c1e;
+        --link-main: #0066cc;
+        --border-color: #f2f2f7;
+        --btn-bg: rgba(255, 255, 255, 0.9);
+        --btn-border: #e5e5ea;
+        --icon-color: #1c1c1e;
       }
 
+      body.dark-mode {
+        --bg-main: #121212;
+        --text-main: #f2f2f7;
+        --link-main: #66aaff;
+        --border-color: #2c2c2e;
+        --btn-bg: rgba(30, 30, 30, 0.75);
+        --btn-border: #3a3a3c;
+        --icon-color: #f2f2f7;
+      }
+
+      .theme-initializing * {
+        transition: none !important;
+      }
+
+
       body {
-        background-color: var(--bg-color);
-        color: var(--text-color);
-        transition: background-color 0.3s, color 0.3s;
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        transition: background-color 0.3s ease, color 0.3s ease;
       }
 
       a {
-        color: var(--link-color);
+        color: var(--link-main);
+        transition: color 0.2s ease;
       }
 
-      /* ========================================================
-         ⚡ 修复闪烁：首屏默认彻底隐藏手机端“三条杠”
-         ======================================================== */
-      .masthead__toggle {
-        display: none !important;
-      }
-
-      /* 只有当屏幕真的处于手机/平板移动端时（Minimal Mistakes 默认 64em），才允许三条杠显示 */
-      @media (max-width: 64em) {
-        .masthead__toggle {
-          display: flex !important;
-        }
-      }
-
-      /* ========================================================
-         🌙 深色模式极致修复版（全面围剿导航栏白底白字问题）
-         ======================================================== */
-      body.dark-mode {
-        --bg-color: #121212;
-        --text-color: #eee;
-        --link-color: #66aaff;
-        --icon-color: #fff; /* 深色模式下月亮/太阳图标变为浅色 */
-      }
-
-      /* 📍 终极降维打击：只要 body 变黑，页面最顶部的所有容器、导航栏及其所有子元素背景一律变黑 */
-      body.dark-mode header,
       body.dark-mode .masthead,
-      body.dark-mode .masthead * { 
-        background-color: var(--bg-color) !important;
+      body.dark-mode .initial-content,
+      body.dark-mode .page__footer,
+      body.dark-mode header,
+      body.dark-mode footer,
+      body.dark-mode .masthead * {
+        background-color: var(--bg-main);
+        color: var(--text-main);
+        border-color: var(--border-color);
       }
 
-      /* 📍 强行纠正文字颜色：确保导航栏里所有链接、文字都老老实实变成浅灰色/白色 */
-      body.dark-mode header a,
-      body.dark-mode header span,
       body.dark-mode .masthead a,
       body.dark-mode .masthead__menu-item a,
       body.dark-mode .site-title a {
-        color: var(--text-color) !important;
+        color: var(--text-main);
       }
 
-      /* 鼠标悬停在导航链接上的高亮颜色 */
-      body.dark-mode header a:hover,
-      body.dark-mode .masthead a:hover,
-      body.dark-mode .masthead__menu-item a:hover {
-        color: var(--link-color) !important;
+      body.dark-mode .masthead a:hover {
+        color: var(--link-main);
       }
 
-      /* 顺手把页脚和可能存在的白底容器也一起消灭 */
-      body.dark-mode .initial-content,
-      body.dark-mode .page__footer,
-      body.dark-mode footer,
-      body.dark-mode footer * {
-        background-color: var(--bg-color) !important;
-        color: var(--text-color) !important;
+      /* 解决电脑端偶发性闪烁三条杠（汉堡菜单）的防御性代码 */
+      .masthead__toggle {
+        display: none !important;
+      }
+      @media (max-width: 64em) {
+        .masthead__toggle { display: flex !important; }
       }
 
-      /* ========================================================
-         🔘 切换按钮及小部件样式优化
-         ======================================================== */
+
       #theme-toggle {
         position: fixed;
         top: calc(1rem - 12px); 
         right: calc(1rem + 20px);
         z-index: 1000;
-        background: rgba(255, 255, 255, 0.9);
-        border: 1px solid #ddd;
+        background: var(--btn-bg);
+        border: 1px solid var(--btn-border);
         border-radius: 50%;
         padding: 0.5em;
         cursor: pointer;
@@ -101,50 +92,45 @@ layout: compress
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: background-color 0.3s, border-color 0.3s, transform 0.2s;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+        backdrop-filter: blur(8px);
+        -webkit-backdrop-filter: blur(8px);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        transition: background-color 0.3s, border-color 0.3s, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
 
       #theme-toggle:hover {
-        transform: scale(1.1);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-      }
-
-      body.dark-mode #theme-toggle {
-        background: rgba(30, 30, 30, 0.95); /* 深色模式下按钮底色变暗，不再刺眼 */
-        border-color: #444;
+        transform: scale(1.08);
+        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
       }
 
       #theme-toggle svg {
         width: 20px;
         height: 20px;
         fill: var(--icon-color);
-        stroke: none;
-        transition: transform 0.3s ease;
+        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
 
       #theme-toggle:hover svg {
-        transform: rotate(15deg);
+        transform: rotate(30deg); 
       }
     </style>
   </head>
 
   <body>
     <script>
-      const body = document.body;
-      function isNightTime() {
-        const hour = new Date().getHours();
-        return hour >= 20 || hour < 6;
-      }
-      const savedTheme = localStorage.getItem('theme');
-      if (savedTheme === 'dark') {
-        body.classList.add('dark-mode');
-      } else if (savedTheme === 'light') {
-        body.classList.remove('dark-mode');
-      } else {
-        if (isNightTime()) { body.classList.add('dark-mode'); }
-        else { body.classList.remove('dark-mode'); }
-      }
+      (function() {
+        document.documentElement.classList.add('theme-initializing');
+        
+        const savedTheme = localStorage.getItem('theme');
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        const isNight = (new Date().getHours() >= 20 || new Date().getHours() < 6);
+
+        if (savedTheme === 'dark' || (!savedTheme && (prefersDark || isNight))) {
+          document.body.classList.add('dark-mode');
+        } else {
+          document.body.classList.remove('dark-mode');
+        }
+      })();
     </script>
 
     {% include browser-upgrade.html %}
@@ -153,9 +139,9 @@ layout: compress
     <button id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
       <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
         <path d="M21 12.79a9 9 0 1 1-9.21-9.21 7 7 0 1 0 9.21 9.21z"/>
-        <circle cx="14" cy="8" r="0.8" opacity="0.3"/>
-        <circle cx="16" cy="11" r="0.5" opacity="0.3"/>
-        <circle cx="13" cy="13" r="0.6" opacity="0.3"/>
+        <circle cx="14" cy="8" r="0.8" opacity="0.25"/>
+        <circle cx="16" cy="11" r="0.5" opacity="0.25"/>
+        <circle cx="13" cy="13" r="0.6" opacity="0.25"/>
       </svg>
 
       <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
@@ -170,7 +156,7 @@ layout: compress
           <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
         </g>
-        <circle cx="12" cy="12" r="2" opacity="0.3"/>
+        <circle cx="12" cy="12" r="2" opacity="0.25"/>
       </svg>
     </button>
 
@@ -189,39 +175,42 @@ layout: compress
       </article>
     </div>
 
-    <div style="text-align: center; margin-top: 0em;">
+    <div style="text-align: center; margin-top: 2em; opacity: 0.8;">
       <script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?d=2UxH5y46PqDxZdzjQLYQ-SsZY-4WIBZMvKC7tmJ1H1w&cl=ffffff&w=a"></script>
     </div>
 
     {% include scripts.html %}
 
     <script>
-      const toggleBtn = document.getElementById('theme-toggle');
-      const iconSun = document.getElementById('icon-sun');
-      const iconMoon = document.getElementById('icon-moon');
+      (function() {
+        const toggleBtn = document.getElementById('theme-toggle');
+        const iconSun = document.getElementById('icon-sun');
+        const iconMoon = document.getElementById('icon-moon');
 
-      function updateIcons() {
-        if (document.body.classList.contains('dark-mode')) {
-          iconSun.style.display = 'flex';
-          iconMoon.style.display = 'none';
-        } else {
-          iconSun.style.display = 'none';
-          iconMoon.style.display = 'flex';
+        function updateIcons() {
+          const isDark = document.body.classList.contains('dark-mode');
+          iconSun.style.display = isDark ? 'flex' : 'none';
+          iconMoon.style.display = isDark ? 'none' : 'flex';
         }
-      }
 
-      // 首次加载时更新图标状态
-      updateIcons();
-
-      toggleBtn.addEventListener('click', () => {
-        document.body.classList.toggle('dark-mode');
-        if (document.body.classList.contains('dark-mode')) {
-          localStorage.setItem('theme', 'dark');
-        } else {
-          localStorage.setItem('theme', 'light');
-        }
         updateIcons();
-      });
+        setTimeout(() => {
+          document.documentElement.classList.remove('theme-initializing');
+        }, 50);
+
+        toggleBtn.addEventListener('click', () => {
+          const isDark = document.body.classList.toggle('dark-mode');
+          localStorage.setItem('theme', isDark ? 'dark' : 'light');
+          updateIcons();
+        });
+
+        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+          if (!localStorage.getItem('theme')) {
+            document.body.classList.toggle('dark-mode', e.matches);
+            updateIcons();
+          }
+        });
+      })();
     </script>
 
   </body>
