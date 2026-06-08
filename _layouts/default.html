@@ -27,47 +27,63 @@ layout: compress
       }
 
       /* ========================================================
-         深色模式核心样式（已修正导航栏不随之变色的问题）
+         ⚡ 修复闪烁：首屏默认彻底隐藏手机端“三条杠”
+         ======================================================== */
+      .masthead__toggle {
+        display: none !important;
+      }
+
+      /* 只有当屏幕真的处于手机/平板移动端时（Minimal Mistakes 默认 64em），才允许三条杠显示 */
+      @media (max-width: 64em) {
+        .masthead__toggle {
+          display: flex !important;
+        }
+      }
+
+      /* ========================================================
+         🌙 深色模式极致修复版（全面围剿导航栏白底白字问题）
          ======================================================== */
       body.dark-mode {
         --bg-color: #121212;
         --text-color: #eee;
         --link-color: #66aaff;
-        --icon-color: #fff; /* 修正：深色模式下图标改为白色 */
+        --icon-color: #fff; /* 深色模式下月亮/太阳图标变为浅色 */
       }
 
-      /* 📍 强制覆盖 Jekyll 主题自带的导航栏、主容器和页脚背景 */
-      body.dark-mode .masthead,
-      body.dark-mode .initial-content,
-      body.dark-mode .page__footer,
+      /* 📍 终极降维打击：只要 body 变黑，页面最顶部的所有容器、导航栏及其所有子元素背景一律变黑 */
       body.dark-mode header,
-      body.dark-mode footer {
+      body.dark-mode .masthead,
+      body.dark-mode .masthead * { 
         background-color: var(--bg-color) !important;
-        color: var(--text-color) !important;
-        border-bottom-color: #222 !important; /* 让导航栏底部的线条变暗 */
       }
 
-      /* 确保导航栏菜单内的链接文字在深色模式下也变成浅色 */
+      /* 📍 强行纠正文字颜色：确保导航栏里所有链接、文字都老老实实变成浅灰色/白色 */
+      body.dark-mode header a,
+      body.dark-mode header span,
       body.dark-mode .masthead a,
       body.dark-mode .masthead__menu-item a,
       body.dark-mode .site-title a {
         color: var(--text-color) !important;
       }
 
-      /* 鼠标悬停在导航栏链接上时的颜色 */
+      /* 鼠标悬停在导航链接上的高亮颜色 */
+      body.dark-mode header a:hover,
       body.dark-mode .masthead a:hover,
-      body.dark-mode .masthead__menu-item a:hover,
-      body.dark-mode .site-title a:hover {
+      body.dark-mode .masthead__menu-item a:hover {
         color: var(--link-color) !important;
       }
 
-      /* 确保侧边栏（如果有的话）文字颜色正常 */
-      body.dark-mode .sidebar {
+      /* 顺手把页脚和可能存在的白底容器也一起消灭 */
+      body.dark-mode .initial-content,
+      body.dark-mode .page__footer,
+      body.dark-mode footer,
+      body.dark-mode footer * {
+        background-color: var(--bg-color) !important;
         color: var(--text-color) !important;
       }
 
       /* ========================================================
-         按钮及其他小部件样式
+         🔘 切换按钮及小部件样式优化
          ======================================================== */
       #theme-toggle {
         position: fixed;
@@ -95,7 +111,7 @@ layout: compress
       }
 
       body.dark-mode #theme-toggle {
-        background: rgba(30, 30, 30, 0.95); /* 深色模式下按钮底色稍微变暗，更协调 */
+        background: rgba(30, 30, 30, 0.95); /* 深色模式下按钮底色变暗，不再刺眼 */
         border-color: #444;
       }
 
@@ -114,6 +130,22 @@ layout: compress
   </head>
 
   <body>
+    <script>
+      const body = document.body;
+      function isNightTime() {
+        const hour = new Date().getHours();
+        return hour >= 20 || hour < 6;
+      }
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        body.classList.add('dark-mode');
+      } else if (savedTheme === 'light') {
+        body.classList.remove('dark-mode');
+      } else {
+        if (isNightTime()) { body.classList.add('dark-mode'); }
+        else { body.classList.remove('dark-mode'); }
+      }
+    </script>
 
     {% include browser-upgrade.html %}
     {% include masthead.html %}
@@ -165,17 +197,11 @@ layout: compress
 
     <script>
       const toggleBtn = document.getElementById('theme-toggle');
-      const body = document.body;
       const iconSun = document.getElementById('icon-sun');
       const iconMoon = document.getElementById('icon-moon');
 
-      function isNightTime() {
-        const hour = new Date().getHours();
-        return hour >= 20 || hour < 6;
-      }
-
       function updateIcons() {
-        if (body.classList.contains('dark-mode')) {
+        if (document.body.classList.contains('dark-mode')) {
           iconSun.style.display = 'flex';
           iconMoon.style.display = 'none';
         } else {
@@ -184,35 +210,17 @@ layout: compress
         }
       }
 
-      function initTheme() {
-        const savedTheme = localStorage.getItem('theme');
-        if (savedTheme === 'dark') {
-          body.classList.add('dark-mode');
-        } else if (savedTheme === 'light') {
-          body.classList.remove('dark-mode');
-        } else {
-          if (isNightTime()) {
-            body.classList.add('dark-mode');
-          } else {
-            body.classList.remove('dark-mode');
-          }
-        }
-        updateIcons();
-      }
+      // 首次加载时更新图标状态
+      updateIcons();
 
       toggleBtn.addEventListener('click', () => {
-        body.classList.toggle('dark-mode');
-        if (body.classList.contains('dark-mode')) {
+        document.body.classList.toggle('dark-mode');
+        if (document.body.classList.contains('dark-mode')) {
           localStorage.setItem('theme', 'dark');
         } else {
           localStorage.setItem('theme', 'light');
         }
         updateIcons();
-      });
-
-      // 添加平滑的初始化
-      document.addEventListener('DOMContentLoaded', () => {
-        initTheme();
       });
     </script>
 
