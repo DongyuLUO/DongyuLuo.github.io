@@ -1,29 +1,42 @@
 name: Get Citation Data
 
 on: 
- page_build: 
- schedule:
-  - cron:  '0 8 * * *'
+  page_build: 
+  schedule:
+    - cron: '0 8 * * *'
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
+      
     steps:
-    - uses: actions/checkout@v2
-    - name: Install Reqs
-      run: |
-        sudo apt-get install python3-setuptools
-    - name: Run
+    - uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Run Crawler
+      env: 
+        GOOGLE_SCHOLAR_ID: ${{ secrets.GOOGLE_SCHOLAR_ID }}
       run: |
         cd ./google_scholar_crawler
         pip3 install -r requirements.txt
         python3 main.py
-        cd ./results
+
+    - name: Deploy Results
+      run: |
+        cd ./google_scholar_crawler/results
         git init
-        git config --local user.name "${GITHUB_ACTOR}"
-        export remote_repo="https://${GITHUB_ACTOR}:${{ secrets.GITHUB_TOKEN }}@github.com/${GITHUB_REPOSITORY}.git"
+        git config --local user.name "github-actions[bot]"
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        
         git add *.json
         git commit -m "Updated Citation Data"
-        git push "${remote_repo}" HEAD:google-scholar-stats --force
-      env: 
-        GOOGLE_SCHOLAR_ID: ${{ secrets.GOOGLE_SCHOLAR_ID }}
+        git remote add origin "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git"
+        git push origin HEAD:google-scholar-stats --force
