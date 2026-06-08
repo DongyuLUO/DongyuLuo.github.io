@@ -34,10 +34,8 @@ layout: compress
       }
 
       html, 
-      body, 
-      body.dark-mode,
-      html body.dark-mode {
-        background-color: var(--bg-main) !important;
+      body {
+        background-color: var(--bg-main);
         color: var(--text-main);
         transition: background-color 0.3s ease, color 0.3s ease;
       }
@@ -47,33 +45,58 @@ layout: compress
         transition: color 0.2s ease;
       }
 
-      body.dark-mode #main,
+      /* ========================================================
+         ULTIMATE FORCE FOR DARK MODE (The Unconditional Fix)
+         ======================================================== */
+      html.dark-mode,
+      body.dark-mode,
+      body.dark-mode div,
+      body.dark-mode header,
+      body.dark-mode footer,
+      body.dark-mode nav,
+      body.dark-mode section,
+      body.dark-mode article,
+      body.dark-mode ul,
+      body.dark-mode li {
+        background-color: var(--bg-main) !important;
+        border-color: var(--border-color) !important;
+      }
+
+      body.dark-mode div:not(#theme-toggle),
+      body.dark-mode header,
+      body.dark-mode footer,
+      body.dark-mode nav,
+      body.dark-mode p,
+      body.dark-mode span,
+      body.dark-mode h1,
+      body.dark-mode h2,
+      body.dark-mode h3,
+      body.dark-mode h4,
+      body.dark-mode li {
+        color: var(--text-main) !important;
+      }
+
+      body.dark-mode a {
+        color: var(--link-main) !important;
+      }
+      body.dark-mode a:hover {
+        color: var(--text-main) !important;
+      }
+
+      /* Specific adjustments for Minimal Mistakes elements */
       body.dark-mode .masthead,
       body.dark-mode .masthead__inner-wrap,
       body.dark-mode .masthead__menu,
       body.dark-mode .initial-content,
       body.dark-mode .page__footer,
-      body.dark-mode header,
-      body.dark-mode footer,
-      body.dark-mode [role="main"],
       body.dark-mode .page {
+        background: var(--bg-main) !important;
         background-color: var(--bg-main) !important;
-        color: var(--text-main) !important;
-        border-color: var(--border-color) !important;
       }
 
-      body.dark-mode .masthead a,
-      body.dark-mode .masthead__menu-item a,
-      body.dark-mode .site-title a,
-      body.dark-mode .masthead__toggle svg {
-        color: var(--text-main) !important;
-        fill: var(--text-main);
-      }
-
-      body.dark-mode .masthead a:hover {
-        color: var(--link-main) !important;
-      }
-
+      /* ========================================================
+         RESPONSIVE & TOGGLE INTERACTION
+         ======================================================== */
       .masthead__toggle {
         display: none !important;
       }
@@ -82,8 +105,8 @@ layout: compress
         .masthead__toggle {
           display: inline-block !important;
         }
-        body.dark-mode .masthead__menu {
-          background-color: var(--bg-main) !important;
+        body.dark-mode .masthead__toggle svg {
+          fill: var(--text-main) !important;
         }
       }
 
@@ -91,43 +114,39 @@ layout: compress
         position: fixed;
         top: calc(1rem - 12px); 
         right: calc(1rem + 20px);
-        z-index: 99999;
+        z-index: 999999 !important;
         background: var(--btn-bg) !important;
         border: 1px solid var(--btn-border) !important;
-        border-radius: 50%;
-        padding: 0.5em;
-        cursor: pointer;
-        width: 3rem;
-        height: 3rem;
-        user-select: none;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-        transition: background-color 0.3s, border-color 0.3s, transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        border-radius: 50% !important;
+        padding: 0.5em !important;
+        cursor: pointer !important;
+        width: 3rem !important;
+        height: 3rem !important;
+        user-select: none !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        backdrop-filter: blur(8px) !important;
+        -webkit-backdrop-filter: blur(8px) !important;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
+        transition: background-color 0.3s, border-color 0.3s, transform 0.2s !important;
       }
 
       #theme-toggle:hover {
-        transform: scale(1.08);
-        box-shadow: 0 6px 16px rgba(0, 0, 0, 0.15);
+        transform: scale(1.08) !important;
       }
 
       #theme-toggle svg {
-        width: 20px;
-        height: 20px;
-        transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        width: 20px !important;
+        height: 20px !important;
+        background: transparent !important;
       }
       
       #theme-toggle svg,
       #theme-toggle svg * {
+        background: transparent !important;
         fill: var(--icon-color) !important;
         stroke: var(--icon-color) !important;
-      }
-
-      #theme-toggle:hover svg {
-        transform: rotate(30deg);
       }
     </style>
   </head>
@@ -141,8 +160,10 @@ layout: compress
         const isNight = (new Date().getHours() >= 20 || new Date().getHours() < 6);
 
         if (savedTheme === 'dark' || (!savedTheme && (prefersDark || isNight))) {
+          document.documentElement.classList.add('dark-mode');
           document.body.classList.add('dark-mode');
         } else {
+          document.documentElement.classList.remove('dark-mode');
           document.body.classList.remove('dark-mode');
         }
       })();
@@ -153,14 +174,14 @@ layout: compress
 
     <button id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
       <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M21 12.79a9 9 0 1 1-9.21-9.21 7 7 0 1 0 9.21 9.21z" fill="currentColor"/>
-        <circle cx="14" cy="8" r="0.8" opacity="0.25" fill="currentColor"/>
-        <circle cx="16" cy="11" r="0.5" opacity="0.25" fill="currentColor"/>
-        <circle cx="13" cy="13" r="0.6" opacity="0.25" fill="currentColor"/>
+        <path d="M21 12.79a9 9 0 1 1-9.21-9.21 7 7 0 1 0 9.21 9.21z"/>
+        <circle cx="14" cy="8" r="0.8" opacity="0.25"/>
+        <circle cx="16" cy="11" r="0.5" opacity="0.25"/>
+        <circle cx="13" cy="13" r="0.6" opacity="0.25"/>
       </svg>
 
       <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
-        <circle cx="12" cy="12" r="4" fill="currentColor"/>
+        <circle cx="12" cy="12" r="4"/>
         <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <line x1="12" y1="1" x2="12" y2="3"/>
           <line x1="12" y1="21" x2="12" y2="23"/>
@@ -171,7 +192,7 @@ layout: compress
           <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
         </g>
-        <circle cx="12" cy="12" r="2" opacity="0.25" fill="currentColor"/>
+        <circle cx="12" cy="12" r="2" opacity="0.25"/>
       </svg>
     </button>
 
@@ -216,7 +237,13 @@ layout: compress
         const handleToggle = (e) => {
           e.preventDefault();
           const isDark = document.body.classList.toggle('dark-mode');
-          localStorage.setItem('theme', isDark ? 'dark' : 'light');
+          if (isDark) {
+            document.documentElement.classList.add('dark-mode');
+            localStorage.setItem('theme', 'dark');
+          } else {
+            document.documentElement.classList.remove('dark-mode');
+            localStorage.setItem('theme', 'light');
+          }
           updateIcons();
         };
 
@@ -226,6 +253,7 @@ layout: compress
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
           if (!localStorage.getItem('theme')) {
             document.body.classList.toggle('dark-mode', e.matches);
+            document.documentElement.classList.toggle('dark-mode', e.matches);
             updateIcons();
           }
         });
