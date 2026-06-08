@@ -26,13 +26,49 @@ layout: compress
         color: var(--link-color);
       }
 
+      /* ========================================================
+         深色模式核心样式（已修正导航栏不随之变色的问题）
+         ======================================================== */
       body.dark-mode {
         --bg-color: #121212;
         --text-color: #eee;
         --link-color: #66aaff;
-        --icon-color: #000;
+        --icon-color: #fff; /* 修正：深色模式下图标改为白色 */
       }
 
+      /* 📍 强制覆盖 Jekyll 主题自带的导航栏、主容器和页脚背景 */
+      body.dark-mode .masthead,
+      body.dark-mode .initial-content,
+      body.dark-mode .page__footer,
+      body.dark-mode header,
+      body.dark-mode footer {
+        background-color: var(--bg-color) !important;
+        color: var(--text-color) !important;
+        border-bottom-color: #222 !important; /* 让导航栏底部的线条变暗 */
+      }
+
+      /* 确保导航栏菜单内的链接文字在深色模式下也变成浅色 */
+      body.dark-mode .masthead a,
+      body.dark-mode .masthead__menu-item a,
+      body.dark-mode .site-title a {
+        color: var(--text-color) !important;
+      }
+
+      /* 鼠标悬停在导航栏链接上时的颜色 */
+      body.dark-mode .masthead a:hover,
+      body.dark-mode .masthead__menu-item a:hover,
+      body.dark-mode .site-title a:hover {
+        color: var(--link-color) !important;
+      }
+
+      /* 确保侧边栏（如果有的话）文字颜色正常 */
+      body.dark-mode .sidebar {
+        color: var(--text-color) !important;
+      }
+
+      /* ========================================================
+         按钮及其他小部件样式
+         ======================================================== */
       #theme-toggle {
         position: fixed;
         top: calc(1rem - 12px); 
@@ -59,8 +95,8 @@ layout: compress
       }
 
       body.dark-mode #theme-toggle {
-        background: rgba(255, 255, 255, 0.95);
-        border-color: #ccc;
+        background: rgba(30, 30, 30, 0.95); /* 深色模式下按钮底色稍微变暗，更协调 */
+        border-color: #444;
       }
 
       #theme-toggle svg {
@@ -83,21 +119,16 @@ layout: compress
     {% include masthead.html %}
 
     <button id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
-      <!-- 月亮图标 - 改进的形状 -->
       <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
-      <path fill="#000" d="M21 12.79a9 9 0 1 1-9.21-9.21 7 7 0 1 0 9.21 9.21z"/>
-      <!-- 细节点 -->
-      <circle cx="14" cy="8" r="0.8" fill="#666" opacity="0.3"/>
-      <circle cx="16" cy="11" r="0.5" fill="#666" opacity="0.3"/>
-      <circle cx="13" cy="13" r="0.6" fill="#666" opacity="0.3"/>
-    </svg>
+        <path d="M21 12.79a9 9 0 1 1-9.21-9.21 7 7 0 1 0 9.21 9.21z"/>
+        <circle cx="14" cy="8" r="0.8" opacity="0.3"/>
+        <circle cx="16" cy="11" r="0.5" opacity="0.3"/>
+        <circle cx="13" cy="13" r="0.6" opacity="0.3"/>
+      </svg>
 
-      <!-- 太阳图标 - 改进的形状 -->
       <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
-        <!-- 太阳中心 -->
-        <circle cx="12" cy="12" r="4" fill="#000"/>
-        <!-- 太阳光芒 - 使用更优雅的线条 -->
-        <g stroke="#000" stroke-width="2" stroke-linecap="round">
+        <circle cx="12" cy="12" r="4"/>
+        <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <line x1="12" y1="1" x2="12" y2="3"/>
           <line x1="12" y1="21" x2="12" y2="23"/>
           <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
@@ -107,8 +138,7 @@ layout: compress
           <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
         </g>
-        <!-- 添加内部光芒效果 -->
-        <circle cx="12" cy="12" r="2" fill="#333" opacity="0.3"/>
+        <circle cx="12" cy="12" r="2" opacity="0.3"/>
       </svg>
     </button>
 
@@ -127,7 +157,6 @@ layout: compress
       </article>
     </div>
 
-    <!-- 📍 ClustrMaps Visitor Map (bottom of page) -->
     <div style="text-align: center; margin-top: 0em;">
       <script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?d=2UxH5y46PqDxZdzjQLYQ-SsZY-4WIBZMvKC7tmJ1H1w&cl=ffffff&w=a"></script>
     </div>
@@ -142,7 +171,6 @@ layout: compress
 
       function isNightTime() {
         const hour = new Date().getHours();
-        // 夜间时间定义为 20:00 - 06:00
         return hour >= 20 || hour < 6;
       }
 
@@ -190,6 +218,3 @@ layout: compress
 
   </body>
 </html>
-
-
-
