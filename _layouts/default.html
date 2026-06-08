@@ -27,16 +27,15 @@ layout: compress
         --border-color: #2c2c2e;
         --btn-bg: rgba(30, 30, 30, 0.75);
         --btn-border: #3a3a3c;
-        --icon-color: #f2f2f7;
+        --icon-color: #ffffff; 
       }
 
       .theme-initializing * {
         transition: none !important;
       }
 
-
-      body {
-        background-color: var(--bg-main);
+      html, body {
+        background-color: var(--bg-main) !important;
         color: var(--text-main);
         transition: background-color 0.3s ease, color 0.3s ease;
       }
@@ -46,33 +45,35 @@ layout: compress
         transition: color 0.2s ease;
       }
 
+      body.dark-mode,
+      body.dark-mode #main,
       body.dark-mode .masthead,
       body.dark-mode .initial-content,
       body.dark-mode .page__footer,
       body.dark-mode header,
       body.dark-mode footer,
-      body.dark-mode .masthead * {
-        background-color: var(--bg-main);
-        color: var(--text-main);
-        border-color: var(--border-color);
+      body.dark-mode .masthead *,
+      body.dark-mode [role="main"] {
+        background-color: var(--bg-main) !important;
+        color: var(--text-main) !important;
+        border-color: var(--border-color) !important;
       }
 
       body.dark-mode .masthead a,
       body.dark-mode .masthead__menu-item a,
       body.dark-mode .site-title a {
-        color: var(--text-main);
+        color: var(--text-main) !important;
       }
 
       body.dark-mode .masthead a:hover {
-        color: var(--link-main);
+        color: var(--link-main) !important;
       }
 
-      /* 解决电脑端偶发性闪烁三条杠（汉堡菜单）的防御性代码 */
       .masthead__toggle {
         display: none !important;
       }
       @media (max-width: 64em) {
-        .masthead__toggle { display: flex !important; }
+        body .masthead__toggle { display: flex !important; }
       }
 
 
@@ -81,8 +82,8 @@ layout: compress
         top: calc(1rem - 12px); 
         right: calc(1rem + 20px);
         z-index: 1000;
-        background: var(--btn-bg);
-        border: 1px solid var(--btn-border);
+        background: var(--btn-bg) !important;
+        border: 1px solid var(--btn-border) !important;
         border-radius: 50%;
         padding: 0.5em;
         cursor: pointer;
@@ -106,12 +107,17 @@ layout: compress
       #theme-toggle svg {
         width: 20px;
         height: 20px;
-        fill: var(--icon-color);
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      
+      body.dark-mode #theme-toggle svg,
+      body.dark-mode #theme-toggle svg * {
+        fill: var(--icon-color) !important;
+        stroke: var(--icon-color) !important;
       }
 
       #theme-toggle:hover svg {
-        transform: rotate(30deg); 
+        transform: rotate(30deg);
       }
     </style>
   </head>
@@ -120,7 +126,6 @@ layout: compress
     <script>
       (function() {
         document.documentElement.classList.add('theme-initializing');
-        
         const savedTheme = localStorage.getItem('theme');
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
         const isNight = (new Date().getHours() >= 20 || new Date().getHours() < 6);
@@ -138,14 +143,14 @@ layout: compress
 
     <button id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
       <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M21 12.79a9 9 0 1 1-9.21-9.21 7 7 0 1 0 9.21 9.21z"/>
-        <circle cx="14" cy="8" r="0.8" opacity="0.25"/>
-        <circle cx="16" cy="11" r="0.5" opacity="0.25"/>
-        <circle cx="13" cy="13" r="0.6" opacity="0.25"/>
+        <path d="M21 12.79a9 9 0 1 1-9.21-9.21 7 7 0 1 0 9.21 9.21z" fill="currentColor"/>
+        <circle cx="14" cy="8" r="0.8" opacity="0.25" fill="currentColor"/>
+        <circle cx="16" cy="11" r="0.5" opacity="0.25" fill="currentColor"/>
+        <circle cx="13" cy="13" r="0.6" opacity="0.25" fill="currentColor"/>
       </svg>
 
       <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
-        <circle cx="12" cy="12" r="4"/>
+        <circle cx="12" cy="12" r="4" fill="currentColor"/>
         <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <line x1="12" y1="1" x2="12" y2="3"/>
           <line x1="12" y1="21" x2="12" y2="23"/>
@@ -156,7 +161,7 @@ layout: compress
           <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
           <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
         </g>
-        <circle cx="12" cy="12" r="2" opacity="0.25"/>
+        <circle cx="12" cy="12" r="2" opacity="0.25" fill="currentColor"/>
       </svg>
     </button>
 
