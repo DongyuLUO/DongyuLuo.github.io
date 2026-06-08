@@ -33,11 +33,18 @@ layout: compress
         transition: none !important;
       }
 
-      html, 
+      html {
+        background-color: var(--bg-main) !important;
+        height: 100%;
+      }
+
       body {
-        background-color: var(--bg-main);
+        background-color: var(--bg-main) !important;
         color: var(--text-main);
         transition: background-color 0.3s ease, color 0.3s ease;
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
       }
 
       a {
@@ -45,58 +52,41 @@ layout: compress
         transition: color 0.2s ease;
       }
 
-      /* ========================================================
-         ULTIMATE FORCE FOR DARK MODE (The Unconditional Fix)
-         ======================================================== */
-      html.dark-mode,
       body.dark-mode,
-      body.dark-mode div,
-      body.dark-mode header,
-      body.dark-mode footer,
-      body.dark-mode nav,
-      body.dark-mode section,
-      body.dark-mode article,
-      body.dark-mode ul,
-      body.dark-mode li {
-        background-color: var(--bg-main) !important;
-        border-color: var(--border-color) !important;
+      html.dark-mode {
+        background-color: #121212 !important;
+        background: #121212 !important;
       }
 
-      body.dark-mode div:not(#theme-toggle),
-      body.dark-mode header,
-      body.dark-mode footer,
-      body.dark-mode nav,
-      body.dark-mode p,
-      body.dark-mode span,
-      body.dark-mode h1,
-      body.dark-mode h2,
-      body.dark-mode h3,
-      body.dark-mode h4,
-      body.dark-mode li {
-        color: var(--text-main) !important;
-      }
-
-      body.dark-mode a {
-        color: var(--link-main) !important;
-      }
-      body.dark-mode a:hover {
-        color: var(--text-main) !important;
-      }
-
-      /* Specific adjustments for Minimal Mistakes elements */
+      body.dark-mode #main,
       body.dark-mode .masthead,
       body.dark-mode .masthead__inner-wrap,
       body.dark-mode .masthead__menu,
       body.dark-mode .initial-content,
       body.dark-mode .page__footer,
-      body.dark-mode .page {
-        background: var(--bg-main) !important;
+      body.dark-mode header,
+      body.dark-mode footer,
+      body.dark-mode [role="main"],
+      body.dark-mode .page,
+      body.dark-mode .page__inner-wrap {
         background-color: var(--bg-main) !important;
+        background: var(--bg-main) !important;
+        color: var(--text-main) !important;
+        border-color: var(--border-color) !important;
       }
 
-      /* ========================================================
-         RESPONSIVE & TOGGLE INTERACTION
-         ======================================================== */
+      body.dark-mode .masthead a,
+      body.dark-mode .masthead__menu-item a,
+      body.dark-mode .site-title a,
+      body.dark-mode .masthead__toggle svg {
+        color: var(--text-main) !important;
+        fill: var(--text-main);
+      }
+
+      body.dark-mode .masthead a:hover {
+        color: var(--link-main) !important;
+      }
+
       .masthead__toggle {
         display: none !important;
       }
@@ -105,8 +95,8 @@ layout: compress
         .masthead__toggle {
           display: inline-block !important;
         }
-        body.dark-mode .masthead__toggle svg {
-          fill: var(--text-main) !important;
+        body.dark-mode .masthead__menu {
+          background-color: var(--bg-main) !important;
         }
       }
 
@@ -196,7 +186,7 @@ layout: compress
       </svg>
     </button>
 
-    <div id="main" role="main">
+    <div id="main" role="main" style="flex: 1 0 auto;">
       {% include sidebar.html %}
 
       <article class="page" itemscope itemtype="http://schema.org/CreativeWork">
@@ -211,7 +201,7 @@ layout: compress
       </article>
     </div>
 
-    <div style="text-align: center; margin-top: 2em; opacity: 0.8;">
+    <div style="text-align: center; margin-top: auto; padding-top: 2em; padding-bottom: 2em; opacity: 0.8;">
       <script type="text/javascript" id="clustrmaps" src="//clustrmaps.com/map_v2.js?d=2UxH5y46PqDxZdzjQLYQ-SsZY-4WIBZMvKC7tmJ1H1w&cl=ffffff&w=a"></script>
     </div>
 
