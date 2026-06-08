@@ -53,26 +53,30 @@ layout: compress
         transition: color 0.2s ease;
       }
 
+      /* 精准针对布局大容器进行深色模式涂黑，不再对所有小 div / span 一刀切 */
       html.dark-mode,
       body.dark-mode,
-      body.dark-mode div,
+      body.dark-mode #main,
+      body.dark-mode .masthead,
+      body.dark-mode .masthead__inner-wrap,
+      body.dark-mode .masthead__menu,
+      body.dark-mode .initial-content,
+      body.dark-mode .page__footer,
+      body.dark-mode .page,
       body.dark-mode header,
       body.dark-mode footer,
       body.dark-mode nav,
       body.dark-mode section,
       body.dark-mode article,
-      body.dark-mode ul,
-      body.dark-mode li {
+      body.dark-mode [role="main"] {
         background-color: var(--bg-main) !important;
+        background: var(--bg-main) !important;
         border-color: var(--border-color) !important;
       }
 
-      body.dark-mode div:not(#theme-toggle),
-      body.dark-mode header,
-      body.dark-mode footer,
-      body.dark-mode nav,
+      /* 仅改变标准排版元素的文字颜色，避开特定的组件按钮和标签 */
       body.dark-mode p,
-      body.dark-mode span,
+      body.dark-mode span:not([class*="btn"]):not([class*="badge"]), 
       body.dark-mode h1,
       body.dark-mode h2,
       body.dark-mode h3,
@@ -88,16 +92,22 @@ layout: compress
         color: var(--text-main) !important;
       }
 
-      body.dark-mode .masthead,
-      body.dark-mode .masthead__inner-wrap,
-      body.dark-mode .masthead__menu,
-      body.dark-mode .initial-content,
-      body.dark-mode .page__footer,
-      body.dark-mode .page {
-        background: var(--bg-main) !important;
-        background-color: var(--bg-main) !important;
+      /* ========================================================
+         PROTECTION FOR BADGES / BUTTONS (防止标签和框意外变色)
+         ======================================================== */
+      body.dark-mode .btn,
+      body.dark-mode .btn--primary,
+      body.dark-mode [class*="badge"],
+      body.dark-mode [class*="button"],
+      body.dark-mode .notice,
+      body.dark-mode .notice--info {
+        background-color: inherit; 
+        color: inherit;
       }
 
+      /* ========================================================
+         RESPONSIVE & TOGGLE INTERACTION
+         ======================================================== */
       .masthead__toggle {
         display: none !important;
       }
