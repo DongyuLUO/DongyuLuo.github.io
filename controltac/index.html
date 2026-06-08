@@ -6,7 +6,7 @@
 <title>ControlTac: Scaling Tactile Data with Physically Controlled Tactile Image Generation</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Orbitron:wght@800;900&family=Montserrat:wght@900&display=swap" rel="stylesheet">
 
 <style>
   :root {
@@ -47,6 +47,50 @@
     pointer-events: none;
     z-index: 1000;
     opacity: 0.3;
+  }
+
+  /* ── ControlTac 特殊样式 (硬朗工业风 + 两个红色 O 的高级定制) ── */
+  .controltac-stylized {
+    font-family: 'Orbitron', 'Montserrat', sans-serif;
+    font-weight: 900;
+    text-transform: uppercase; /* 确保强制全大写 */
+    display: inline-flex;
+    align-items: baseline;
+    line-height: 1;
+    letter-spacing: -0.05em; /* 紧凑字距增加机械张力 */
+  }
+  
+  .controltac-stylized .control-part {
+    color: var(--black);
+    font-weight: 900;
+    display: inline-flex;
+    align-items: baseline;
+  }
+
+  /* 精准将 Control 中的两个 O 染成 Logo 对应的工业红 */
+  .controltac-stylized .control-part .o-red {
+    color: var(--crimson);
+    font-weight: 900;
+  }
+  
+  .controltac-stylized .tac-part {
+    color: var(--crimson);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    margin-left: 0.06em; /* 稍稍拉开与 CONTROL 的间距，凸显层次 */
+    position: relative;
+  }
+
+  /* 大标题处字体优化 */
+  h1 .controltac-stylized {
+    font-size: 1.05em;
+    transform: scaleY(0.96); /* 纵向微调，使其更显稳重厚实 */
+    margin: 0 4px;
+  }
+  
+  /* 导航栏组件处的 Logo 尺寸 */
+  nav .nav-logo .controltac-stylized {
+    font-size: 1.25rem;
   }
 
   .bg-gear {
@@ -102,13 +146,9 @@
   }
 
   nav .nav-logo {
-    font-family: 'Playfair Display', serif;
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: var(--text-primary);
-    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
   }
-  nav .nav-logo span { color: var(--crimson-light); }
 
   nav ul { display: flex; gap: 32px; list-style: none; }
   nav ul li a {
@@ -154,15 +194,14 @@
 
   h1 {
     font-family: 'Playfair Display', serif;
-    font-size: clamp(1.8rem, 5vw, 4rem);
+    font-size: clamp(1.8rem, 4.5vw, 3.8rem);
     font-weight: 900;
-    line-height: 1.15;
+    line-height: 1.25;
     letter-spacing: -0.01em;
-    max-width: 900px;
+    max-width: 1000px;
     margin: 0 auto 24px;
     animation: fadeDown 0.8s ease 0.1s both;
   }
-  h1 .highlight { color: var(--crimson-light); }
 
   .subtitle-tag {
     font-size: 1rem;
@@ -572,7 +611,7 @@
   .bar-val.ours-val { color: var(--crimson-light); font-weight: 600; }
 
   .info-box {
-    background: rgba(139,26,26,0.03);
+    background: rgba(139, 26, 26, 0.03);
     border: 1px solid var(--border-bright);
     border-radius: 4px;
     padding: 20px 24px;
@@ -758,7 +797,6 @@
     max-width: 100%;
   }
   
-  /* 优化样式：限制图7与图8页面比例占60% */
   .inline-fig-box.scaled-fig-60 {
     max-width: 60%;
     margin-left: auto;
@@ -782,7 +820,6 @@
     color: var(--text-secondary);
   }
 
-  /* ── 移动端对齐与防溢出修正 ── */
   @media (max-width: 900px) {
     nav { padding: 0 16px; }
     nav .nav-center { display: none; } 
@@ -813,7 +850,6 @@
     .demo-grid { gap: 32px; }
     .fig-card.fig2-scaled { max-width: 100%; }
     
-    /* 移动端恢复满宽，避免小屏显示太窄 */
     .inline-fig-box.scaled-fig-60 {
       max-width: 100%;
     }
@@ -835,15 +871,16 @@
 
 <nav>
   <div class="nav-left">
-    <div class="nav-logo">Control<span>Tac</span></div>
+    <div class="nav-logo"><span class="controltac-stylized"><span class="control-part">C<span class="o-red">O</span>NTR<span class="o-red">O</span>L</span><span class="tac-part">TAC</span></span></div>
   </div>
   
   <div class="nav-center">
     <a href="https://dongyuluo.github.io/" class="home-link" title="Home">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
-        <polyline points="9 22 9 12 15 12 15 22"></svg>
-      </a>
+        <polyline points="9 22 9 12 15 12 15 22"></polyline>
+      </svg>
+    </a>
   </div>
 
   <ul>
@@ -863,7 +900,7 @@
   <div class="bg-gear" style="width:200px;height:200px;bottom:-40px;left:-60px;opacity:0.5;"></div>
 
   <h1>
-    Control<span class="highlight">Tac</span>: Scaling Tactile Data with<br>
+    <span class="controltac-stylized"><span class="control-part">C<span class="o-red">O</span>NTR<span class="o-red">O</span>L</span><span class="tac-part">TAC</span></span>: Scaling Tactile Data with<br>
     Physically Controlled Tactile Image Generation
   </h1>
 
@@ -890,16 +927,16 @@
 
   <div class="video-wrapper">
     <iframe 
-  width="854" 
-  height="480" 
-  src="https://www.youtube.com/embed/7WzQ9s1cz5M?si=ALbVQJRghQoFMxUO" 
-  title="YouTube video player" 
-  frameborder="0" 
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-  referrerpolicy="strict-origin-when-cross-origin" 
-  allowfullscreen
-  style="border: none; display: block; margin: 0; padding: 0;"
-></iframe>
+      width="854" 
+      height="480" 
+      src="https://www.youtube.com/embed/7WzQ9s1cz5M?si=ALbVQJRghQoFMxUO" 
+      title="YouTube video player" 
+      frameborder="0" 
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
+      referrerpolicy="strict-origin-when-cross-origin" 
+      allowfullscreen
+      style="border: none; display: block; margin: 0; padding: 0;"
+    ></iframe>
     <div class="video-label">Overview Video</div>
   </div>
 </section>
@@ -1425,11 +1462,51 @@
 
   
 <footer>
-  <p>ControlTac &nbsp;·&nbsp; University of Maryland, College Park</p>
+  <p><span class="controltac-stylized"><span class="control-part">C<span class="o-red">O</span>NTR<span class="o-red">O</span>L</span><span class="tac-part">TAC</span></span> &nbsp;·&nbsp; University of Maryland, College Park</p>
   <p style="margin-top:8px;">Project page for ControlTac.</p>
 </footer>
 
 <script>
+  // ── 全局高级渲染：精准还原带有双红 O 的硬朗 Logo 结构 ──
+  function stylizeControlTac() {
+    // 渲染结构：C + 红O + NTR + 红O + L 拼成黑色 CONTROL，后接红色 TAC
+    const replacement = '<span class="controltac-stylized"><span class="control-part">C<span class="o-red">O</span>NTR<span class="o-red">O</span>L</span><span class="tac-part">TAC</span></span>';
+    
+    function walk(node) {
+      if (node.nodeType === 3) { // 文本节点
+        if (node.parentNode && (
+          node.parentNode.classList.contains('controltac-stylized') || 
+          node.parentNode.classList.contains('control-part') ||
+          node.parentNode.classList.contains('o-red') ||
+          node.parentNode.classList.contains('tac-part') ||
+          node.parentNode.tagName === 'CODE' ||
+          node.parentNode.closest('#bibtex-box')
+        )) {
+          return;
+        }
+        
+        const text = node.nodeValue;
+        if (text.includes('ControlTac')) {
+          const span = document.createElement('span');
+          span.innerHTML = text.replace(/ControlTac/g, replacement);
+          node.parentNode.insertBefore(span, node);
+          node.parentNode.removeChild(node);
+        }
+      } else {
+        for (let i = 0; i < node.childNodes.length; i++) {
+          walk(node.childNodes[i]);
+        }
+      }
+    }
+    walk(document.body);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', stylizeControlTac);
+  } else {
+    stylizeControlTac();
+  }
+
   const observer = new IntersectionObserver((entries) => {
     entries.forEach(e => {
       if (e.isIntersecting) { e.target.classList.add('visible'); observer.unobserve(e.target); }
