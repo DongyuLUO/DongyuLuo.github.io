@@ -9,7 +9,6 @@ layout: compress
     {% include head/custom.html %}
 
     <style>
-
       :root {
         --bg-main: #ffffff;
         --text-main: #1c1c1e;
@@ -27,7 +26,7 @@ layout: compress
         --border-color: #2c2c2e;
         --btn-bg: rgba(30, 30, 30, 0.75);
         --btn-border: #3a3a3c;
-        --icon-color: #ffffff; 
+        --icon-color: #ffffff;
       }
 
       .theme-initializing * {
@@ -45,24 +44,29 @@ layout: compress
         transition: color 0.2s ease;
       }
 
-      body.dark-mode,
       body.dark-mode #main,
       body.dark-mode .masthead,
       body.dark-mode .initial-content,
       body.dark-mode .page__footer,
       body.dark-mode header,
       body.dark-mode footer,
-      body.dark-mode .masthead *,
       body.dark-mode [role="main"] {
         background-color: var(--bg-main) !important;
         color: var(--text-main) !important;
         border-color: var(--border-color) !important;
       }
 
+      body.dark-mode .masthead .masthead__inner-wrap,
+      body.dark-mode .masthead .masthead__menu {
+        background-color: var(--bg-main) !important;
+      }
+
       body.dark-mode .masthead a,
       body.dark-mode .masthead__menu-item a,
-      body.dark-mode .site-title a {
+      body.dark-mode .site-title a,
+      body.dark-mode .masthead__toggle svg {
         color: var(--text-main) !important;
+        fill: var(--text-main);
       }
 
       body.dark-mode .masthead a:hover {
@@ -72,16 +76,21 @@ layout: compress
       .masthead__toggle {
         display: none !important;
       }
-      @media (max-width: 64em) {
-        body .masthead__toggle { display: flex !important; }
-      }
 
+      @media (max-width: 64em) {
+        .masthead__toggle {
+          display: inline-block !important;
+        }
+        .masthead__menu {
+          background-color: var(--bg-main);
+        }
+      }
 
       #theme-toggle {
         position: fixed;
         top: calc(1rem - 12px); 
         right: calc(1rem + 20px);
-        z-index: 1000;
+        z-index: 99999;
         background: var(--btn-bg) !important;
         border: 1px solid var(--btn-border) !important;
         border-radius: 50%;
@@ -110,8 +119,8 @@ layout: compress
         transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       }
       
-      body.dark-mode #theme-toggle svg,
-      body.dark-mode #theme-toggle svg * {
+      #theme-toggle svg,
+      #theme-toggle svg * {
         fill: var(--icon-color) !important;
         stroke: var(--icon-color) !important;
       }
@@ -203,11 +212,15 @@ layout: compress
           document.documentElement.classList.remove('theme-initializing');
         }, 50);
 
-        toggleBtn.addEventListener('click', () => {
+        const handleToggle = (e) => {
+          e.preventDefault();
           const isDark = document.body.classList.toggle('dark-mode');
           localStorage.setItem('theme', isDark ? 'dark' : 'light');
           updateIcons();
-        });
+        };
+
+        toggleBtn.addEventListener('click', handleToggle);
+        toggleBtn.addEventListener('touchstart', handleToggle, { passive: false });
 
         window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
           if (!localStorage.getItem('theme')) {
