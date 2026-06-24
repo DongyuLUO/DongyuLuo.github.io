@@ -17,7 +17,9 @@ redirect_from:
 
 <span class='anchor' id='about-me'></span>
 
-I am currently a senior undergraduate student at the **The University of Hong Kong**, pursuing a Bachelor of Science degree. I am fortunate to be conducting research at the Multisensory Machine Intelligence Lab at the **University of Maryland**, under the guidance of Ph.D. mentor [Kelin Yu](https://colinyu1.github.io/) and Prof. [Ruohan Gao](https://ruohangao.github.io/). I would like to express my deep gratitude to Dr. [Shixiang Tang](https://tangshixiang.github.io/) and Prof. [Wanli Ouyang](https://wlouyang.github.io/) for introducing me to the world of research, especially during the early stages when I had no prior experience.
+I will be pursuing my Ph.D. degree under the supervision of Prof. [Weiyu Liu](https://www.weiyuliu.com/). I received my bachelor’s degree from **[The University of Hong Kong](https://www.hku.hk/)**.
+
+During my undergraduate studies, I was fortunate to conduct research at the Multisensory Machine Intelligence Lab at the **[University of Maryland](https://umd.edu/)**, where I was mentored by [Kelin Yu](https://colinyu1.github.io/) and Prof. [Ruohan Gao](https://ruohangao.github.io/). I am deeply grateful to Dr. [Shixiang Tang](https://tangshixiang.github.io/) and Prof. [Wanli Ouyang](https://wlouyang.github.io/) for introducing me to research and guiding me through the early stages of my academic journey.
 
 My research interests primarily focus on **Multisensory Intelligence** and **Robot Learning**.
 
@@ -55,8 +57,14 @@ I am always excited to connect and collaborate with people from diverse backgrou
 
 <span class="anchor" id="experience"></span>
 # Experience
-- *2022.08 - 2026.06 (expected)*, Bachelor of Science, The University of Hong Kong
+- *2022.08 - 2026.06*, Bachelor of Science, The University of Hong Kong
 - *2025.01 - 2025.05*, Exchange, University of Maryland
+
+---
+
+<div style="text-align: center; margin-top: -4.5em; transform: scale(0.5); transform-origin: center;">
+  <script type='text/javascript' id='clustrmaps' src='//cdn.clustrmaps.com/map_v2.js?cl=ffffff&w=a&t=n&d=2UxH5y46PqDxZdzjQLYQ-SsZY-4WIBZMvKC7tmJ1H1w&co=050505&cmo=9abedd&cmn=f48b99'></script>
+</div>
 
 
 
