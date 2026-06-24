@@ -5,6 +5,31 @@ layout: compress
 <!doctype html>
 <html lang="en" class="no-js">
   <head>
+    <!-- Theme initialization: run before CSS to avoid flashing -->
+    <script>
+      (function() {
+        document.documentElement.classList.add('theme-initializing');
+
+        try {
+          const savedTheme = localStorage.getItem('theme');
+          const prefersDark =
+            window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+          const hour = new Date().getHours();
+          const isNight = hour >= 20 || hour < 6;
+
+          const shouldUseDark =
+            savedTheme === 'dark' ||
+            (!savedTheme && (prefersDark || isNight));
+
+          document.documentElement.classList.toggle('dark-mode', shouldUseDark);
+        } catch (e) {
+          document.documentElement.classList.remove('dark-mode');
+        }
+      })();
+    </script>
+
     {% include head.html %}
     {% include head/custom.html %}
 
@@ -19,6 +44,7 @@ layout: compress
         --icon-color: #1c1c1e;
       }
 
+      html.dark-mode,
       body.dark-mode {
         --bg-main: #121212;
         --text-main: #f2f2f7;
@@ -29,6 +55,7 @@ layout: compress
         --icon-color: #ffffff;
       }
 
+      .theme-initializing,
       .theme-initializing * {
         transition: none !important;
       }
@@ -53,77 +80,144 @@ layout: compress
         transition: color 0.2s ease;
       }
 
-      /* 精准针对布局大容器进行深色模式涂黑，不再对所有小 div / span 一刀切 */
+      /*
+        Dark mode background protection.
+        Use html.dark-mode instead of only body.dark-mode,
+        because html is available before body is fully parsed.
+      */
       html.dark-mode,
-      body.dark-mode,
-      body.dark-mode #main,
-      body.dark-mode .masthead,
-      body.dark-mode .masthead__inner-wrap,
-      body.dark-mode .masthead__menu,
-      body.dark-mode .initial-content,
-      body.dark-mode .page__footer,
-      body.dark-mode .page,
-      body.dark-mode header,
-      body.dark-mode footer,
-      body.dark-mode nav,
-      body.dark-mode section,
-      body.dark-mode article,
-      body.dark-mode [role="main"] {
+      html.dark-mode body,
+      html.dark-mode #main,
+      html.dark-mode .masthead,
+      html.dark-mode .masthead__inner-wrap,
+      html.dark-mode .masthead__menu,
+      html.dark-mode .initial-content,
+      html.dark-mode .page__footer,
+      html.dark-mode .page,
+      html.dark-mode header,
+      html.dark-mode footer,
+      html.dark-mode nav,
+      html.dark-mode section,
+      html.dark-mode article,
+      html.dark-mode [role="main"] {
         background-color: var(--bg-main) !important;
         background: var(--bg-main) !important;
         border-color: var(--border-color) !important;
       }
 
-      /* 仅改变标准排版元素的文字颜色，避开特定的组件按钮和标签 */
-      body.dark-mode p,
-      body.dark-mode span:not([class*="btn"]):not([class*="badge"]), 
-      body.dark-mode h1,
-      body.dark-mode h2,
-      body.dark-mode h3,
-      body.dark-mode h4,
-      body.dark-mode li {
+      html.dark-mode p,
+      html.dark-mode span:not([class*="btn"]):not([class*="badge"]),
+      html.dark-mode h1,
+      html.dark-mode h2,
+      html.dark-mode h3,
+      html.dark-mode h4,
+      html.dark-mode h5,
+      html.dark-mode h6,
+      html.dark-mode li,
+      html.dark-mode td,
+      html.dark-mode th {
         color: var(--text-main) !important;
       }
 
-      body.dark-mode a {
+      html.dark-mode a {
         color: var(--link-main) !important;
       }
-      body.dark-mode a:hover {
+
+      html.dark-mode a:hover {
         color: var(--text-main) !important;
       }
 
-      /* ========================================================
-         PROTECTION FOR BADGES / BUTTONS (防止标签和框意外变色)
-         ======================================================== */
-      body.dark-mode .btn,
-      body.dark-mode .btn--primary,
-      body.dark-mode [class*="badge"],
-      body.dark-mode [class*="button"],
-      body.dark-mode .notice,
-      body.dark-mode .notice--info {
-        background-color: inherit; 
+      /*
+        Protection for badges / buttons.
+        Avoid accidentally overwriting theme-specific labels.
+      */
+      html.dark-mode .btn,
+      html.dark-mode .btn--primary,
+      html.dark-mode [class*="badge"],
+      html.dark-mode [class*="button"],
+      html.dark-mode .notice,
+      html.dark-mode .notice--info {
+        background-color: inherit;
         color: inherit;
       }
 
-      /* ========================================================
-         RESPONSIVE & TOGGLE INTERACTION
-         ======================================================== */
-      .masthead__toggle {
+      /*
+        Fully hide Minimal Mistakes hamburger / greedy nav toggle.
+        This prevents mobile hamburger flashing during load.
+      */
+      .masthead__toggle,
+      .greedy-nav__toggle,
+      button.greedy-nav__toggle,
+      .greedy-nav button {
         display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+        width: 0 !important;
+        height: 0 !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        border: 0 !important;
+      }
+
+      /*
+        Hide dropdown-style hidden links.
+        This prevents the menu panel from appearing when the toggle is removed.
+      */
+      .greedy-nav .hidden-links,
+      .greedy-nav .hidden-links.hidden {
+        display: none !important;
+        visibility: hidden !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+
+      /*
+        Keep navigation links visible instead of collapsing into hamburger.
+        On mobile, links may wrap to multiple lines.
+      */
+      .greedy-nav {
+        display: flex !important;
+        align-items: center !important;
+        justify-content: space-between !important;
+      }
+
+      .greedy-nav .visible-links {
+        display: flex !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
       }
 
       @media (max-width: 64em) {
-        .masthead__toggle {
-          display: inline-block !important;
+        .masthead__inner-wrap {
+          padding-left: 1em !important;
+          padding-right: 4.5em !important;
         }
-        body.dark-mode .masthead__toggle svg {
-          fill: var(--text-main) !important;
+
+        .masthead__menu,
+        .greedy-nav {
+          display: flex !important;
+          align-items: center !important;
+        }
+
+        .greedy-nav .visible-links {
+          display: flex !important;
+          flex-wrap: wrap !important;
+          align-items: center !important;
+          gap: 0.25rem 0.6rem !important;
+        }
+
+        .greedy-nav .visible-links li {
+          display: inline-block !important;
         }
       }
 
+      /*
+        Theme toggle button.
+      */
       #theme-toggle {
         position: fixed;
-        top: calc(1rem - 12px); 
+        top: calc(1rem - 12px);
         right: calc(1rem + 20px);
         z-index: 999999 !important;
         background: var(--btn-bg) !important;
@@ -140,7 +234,10 @@ layout: compress
         backdrop-filter: blur(8px) !important;
         -webkit-backdrop-filter: blur(8px) !important;
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08) !important;
-        transition: background-color 0.3s, border-color 0.3s, transform 0.2s !important;
+        transition:
+          background-color 0.3s,
+          border-color 0.3s,
+          transform 0.2s !important;
       }
 
       #theme-toggle:hover {
@@ -152,29 +249,37 @@ layout: compress
         height: 20px !important;
         background: transparent !important;
       }
-      
+
       #theme-toggle svg,
       #theme-toggle svg * {
         background: transparent !important;
         fill: var(--icon-color) !important;
         stroke: var(--icon-color) !important;
       }
+
+      @media (max-width: 64em) {
+        #theme-toggle {
+          top: 0.65rem !important;
+          right: 0.85rem !important;
+          width: 2.75rem !important;
+          height: 2.75rem !important;
+        }
+
+        #theme-toggle svg {
+          width: 18px !important;
+          height: 18px !important;
+        }
+      }
     </style>
   </head>
 
   <body>
+    <!-- Sync body class as early as possible -->
     <script>
       (function() {
-        document.documentElement.classList.add('theme-initializing');
-        const savedTheme = localStorage.getItem('theme');
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        const isNight = (new Date().getHours() >= 20 || new Date().getHours() < 6);
-
-        if (savedTheme === 'dark' || (!savedTheme && (prefersDark || isNight))) {
-          document.documentElement.classList.add('dark-mode');
+        if (document.documentElement.classList.contains('dark-mode')) {
           document.body.classList.add('dark-mode');
         } else {
-          document.documentElement.classList.remove('dark-mode');
           document.body.classList.remove('dark-mode');
         }
       })();
@@ -214,6 +319,7 @@ layout: compress
         {% if page.title %}
           <meta itemprop="headline" content="{{ page.title | markdownify | strip_html | strip_newlines | escape_once }}">
         {% endif %}
+
         <div class="page__inner-wrap">
           <section class="page__content" itemprop="text">
             {{ content }}
@@ -234,42 +340,66 @@ layout: compress
         const iconSun = document.getElementById('icon-sun');
         const iconMoon = document.getElementById('icon-moon');
 
-        function updateIcons() {
-          const isDark = document.body.classList.contains('dark-mode');
-          iconSun.style.display = isDark ? 'flex' : 'none';
-          iconMoon.style.display = isDark ? 'none' : 'flex';
+        if (!toggleBtn || !iconSun || !iconMoon) return;
+
+        function isDarkMode() {
+          return document.documentElement.classList.contains('dark-mode');
         }
 
-        updateIcons();
-        setTimeout(() => {
-          document.documentElement.classList.remove('theme-initializing');
-        }, 50);
+        function updateIcons() {
+          const isDark = isDarkMode();
+          iconSun.style.display = isDark ? 'block' : 'none';
+          iconMoon.style.display = isDark ? 'none' : 'block';
+        }
 
-        const handleToggle = (e) => {
-          e.preventDefault();
-          const isDark = document.body.classList.toggle('dark-mode');
-          if (isDark) {
-            document.documentElement.classList.add('dark-mode');
-            localStorage.setItem('theme', 'dark');
-          } else {
-            document.documentElement.classList.remove('dark-mode');
-            localStorage.setItem('theme', 'light');
+        function setTheme(isDark, savePreference) {
+          document.documentElement.classList.toggle('dark-mode', isDark);
+          document.body.classList.toggle('dark-mode', isDark);
+
+          if (savePreference) {
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
           }
+
           updateIcons();
-        };
+        }
 
-        toggleBtn.addEventListener('click', handleToggle);
-        toggleBtn.addEventListener('touchstart', handleToggle, { passive: false });
+        function syncInitialTheme() {
+          const isDark = isDarkMode();
+          document.body.classList.toggle('dark-mode', isDark);
+          updateIcons();
 
-        window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
-          if (!localStorage.getItem('theme')) {
-            document.body.classList.toggle('dark-mode', e.matches);
-            document.documentElement.classList.toggle('dark-mode', e.matches);
-            updateIcons();
-          }
+          window.requestAnimationFrame(function() {
+            document.documentElement.classList.remove('theme-initializing');
+          });
+        }
+
+        syncInitialTheme();
+
+        /*
+          Use click only.
+          Do not bind touchstart, otherwise mobile Safari/Chrome may trigger twice.
+        */
+        toggleBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          setTheme(!isDarkMode(), true);
         });
+
+        if (window.matchMedia) {
+          const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+          const handleSystemThemeChange = function(e) {
+            if (!localStorage.getItem('theme')) {
+              setTheme(e.matches, false);
+            }
+          };
+
+          if (mediaQuery.addEventListener) {
+            mediaQuery.addEventListener('change', handleSystemThemeChange);
+          } else if (mediaQuery.addListener) {
+            mediaQuery.addListener(handleSystemThemeChange);
+          }
+        }
       })();
     </script>
-
   </body>
 </html>
