@@ -57,7 +57,7 @@ I am always excited to connect and collaborate with people from diverse backgrou
 
 <span class="anchor" id="experience"></span>
 # Experience
-- *2022.08 - 2026.06*, Bachelor of Science, The University of Hong Kong
+- *2022.08 - 2026.09*, Bachelor of Science, The University of Hong Kong
 - *2025.01 - 2025.05*, Exchange, University of Maryland
 
 
