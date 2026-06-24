@@ -17,9 +17,9 @@ redirect_from:
 
 <span class='anchor' id='about-me'></span>
 
-I will be pursuing my Ph.D. degree under the supervision of Prof. [Weiyu Liu](https://www.weiyuliu.com/). I received my bachelor’s degree from **[The University of Hong Kong](https://www.hku.hk/)**.
+I will be pursuing my Ph.D. degree under the supervision of Prof. [Weiyu Liu](https://www.weiyuliu.com/). I received my bachelor’s degree from **The University of Hong Kong**.
 
-During my undergraduate studies, I was fortunate to conduct research at the Multisensory Machine Intelligence Lab at the **[University of Maryland](https://umd.edu/)**, where I was mentored by [Kelin Yu](https://colinyu1.github.io/) and Prof. [Ruohan Gao](https://ruohangao.github.io/). I am deeply grateful to Dr. [Shixiang Tang](https://tangshixiang.github.io/) and Prof. [Wanli Ouyang](https://wlouyang.github.io/) for introducing me to research and guiding me through the early stages of my academic journey.
+During my undergraduate studies, I was fortunate to conduct research at the Multisensory Machine Intelligence Lab at the **University of Maryland**, where I was mentored by [Kelin Yu](https://colinyu1.github.io/) and Prof. [Ruohan Gao](https://ruohangao.github.io/). I am deeply grateful to Dr. [Shixiang Tang](https://tangshixiang.github.io/) and Prof. [Wanli Ouyang](https://wlouyang.github.io/) for introducing me to research and guiding me through the early stages of my academic journey.
 
 My research interests primarily focus on **Multisensory Intelligence** and **Robot Learning**.
 
