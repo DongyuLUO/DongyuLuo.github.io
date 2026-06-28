@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ObjectFolder: A Dataset of Objects with Implicit Visual, Auditory, and Tactile Representations</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Gao, Chang, Mall, Fei-Fei, Wu">
+<meta name="year" content="2021">
+<meta name="venue" content="CoRL 2021">
+<meta name="arxiv_id" content="2109.07991">
+<meta name="url" content="https://arxiv.org/abs/2109.07991">
+<meta name="pdf" content="../../raw/papers/objectfolder_dataset_implicit_representations.pdf">
+<meta name="tags" content="multimodal-dataset, multisensory, audio-visual, tactile-sensing, vision-based-tactile, acoustic-sensing, representation-learning, robot-learning, digit">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>ObjectFolder: A Dataset of Objects with Implicit Visual, Auditory, and Tactile Representations</h1>
+<p class="meta">
+  Ruohan Gao, Yen-Yu Chang*, Shivani Mall*, Li Fei-Fei, Jiajun Wu
+  &middot; Stanford University
+  &middot; CoRL 2021
+  &middot; <a href="https://arxiv.org/abs/2109.07991">arXiv:2109.07991</a>
+  &middot; <a href="../../raw/papers/objectfolder_dataset_implicit_representations.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> ObjectFolder packages 100 virtualized 3D objects each as a single
+<em>Object File</em> &mdash; a small triplet of neural networks (VisionNet / AudioNet / TouchNet) you
+query with extrinsic parameters (viewpoint, contact location) to get that object's rendered image,
+impact sound, and tactile reading &mdash; turning multisensory object perception into a shareable,
+storage-cheap implicit-representation benchmark instead of a pile of raw renders and recordings.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Multisensory, object-centric perception is bottlenecked by data. Synthetic object datasets
+(ShapeNet, ModelNet) carry geometry but little realistic texture and no sound or touch; real
+manipulation object sets (YCB, BigBIRD) are expensive, unstable to acquire (shipping, inventory),
+and hard to virtualize across sensory modes. The world gets modeled as "silent and untouchable"
+because we only have looking-based data. ObjectFolder's goal is a community-accessible standard
+benchmark of 3D objects that are (1) easy to share, (2) high-quality in visual texture, and
+(3) augmented with <em>realistic</em> auditory and tactile sensory data &mdash; all under one
+uniform, object-centric, implicit representation.</p>
+
+<h2>Method</h2>
+<p>Each object is an <em>Object File</em>: a compact implicit neural representation with three
+sub-networks (Fig 3). You feed extrinsics; the networks emit sensory data. The "object file" framing
+is borrowed from Kahneman et al. [22] &mdash; the information received about an object at a location.</p>
+
+<p><strong>Objects.</strong> 100 high-quality 3D objects from online repositories: 20 from 3D Model
+Haven, 28 from YCB, 52 from Google Scanned Objects. Each annotated with a material type
+(ceramic, glass, wood, plastic, iron, polycarbonate, steel) that drives audio simulation. Common
+household categories (bowl, mug, cabinet, television, shelf, fork, spoon).</p>
+
+<p><strong>VisionNet.</strong> A NeRF-style object-centric neural scattering function (following
+object-centric NeRF [27]). Inputs are a 7D coordinate <code>(x,y,z, &phi;<sub>i</sub>,&theta;<sub>i</sub>,
+&phi;<sub>o</sub>,&theta;<sub>o</sub>)</code> &mdash; 3D location plus incoming/outgoing light directions;
+an MLP <code>F<sub>v</sub></code> maps it to volume density <code>&sigma;</code> and per-channel scatter
+fractions <code>(&rho;<sub>r</sub>,&rho;<sub>g</sub>,&rho;<sub>b</sub>)</code>. Classic volume rendering
+(Eq 1&ndash;2) produces images at arbitrary viewpoint and lighting. Training images are rendered in
+Blender Cycles, object normalized to a unit cube, point light on a unit sphere, white background,
+viewpoints on a full sphere. Uses stratified sampling, positional encoding, hierarchical volume
+sampling.</p>
+
+<p><strong>AudioNet.</strong> Physics-based rigid-body impact sound via linear modal analysis [23].
+The surface mesh is converted to a volumetric hexahedron mesh (<code>N</code> voxels); the linear
+elastic dynamics <code>M&uuml; + C&udot; + Ku = f</code> (Eq 3) is solved by generalized eigenvalue
+decomposition into a bank of damped sinusoids, one per vibration mode (Eq 4&ndash;6), with frequency
+and damping set by material parameters (density, Young's modulus, Poisson's ratio, Rayleigh damping).
+Modes are excited by unit forces <code>f<sub>1</sub>,f<sub>2</sub>,f<sub>3</sub></code> at every vertex.
+For each force direction a separate MLP branch encodes the modes signal: input is vertex coordinate
+<code>(x,y,z)</code> + spectrogram location <code>(f,t)</code>; it predicts the real and imaginary
+parts of the complex spectrogram, inverted via ISTFT. (They found predicting the spectrogram works
+better than predicting the modes signal directly.) At test time an arbitrary force is decomposed into
+the three unit-force amplitudes and combined per vertex.</p>
+
+<p><strong>TouchNet.</strong> Tactile readings are simulated with the vision-based touch simulator
+TACTO [25], configured to a DIGIT [24] sensor (chosen for compactness and high resolution, with
+relevance to in-hand manipulation). DIGIT is pressed at each surface vertex along the normal, force
+constrained to a small range so renderings don't vary much across forces, yielding an RGB tactile
+image capturing local contact geometry. TouchNet is an MLP taking vertex <code>(x,y,z)</code> + tactile
+image location <code>(w,h)</code> and predicting the per-pixel RGB of the tactile image.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> ObjectFolder itself &mdash; 100 implicitly-represented
+    objects (20 3D Model Haven, 28 YCB, 52 Google Scanned Objects) with paired vision/audio/touch.
+    Evaluated on four benchmark tasks: multisensory instance recognition, cross-sensory retrieval,
+    audio-visual 3D reconstruction, robotic grasping (grasp-stability prediction + a reach task).</li>
+  <li><strong>Hardware / simulator:</strong> Blender Cycles path tracer for vision; linear modal
+    analysis for audio; TACTO simulator with a DIGIT vision-based tactile sensor for touch. Robotic
+    grasping uses a simulated arm with left/right fingers; the reach experiment uses Meta-World [55].
+    No physical robot hardware &mdash; all in virtual environments.</li>
+  <li><strong>Baselines:</strong> Per task &mdash; instance recognition: Chance, single-modality
+    (V/A/T) and fused ResNet-18 classifiers; cross-sensory retrieval: Chance and CCA [53]; 3D
+    reconstruction: an Average-mesh baseline, Image2Mesh [30] (Occupancy Networks), Audio2Mesh,
+    Image+Audio2Mesh; grasping: vision-only / touch-only / vision+touch classifiers, plus a random
+    grasping policy vs. a TRPO [54] touch policy.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>The paper's headline is a <strong>storage</strong> argument plus a suite of small benchmark
+demonstrations that multisensory beats single-modality.</p>
+
+<p><strong>Storage (Table 1).</strong> Implicit Object Files are far smaller than raw data: Vision
+7.2 MB (vs. effectively infinite for all-viewpoint/lighting renders), Audio 6.3 MB (vs. 12.6 GB),
+Touch 2.1 MB (vs. 2.9 GB).</p>
+
+<p><strong>Multisensory instance recognition (Table 2, Acc %).</strong> Chance is 1.00.</p>
+<table>
+  <tr><th>Modality</th><th>V</th><th>A</th><th>T</th><th>V+A</th><th>V+T</th><th>A+T</th><th>V+A+T</th></tr>
+  <tr><td>Acc (%)</td><td>94.8</td><td>98.3</td><td>72.4</td><td>99.5</td><td>97.2</td><td>99.0</td><td><strong>99.8</strong></td></tr>
+</table>
+<p>Surprise: audio alone (98.3) beats vision alone (94.8) &mdash; a single impact sound encodes
+shape/size/material well. Touch is weakest (a single touch is locally informative but not globally
+discriminative). All three fused is best.</p>
+
+<p><strong>Cross-sensory retrieval (Table 3, mAP; chance 0.05).</strong> ObjectFolder embeddings beat
+CCA across all six directions, e.g. Vision&rarr;Audio 0.90 (CCA 0.57), Audio&rarr;Vision 0.92
+(CCA 0.59). Touch-involving pairs are lower (Vision&rarr;Touch 0.50, Touch&rarr;Vision 0.48),
+echoing touch's locality.</p>
+
+<p><strong>Audio-visual 3D reconstruction (Table 4).</strong> Image+Audio2Mesh is best
+(IoU 0.8906, Chamfer-L<sub>1</sub> 0.0043, Normal Consistency 0.9535), edging Image2Mesh
+(0.8809 / 0.0046 / 0.9522) &mdash; audio adds acoustic spatial cues on top of single-view vision.
+Audio-only (Audio2Mesh) already beats nothing meaningfully (IoU 0.8729) vs. the Average baseline
+(0.0675). The Image2Mesh model also transfers to real-world images (Fig 7), failing on out-of-distribution
+shapes (a teapot).</p>
+
+<p><strong>Robotic grasping (&sect;4.4, Fig 9).</strong> Touch reaches high grasp-stability accuracy
+with far less data than vision; vision+touch is best. A TRPO touch-based grasping policy gets 75.5%
+success vs. 53.0% for random. A Meta-World reach task on three objects (cup, bowl, dice) hits 100%.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Future work is needed for richer object states with more accurate, fine-grained physics.</li>
+  <li>Additional sensory modalities and textual descriptions are not yet included (flagged as future).</li>
+  <li>Audio realism is supported only by a user study where simulated audio is preferred 42% of the
+    time vs. real &mdash; i.e., not yet indistinguishable from real recordings.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>Only 100 objects, and benchmark experiments often use small subsets (10 objects for grasp-stability,
+    3 objects for the reach task) &mdash; the manipulation claims rest on very small samples and are
+    reported as single success rates, not seed-averaged with variance.</li>
+  <li>Touch is simulated <em>from</em> TACTO/DIGIT, then re-encoded by TouchNet &mdash; a simulation of a
+    simulation. Sim-to-real fidelity of the tactile channel is never quantified (the audio channel at
+    least has a user study; touch does not).</li>
+  <li>Force on the tactile sensor is deliberately constrained to a narrow range so renderings "do not
+    vary significantly with different forces" &mdash; meaning the tactile representation is essentially a
+    static local-geometry map and discards the force/pressure dimension that contact-rich manipulation
+    cares about most.</li>
+  <li>The audio model is purely impact sound from rigid-body modal analysis &mdash; no scraping, rolling,
+    liquid, or sustained-contact sounds, which limits its relevance to many manipulation audio cues.</li>
+  <li>Tasks are all evaluated in simulation; "robotic grasping" is grasp-outcome classification plus a
+    short RL policy, not real-robot manipulation.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is an <strong>infrastructure / dataset anchor</strong>, not a manipulation-policy or
+abstraction-learning paper &mdash; so its relevance to <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+is foundational rather than methodological. The thesis it serves: many manipulation predicates
+(<code>is_grasped</code>, <code>is_inserted</code>, <code>surface_is_rough</code>,
+<code>is_screwed_tight</code>) are <em>not visually evaluable</em> &mdash; they live in touch, force,
+and sound. ObjectFolder is the original argument that the touch and sound channels can be virtualized
+and learned object-centrically at all. BLADE learns visual predicate classifiers; the obvious extension
+is <em>multisensory</em> predicate classifiers, and ObjectFolder (and its 2.0 / Benchmark successors)
+is the canonical asset for prototyping that without a real multisensory rig.</p>
+<p>Concretely useful angles: (1) its instance-recognition result that <em>audio alone out-predicts
+vision</em> is a clean motivation slide for "looking isn't enough"; (2) the implicit-representation
+packaging (one small network = full multisensory object profile) is an interesting design pattern for
+storing learned per-object sensory models; (3) it is the head of the ObjectFolder line
+(2.0 sim-to-real, the real-object Benchmark) that the rest of cluster I tracks. I should not overclaim:
+there is no language, no long-horizon planning, and no predicate learning here.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  While there has been significant progress by "looking" &mdash; recognizing objects based on glimpses
+  of their visual appearance or 3D shape &mdash; objects in the world are often modeled as silent and
+  untouchable entities.
+  <span class="quote-cite">&mdash; &sect;1, Introduction / p.2</span>
+</blockquote>
+<blockquote>
+  Surprisingly, the audio classifier achieves the best results. This confirms that our audio
+  simulation pipeline well models the shape, size, and material property of the object instance.
+  <span class="quote-cite">&mdash; &sect;4.1, Multisensory Instance Recognition / p.6</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[23] Ren, Yeh &amp; Lin 2013 &mdash; Example-guided physically based modal sound synthesis</strong>
+    (TOG) &mdash; the modal-analysis backbone of AudioNet.</li>
+  <li><strong>[25] Wang et al. 2020 &mdash; TACTO</strong> &mdash; the vision-based touch simulator
+    TouchNet is built on. <a href="../../raw/papers/tacto_tactile_simulator.pdf">forward ref &rarr; tacto_tactile_simulator</a>.</li>
+  <li><strong>[24] Lambeta et al. 2020 &mdash; DIGIT</strong> &mdash; the simulated tactile sensor.
+    <a href="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">forward ref &rarr; digit_low_cost_compact_tactile_sensor</a>.</li>
+  <li><strong>[49] Yuan, Dong &amp; Adelson 2017 &mdash; GelSight</strong> &mdash; the alternative
+    high-res tactile sensor. <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">forward ref &rarr; gelsight_high_resolution_tactile_sensors</a>.</li>
+  <li><strong>[41] Lee et al. 2019 &mdash; Making Sense of Vision and Touch</strong> &mdash; self-supervised
+    multimodal representations for contact-rich tasks. <a href="../../raw/papers/making_sense_of_vision_and_touch.pdf">forward ref &rarr; making_sense_of_vision_and_touch</a>.</li>
+  <li><strong>[21] Chen et al. 2020 &mdash; SoundSpaces</strong> &mdash; audio-visual navigation; the
+    2.0 successor is in this batch. <a href="../../raw/papers/soundspaces_2_visual_acoustic.pdf">forward ref &rarr; soundspaces_2_visual_acoustic</a>.</li>
+  <li><strong>[26] Mildenhall et al. 2020 &mdash; NeRF</strong> and <strong>[27] Guo et al. 2020 &mdash;
+    Object-Centric Neural Scene Rendering</strong> &mdash; the implicit-vision backbone.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a> &mdash; the direct
+    follow-up: scales the dataset and pushes sim-to-real transfer of the multisensory simulations.</li>
+  <li><a href="objectfolder_benchmark_neural_real.html">ObjectFolder Benchmark</a> &mdash; extends the
+    line to real-object multisensory data and standardized benchmark tasks; pairs with this paper's
+    neural Object Files.</li>
+  <li><a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a> &mdash; human-collected
+    paired vision-touch in the wild; the real-data counterpart to ObjectFolder's simulated touch.</li>
+  <li><a href="tacto_tactile_simulator.html">TACTO</a> and <a href="taxim_gelsight_simulation.html">Taxim</a>
+    &mdash; the tactile simulators underpinning / competing with ObjectFolder's TouchNet pipeline.</li>
+  <li><a href="soundspaces_2_visual_acoustic.html">SoundSpaces 2.0</a> &mdash; the acoustic-simulation
+    sibling for audio-visual scenes; complementary modality-simulation infrastructure.</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a> and
+    <a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a> &mdash; downstream multisensory
+    (audio/contact) manipulation work that consumes the kind of cross-modal signal ObjectFolder argues
+    is learnable.</li>
+</ul>
+
+</body>
+</html>

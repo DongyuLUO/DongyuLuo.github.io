@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Interactive Perception: Leveraging Action in Perception and Perception in Action</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Bohg, Hausman, Sankaran, Brock, Kragic, Schaal, Sukhatme">
+<meta name="year" content="2017">
+<meta name="venue" content="IEEE Transactions on Robotics (T-RO)">
+<meta name="arxiv_id" content="1604.03670">
+<meta name="url" content="https://arxiv.org/abs/1604.03670">
+<meta name="pdf" content="../../raw/papers/interactive_perception_action_in_perception.pdf">
+<meta name="tags" content="interactive-perception, perception, manipulation, multimodal, tactile-sensing, state-estimation, foundational, survey">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-25">
+<meta name="source_prompt" content="related-work ingest: dynamic state-change concept grounding for manipulation">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<!-- Survey/foundational format variant: this is a T-RO survey/position paper.
+     "Method" section is replaced by "Framework / taxonomy"; "Setup" is kept but
+     brief (a survey has no single experimental setup). Other sections follow the
+     BLADE template structure as required by the brief. -->
+
+<h1>Interactive Perception: Leveraging Action in Perception and Perception in Action</h1>
+<p class="meta">
+  J. Bohg*, K. Hausman*, B. Sankaran*, O. Brock, D. Kragic, S. Schaal, G. Sukhatme
+  &middot; 2017
+  &middot; IEEE Transactions on Robotics (T-RO)
+  &middot; <a href="https://arxiv.org/abs/1604.03670">arXiv:1604.03670</a>
+  &middot; <a href="../../raw/papers/interactive_perception_action_in_perception.pdf">PDF</a>
+</p>
+<p class="meta">*Authors contributed equally and are listed alphabetically. Bohg &amp; Schaal at Max Planck Institute for Intelligent Systems; Hausman, Sankaran, Schaal &amp; Sukhatme at USC; Bohg also at Stanford; Kragic at KTH; Brock at TU Berlin.</p>
+
+<p><strong>One-liner.</strong> The defining survey of <em>Interactive Perception
+(IP)</em>: a position paper arguing that robots should perceive by <em>acting</em>,
+because forceful interaction (i) creates novel, otherwise-absent sensory signals
+(haptic, audio, motion correlated with action) and (ii) exposes a regularity in
+the joint space of sensor data, action parameters, and time
+(<code>S &times; A &times; t</code>) that makes perception simpler and more
+robust &mdash; then taxonomizes ~120 papers along these two axes.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Mainstream computer vision treats perception as a disembodied,
+<em>passive</em> mapping from static images to labels, which renders many
+perception problems under-constrained and data-hungry. But biological perception
+is intrinsically <em>active and exploratory</em> &mdash; the paper opens with the
+Held &amp; Hein kitten-carousel experiment (only the actively-moving kitten
+developed visually-guided behavior) and Gibson's finding that subjects identify
+irregular 3D objects far better when allowed to touch and rotate them (49% from a
+single image &rarr; 99% with touch). Robots, unlike vision algorithms, are
+embodied agents that can <em>physically interact</em>, which generates richer,
+action-correlated sensory signals that "would otherwise not be present." The
+paper postulates exploiting this as a <em>principle</em> for robot perception,
+and surveys the field to define it and seed benchmarks.</p>
+
+<h2>Framework / taxonomy</h2>
+<p>The conceptual core is two postulated benefits of <em>forceful interaction</em>
+(any action exerting a possibly time-varying force on the environment):</p>
+<ul>
+  <li><strong>Create Novel Signals (CNS).</strong> Forceful interaction creates
+    rich sensory signals that would otherwise be absent &mdash; e.g. motion cues
+    that segment objects, haptic/audio data correlated over time that reveal
+    object weight, surface material, or rigidity. These signals are useful
+    precisely for quantities tied to manipulation (mass, friction, articulation,
+    softness) that a static image cannot expose.</li>
+  <li><strong>Action&ndash;Perception Regularity (APR).</strong> Forceful
+    interaction reveals a repeatable, multi-modal regularity in the joint space
+    <code>S &times; A &times; t</code> of sensory data <code>S</code>, action
+    parameters <code>A</code>, over time <code>t</code>. Although that space is
+    much higher-dimensional than <code>S</code> alone, the signal it carries has
+    <em>more structure</em>. Knowing this regularity is the causal action&rarr;
+    sensory-response model, and lets a robot (i) predict the sensory signal given
+    an action + environment properties, (ii) update beliefs about latent
+    environment state by comparing prediction to observation, and (iii) infer the
+    applied action from the observed signal &mdash; which also enables optimal
+    <em>action selection</em>.</li>
+</ul>
+
+<p><strong>Distinction from Active Perception (AP).</strong> §III relates IP to
+the older Active Perception tradition (Bajcsy 1988; "an agent is an active
+perceiver if it knows <em>why</em> it wishes to sense, then chooses what/how/when/
+where to achieve that perception"). AP largely manipulates the <em>sensor</em>
+(camera viewpoint, zoom) within a vision-centric frame; IP manipulates the
+<em>environment itself</em> with forceful, often non-visual interaction, and
+cares about goal-directed manipulation, not just simplifying a vision problem.
+Fig. 3 places approaches in a <code>S &times; A &times; t</code> grid:
+sensorless manipulation (action only), perception of images/video (sensing only),
+AP (sensing + sensor-only action), and Active Haptic / Interactive Perception
+(sensing + environment-changing action over time).</p>
+
+<p><strong>Application areas (§IV, Fig. 4).</strong> The survey groups IP work
+into ten areas: object segmentation, articulation-model estimation, object
+dynamics learning &amp; haptic-property estimation, object recognition/
+categorization, multimodal object-model learning, object pose estimation, grasp
+planning, manipulation-skill learning, plus state-representation learning. Running
+Lego-block and sphere examples (Figs. 5&ndash;6) show the same percept (count
+objects; estimate weight) going from impossible-when-passive to reliable once the
+robot pushes/lifts and observes the resulting signal.</p>
+
+<p><strong>Taxonomy axes (§V, Tables 8&ndash;9).</strong> Every surveyed paper is
+classified by: (1) how the <code>S &times; A &times; t</code> signal is leveraged
+(CNS vs APR &mdash; APR implies CNS); (2) what priors are employed (rigid /
+articulated / deformable objects, planar motion, action primitives, simple
+dynamics); (3) whether it performs action selection (myopic / planning-horizon /
+global-policy via POMDP/MDP/RL); (4) objective (perception, manipulation, or
+both); (5) whether multiple sensor modalities are exploited; and (6) how
+uncertainty is modeled &mdash; four labels DDM/SDM (deterministic/stochastic
+dynamics) &times; DOM/SOM (deterministic/stochastic observations), plus EU
+(explicitly estimates uncertainty). Fig. 7 plots approaches on a spectrum from
+"weak priors, general" (optical flow, brightness constancy) to "strong priors,
+specific" (joint dynamics models) by how much of APR vs prior knowledge they lean
+on.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> <em>not reported</em> &mdash; this
+    is a survey; it explicitly calls for benchmarks to be <em>established</em> (it
+    contrasts IP with the static-image benchmarks PASCAL VOC, ImageNet, MS COCO
+    that drove passive vision).</li>
+  <li><strong>Hardware / simulator:</strong> <em>not reported</em> (survey).
+    Discusses, across cited work, manipulators with vision, tactile/force-torque,
+    proximity, and contact-audio sensing; motivating application = the DARPA
+    Robotics Challenge (whole-body, multi-contact, unstructured environments).</li>
+  <li><strong>Baselines:</strong> <em>not reported</em> (survey). The implicit
+    foil throughout is <em>passive</em> / disembodied computer vision and
+    sensorless manipulation.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>As a survey, the "result" is the framework itself plus the organized evidence
+base. Key synthesized claims:</p>
+<ul>
+  <li>The two postulates (CNS and APR) cleanly separate IP from Active Perception,
+    sensorless manipulation, and passive vision, and serve as inclusion criteria
+    for whether a paper "is" IP.</li>
+  <li>Across application areas, interaction repeatedly converts an
+    under-constrained perception problem into a tractable one: object
+    segmentation via motion cues (Fitzpatrick &amp; Metta; Kenney et al.;
+    Hausman et al.), articulation-model estimation from observed relative motion,
+    inertial/material-property estimation from push/lift signals (Atkeson et al.;
+    Sinapov et al.), and pose estimation via touch/manifold particle filters
+    (Koval et al.; Javdani et al.).</li>
+  <li>Multi-modal IP (vision + tactile + force/torque + audio + proprioception) is
+    flagged as relatively rare: most surveyed work is still vision-only
+    (Tables 8&ndash;9), with non-visual modalities concentrated in haptic-property
+    and dynamics-learning clusters.</li>
+  <li>Action selection ranges from myopic (one-step, e.g. next-best-touch) to
+    planning-horizon (MLE-observation look-ahead) to global policies
+    (POMDP/RL), with a trade-off: richer uncertainty models cope better with
+    noisy sensing/dynamics but cost more to compute.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors (§VI):</em></p>
+<ul>
+  <li><strong>No unifying framework yet.</strong> The authors conclude there is no
+    single formalism that addresses all IP challenges; candidates include
+    Object-Action Complexes (OACs), affordances, and decision-theoretic
+    frameworks (MDP/POMDP/PSR/bandits), but each only covers a slice.</li>
+  <li><strong>Balancing perception and manipulation.</strong> How to find
+    manipulation actions that simultaneously achieve a task <em>and</em> gather
+    information (the exploration/exploitation trade-off) is open &mdash; closely
+    analogous to RL.</li>
+  <li><strong>Right representations/features for IP.</strong> Existing visual
+    features (edges/corners) and tracking were designed for passive, static
+    scenes; what the analogous "fundamental" features are for dynamic,
+    interaction-driven, multi-modal (haptic/acoustic) perception is unanswered.</li>
+  <li><strong>Deciding which modality to use, when, and at what cost</strong>
+    (passive vs active vs interactive sensing each carry different acquisition
+    cost and expected information gain) is unresolved.</li>
+</ul>
+<p><em>What I noticed reading it (2017 vintage):</em></p>
+<ul>
+  <li>The paper precedes the LLM/VLM/foundation-model era entirely. Its
+    "regularity in <code>S &times; A &times; t</code>" is exactly the structure a
+    modern language-conditioned multisensory policy (FuSe, Tactile-VLA) or a
+    learned change-predicate would try to capture &mdash; but here it is framed as
+    a model to <em>hand-design or estimate</em>, not to learn from web-scale data.</li>
+  <li>"Time" (<code>t</code>) is in the formalism but the surveyed work is mostly
+    about <em>static-property</em> recovery (mass, material, articulation) via a
+    single probing interaction. <em>Dynamic state-transition</em> monitoring
+    ("became slippery", "now boiling") is named in spirit (sensory signals
+    correlated over time) but no surveyed system continuously tracks a semantic
+    state-<em>change</em> to drive replanning &mdash; the closed-loop semantic
+    correction loop is left implicit.</li>
+  <li>The framework is descriptive, not predictive: it organizes a decade of work
+    but offers no algorithm, which is why it lives or dies on whether the CNS/APR
+    distinction is genuinely load-bearing for designing new systems (I think it
+    is &mdash; "which novel signal does this action create, and what regularity
+    lets me read it?" is a good design question).</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is the <strong>principled, conceptual root</strong> of the whole "use
+forceful action to create informative, often non-visual signals that reveal
+object state" idea &mdash; it predates the learned change-predicates and LLM/VLM
+grounding by the better part of a decade and gives them a precise vocabulary.
+For the <em>dynamic state-change concept grounding</em> direction (grounding
+"hot enough now", "became slippery after wetting", "coming to a boil" on
+tactile/audio/thermal/force sensing, monitored over time, to drive closed-loop
+semantic replanning), this paper is the foundation on several axes:</p>
+<ul>
+  <li><strong>The CNS argument = why non-visual sensing is needed at all.</strong>
+    "Forceful interactions create novel, rich sensory signals that would otherwise
+    not be present" is the first-principles justification for grounding manipulation
+    predicates on touch/audio/thermal rather than vision. <a href="../paper/octopi_object_property_reasoning_tactile_language.html">Octopi</a>,
+    <a href="../paper/tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>,
+    <a href="../paper/audio_vla_contact_audio_perception.html">Audio-VLA</a>, and
+    the pouring/boiling acoustic work all instantiate CNS for specific modalities.</li>
+  <li><strong>The APR regularity = what BLADE-style predicate classifiers
+    implicitly learn.</strong> APR says the joint
+    <code>S &times; A &times; t</code> signal is structured and predictable.
+    <a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+    visual predicate classifiers and contact-primitive controllers are a learned,
+    data-driven realization of this regularity &mdash; but BLADE reads it
+    <em>visually</em> and grounds <em>static</em> predicates from first/last (well,
+    every) frames. This survey is the conceptual mandate to push those predicates
+    onto non-visual modalities and onto <em>state transitions</em> tracked over
+    <code>t</code>.</li>
+  <li><strong>Direct authorship lineage.</strong> Co-author Oliver Brock + Jeannette
+    Bohg; Bohg is also senior author on
+    <a href="../paper/grounding_predicates_through_actions.html">Grounding Predicates through Actions (Migimatsu &amp; Bohg)</a>,
+    BLADE's direct ablation target. This survey is the worldview those predicate-
+    grounding papers grew out of.</li>
+</ul>
+<p><strong>Where it threatens / falls short of the idea</strong> (the honest gap):
+the surveyed systems do <em>passive-recognition-after-probing</em> of mostly
+<em>static</em> properties; almost none do <em>continuous monitoring of a semantic
+state-transition</em> feeding back into <em>symbolic replanning</em>. It supplies
+the philosophy (act to perceive; non-visual signals; the
+<code>S &times; A &times; t</code> regularity) but not the closed-loop
+semantic-correction machinery that
+<a href="../paper/reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>,
+<a href="../paper/inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>,
+and BLADE's replan-after-each-behavior loop start to provide. So: cite it as the
+<em>principled foundation</em>, then position the new idea as "instantiate APR for
+dynamic, language-named state transitions on multimodal sensing, and close the
+loop into a planner" &mdash; the step the 2017 survey explicitly flags as open
+(balancing perception and manipulation; which modality, when).</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  Recent approaches in robot perception follow the insight that perception is
+  facilitated by interaction with the environment. These approaches are subsumed
+  under the term Interactive Perception (IP).
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  First, interaction with the environment creates a rich sensory signal that
+  would otherwise not be present. Second, knowledge of the regularity in the
+  combined space of sensory data and action parameters facilitates the prediction
+  and interpretation of the sensory signal.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  Forceful interactions reveal regularities in the combined space
+  (S &times; A &times; t) of sensor information (S) and action parameters (A) over
+  time (t). &hellip; Therefore despite S &times; A &times; t being much higher
+  dimensional, the signal represented in this space has more structure.
+  <span class="quote-cite">&mdash; §II-B, Action Perception Regularity</span>
+</blockquote>
+
+<blockquote>
+  When performing manipulation tasks, humans aptly combine different sources of
+  information &hellip; visual information, haptic feedback, and acoustic signals.
+  Research in Interactive Perception is currently mostly concerned with visual
+  information.
+  <span class="quote-cite">&mdash; §VI-A, Remaining Challenges</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited in this survey that are candidates to ingest (not yet in corpus):</p>
+<ul>
+  <li><strong>Bajcsy, Aloimonos &amp; Tsotsos &mdash; "Revisiting Active Perception"</strong>
+    (CoRR 2016, [22]) &mdash; the companion modern statement of the older AP
+    tradition that IP defines itself against.</li>
+  <li><strong>Kr&uuml;ger et al. &mdash; "Object-Action Complexes (OACs)"</strong>
+    (RAS 2011, [131]) &mdash; named by the authors as a leading candidate framework
+    for symbolically representing continuous sensorimotor experience; directly
+    relevant to grounding symbolic predicates in sensorimotor signals.</li>
+  <li><strong>Gibson &mdash; <em>The Ecological Approach to Visual Perception</em></strong>
+    ([1]) and <strong>No&euml; &mdash; <em>Action in Perception</em></strong> ([3])
+    &mdash; the affordance / sensorimotor-contingency philosophical roots.</li>
+  <li><strong>Sinapov, Schenck &amp; Stoytchev &mdash; "Grounding semantic
+    categories in behavioral interactions" / "Learning relational object categories"</strong>
+    ([59], [60]) &mdash; multi-modal property learning over 100 objects via
+    interaction; close to the "ground object-state concepts on multisensory
+    probing" thread.</li>
+  <li><strong>Chu et al. &mdash; "Robotic learning of haptic adjectives through
+    physical interaction"</strong> (RAS 2015, [42]) &mdash; grounds
+    <em>language</em> haptic adjectives (an object-state-concept analogue) on
+    tactile signals from interaction.</li>
+</ul>
+
+<p>Related papers already in the corpus:</p>
+<ul>
+  <li><a href="grounding_predicates_through_actions.html">Grounding Predicates through Actions (Migimatsu &amp; Bohg)</a>
+    &mdash; same Bohg lineage; the direct descendant that learns symbolic
+    predicates grounded in action, and BLADE's ablation target.</li>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; the anchor; its learned predicate classifiers + contact-primitive
+    controllers are a modern, data-driven realization of APR (but vision-only,
+    static predicates). This survey is the conceptual case for extending it to
+    non-visual, dynamic state.</li>
+  <li><a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+    &mdash; static tactile-property reasoning; a clean CNS instance (touch reveals
+    what vision can't) on the static side, contrasting the dynamic-transition target.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>,
+    <a href="audio_vla_contact_audio_perception.html">Audio-VLA</a>,
+    <a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>,
+    <a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a>,
+    <a href="making_sense_audio_vibration_pouring.html">Making Sense of Audio Vibration (pouring)</a>,
+    <a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a>,
+    <a href="material_recognition_thermal_tactile_database.html">Thermal Tactile Material Recognition</a>
+    &mdash; modern instantiations of CNS for specific non-visual modalities
+    (tactile / contact-audio / thermal) that this survey anticipates in spirit.</li>
+  <li><a href="reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>
+    and <a href="inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>
+    &mdash; the closed-loop multimodal monitoring/correction machinery the survey
+    flags as an open challenge (balancing perception and manipulation).</li>
+</ul>
+
+</body>
+</html>

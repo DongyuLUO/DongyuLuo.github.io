@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TartanDrive 2.0</title>
+<meta name="type" content="paper">
+<meta name="authors" content="">
+<meta name="year" content="2024">
+<meta name="venue" content="datasets.bot public catalog">
+<meta name="arxiv_id" content="2402.01913">
+<meta name="url" content="https://arxiv.org/abs/2402.01913">
+<meta name="pdf" content="https://arxiv.org/abs/2402.01913">
+<meta name="tags" content="datasets-bot,open-data,mobile,physical,depth,point-cloud,proprioception,rgb,custom,rosbag">
+<meta name="status" content="datasets-bot-crosscheck">
+<meta name="ingested" content="2026-06-28">
+<meta name="source_prompt" content="datasets.bot public catalog cross-check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .meta { color: #777; font-size: 0.9em; }
+  a { color: #2962ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>TartanDrive 2.0</h1>
+<p class="meta">CMU AirLab &middot; 2024 &middot; datasets.bot &middot; <a href="https://datasets.bot/datasets/tartandrive-2">datasets.bot page</a></p>
+<p><strong>One-liner.</strong> Seven-hour off-road driving dataset collected on a Yamaha Viking ATV at speeds up to 15 m/s, adding three LiDAR sensors to the original camera, IMU, GPS and proprioceptive data, with tooling to reconfigure the data for self-supervised off-road learning.</p>
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> TartanDrive 2.0 is an expanded large-scale off-road driving dataset from CMU's AirLab, collected on a Yamaha Viking All-Terrain Vehicle (ATV named 'Vicky') over 255+ acres of diverse terrain in Western Pennsylvania (narrow paths, dense foliage, rocky areas, dirt paths, steep hills). It comprises roughly 7 hours of data at speeds up to 15 m/s. Building on TartanDrive 1.0, version 2.0 adds three LiDAR sensors: two Velodyne VLP-32 units (front-roof mounted, one tilted downward) and one Livox Mid-70 (under the camera), all at 10 Hz. The camera system is a Carnegie Robotics MultiSense S21 providing stereo greyscale images plus a left RGB image at 10 Hz. Inertial/positioning comes from a NovAtel PROPAK-V3-RT2i GNSS (IMU at 100 Hz, GPS-fused pose at 50 Hz) and the MultiSense IMU at 400 Hz. Proprioceptive data (Racepak G2X Pro logger plus joystick/pedals) includes per-wheel RPM, rear suspension shock travel, steering commands and angle, and accelerator/brake pedal positions. Post-processed products include TartanVO and Super Odometry estimates, registered point clouds, predicted point clouds, heightmaps, RGB bird's-eye-view maps, IMU-derived roughness cost, and 200x200m BEV LiDAR feature maps at 0.5m resolution (min/max/mean height, roughness, SVD features, ground height/slope). Rich per-sequence metadata (driver ID, vehicle, passenger count, date/time, weather, lighting, course ID, top/average speed, duration) plus timestamped event annotations and 1-5 driving-quality scores are included. Data is distributed both as original rosbags and in a KITTI-like time-synced sequence format, with scripts to regenerate data at custom sample frequency, map size and resolution. A GUI tool (scripts/tartandrive_gui.py) lets users browse runs and select which modalities to download to save storage; a point-cloud scan of the ATV is downloadable separately. Released alongside the ICRA 2024 paper (arXiv:2402.01913). License: MIT. Download: https://github.com/castacks/tartan_drive_2.0.</li>
+  <li><strong>Hardware / simulator:</strong> Embodiment: not listed. Environment: outdoor. Realness: physical.</li>
+</ul>
+<h2>Schema</h2>
+<p>KITTI-like time-synced sequence format (and original rosbags). Per sample/sequence: FPV left RGB + stereo greyscale images (10 Hz), point clouds from 2x Velodyne VLP-32 + Livox Mid-70 (10 Hz), TartanVO/Super Odometry pose, registered/predicted point clouds, heightmaps, RGB BEV maps, 200x200m BEV LiDAR feature maps @0.5m, IMU (100/400 Hz), GPS-fused pose (50 Hz), per-wheel RPM, suspension shock travel, steering angle/commands, pedal positions, plus per-sequence metadata, event annotations and driving-quality scores.</p>
+<h2>Links</h2>
+<ul>
+  <li><a href="https://datasets.bot/datasets/tartandrive-2">datasets.bot page</a></li>
+  <li><a href="https://theairlab.org/TartanDrive2/">Homepage</a></li>
+  <li><a href="https://arxiv.org/abs/2402.01913">Paper</a></li>
+  <li><a href="https://github.com/castacks/tartan_drive_2.0">Download</a></li>
+</ul>
+</body>
+</html>

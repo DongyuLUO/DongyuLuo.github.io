@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Touch and Go: Learning from Human-Collected Vision and Touch</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Yang, Ma, Zhang, Zhu, Yuan, Owens">
+<meta name="year" content="2022">
+<meta name="venue" content="NeurIPS 2022 Datasets and Benchmarks">
+<meta name="arxiv_id" content="2211.12498">
+<meta name="url" content="https://arxiv.org/abs/2211.12498">
+<meta name="pdf" content="../../raw/papers/touch_and_go_human_collected_vision_touch.pdf">
+<meta name="tags" content="multimodal-dataset, visuo-tactile, gelsight, representation-learning, self-supervised-learning, vision-based-tactile, material-recognition, tactile-sensing">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Touch and Go: Learning from Human-Collected Vision and Touch</h1>
+<p class="meta">
+  Fengyu Yang*, Chenyang Ma*, Jiacheng Zhang, Jing Zhu, Wenzhen Yuan, Andrew Owens
+  &middot; University of Michigan / Carnegie Mellon University
+  &middot; NeurIPS 2022 (Datasets and Benchmarks)
+  &middot; <a href="https://arxiv.org/abs/2211.12498">arXiv:2211.12498</a>
+  &middot; <a href="../../raw/papers/touch_and_go_human_collected_vision_touch.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A human-collected, in-the-wild visuo-tactile
+dataset &mdash; people walk through indoor/outdoor scenes pressing a GelSight
+sensor on objects while recording egocentric video &mdash; that is large and
+diverse enough that self-supervised touch&ndash;sight contrastive features beat
+supervised ImageNet on material recognition and robotic grasping, escaping the
+narrow "robot-centric" data that prior visuo-tactile work was confined to.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Visuo-tactile learning has lagged other multimodal areas because good data is
+hard to get. The two existing sources are both narrow: (i) <em>robot-collected</em>
+data (Calandra et al. [8,9], VisGel [42]) is confined to a single lab, limited to
+small graspable objects, and suffers a chicken-and-egg problem (the robot must
+already be able to touch the objects it collects from); (ii) <em>simulated</em>
+data (ObjectFolder [21,22]) can't capture the squishing, deformation, micro-geometry,
+weaves, and tiny pores of real surfaces, and rigid sim objects don't deform when
+pressed. The authors argue many aspects of the visuo-tactile world are best learned
+by observing physical interactions <em>performed by humans</em>: humans reach a far
+wider range of spaces and objects (chairs, walls, trees, grass, sand, brick) than a
+robot can, so the captured signals match how objects are encountered in the wild.</p>
+
+<h2>Method</h2>
+<p>The contribution is primarily a <strong>dataset</strong> plus three demonstration
+<strong>applications</strong>; there is no new model architecture, the methods are
+adaptations of existing ones.</p>
+
+<p><strong>Data collection.</strong> Two data collectors (the authors) work in tandem:
+one presses a GelSight sensor onto objects, the other records an approximately
+egocentric RGB video of the hand, both feeding one laptop. They walk continuously
+object-to-object through indoor (classrooms, hallways, apartments) and outdoor
+(streets, playgrounds, hiking trails) scenes, pressing each object ~3 times, ~0.7 sec
+per press. GelSight is a vision-based tactile sensor (~1.5 cm, a camera watching a
+curved elastomer gel with embedded markers under colored lights); the gel deformation
+encodes surface normal, depth, and shear via photometric stereo. RGB and tactile
+videos both record at ~27 Hz. To support trimming, they train a binary ResNet-18
+"press detector" on 10k hand-labeled GelSight frames (97% test accuracy, chance ~66%)
+to find frames in-contact, and hire workers (5 per image) to label material categories.</p>
+
+<p><strong>App 1 &mdash; self-supervised representation learning.</strong> Adapt
+Contrastive Multiview Coding (CMC, Tian et al. [63]): two encoders
+<code>z<sub>I</sub>=f<sub>&theta;I</sub>(x<sub>I</sub>)</code> for vision and
+<code>z<sub>T</sub>=f<sub>&theta;T</sub>(x<sub>T</sub>)</code> for tactile produce
+L2-normalized embeddings; an InfoNCE loss (Eq. 1, &tau;=0.07) pulls corresponding
+visuo-tactile pairs together against K&minus;1 random tactile examples, symmetrized
+in both directions (Eq. 2).</p>
+
+<p><strong>App 2 &mdash; tactile-driven image stylization.</strong> A novel task:
+restyle an image so it "feels like" a given touch signal (e.g., add bumps to a smooth
+surface to match a rock's tactile reading). Built on contrastive unpaired translation
+(CUT [53]): an image-translation generator conditioned on a tactile example, trained
+with a visuo-tactile adversarial loss <code>L<sub>VT</sub></code> (Eq. 3, a
+discriminator distinguishing real vs. shuffled visuo-tactile pairs) plus the
+structure-preserving patchwise contrastive loss <code>L<sub>CUT</sub></code>
+(Eq. 4: <code>L<sub>TDIS</sub>=L<sub>VT</sub>+L<sub>CUT</sub></code>).</p>
+
+<p><strong>App 3 &mdash; multimodal future touch prediction.</strong> Predict the next
+tactile frame <code>x&#770;<sub>T</sub><sup>t+1</sup></code> from a window of paired
+visuo-tactile frames, adapting the correspondence-wise video-prediction net of Geng et
+al. [23] (ResNet + 3D space-time convolutions, autoregressive multi-frame rollout, L1 +
+perceptual loss). Visual context acts as an <em>implicit</em> action-conditioning signal
+(it carries which action is being performed).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> The <em>Touch and Go</em> dataset itself
+    &mdash; ~13.9k detected touches, ~3971 object instances, ~246k visuo-tactile frame
+    pairs, 20 material categories, balanced indoor (52.2%) / outdoor (47.8%). For
+    self-supervised material probing: unlabeled 5172 touches (51.7%), labeled train 3921
+    (39.2%), labeled test 923 (9.1%), split by video to avoid leakage. Cross-dataset
+    grasping uses the Feeling-of-Success / Calandra et al. [9] dataset (68 objects /
+    5921 touches train, 16/1204 val, 21/1204 test).</li>
+  <li><strong>Hardware / simulator:</strong> GelSight (the [73] robotic-manipulation
+    variant) as the tactile sensor; an ordinary webcam for RGB; one laptop. Real-world,
+    no robot &mdash; data collected by humans walking through ~University-of-Michigan-area
+    scenes.</li>
+  <li><strong>Baselines:</strong> For representation learning &mdash; supervised ImageNet
+    features [15], visuo-tactile CMC trained on ObjectFolder 2.0 [22] and on VisGel [42],
+    and visual CMC (L/ab channels). For stylization &mdash; CycleGAN-based variant [78]
+    and the un-stylized input ("baseline"). For future prediction &mdash; SVG [16] and
+    Geng et al. [23], each touch-only vs. touch+vision.</li>
+  <li><strong>Compute:</strong> CMC trained 240 epochs, batch 128 on 4&times; Nvidia
+    2080-Ti GPUs; stylization 100 epochs, batch 8, 4&times; 2080-Ti; future prediction
+    30 epochs, batch 8, 4&times; 2080-Ti.</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Representation learning (Table 2).</strong> Touch-and-Go visuo-tactile CMC
+features beat supervised ImageNet and CMC trained on other datasets on all four
+downstream linear-probe tasks. With 100% of material classes:</p>
+
+<table>
+  <tr><th>Method (linear probe)</th><th>Grasping Acc%</th><th>Material Acc%</th><th>Hard/Soft Acc%</th><th>Rough/Smooth Acc%</th></tr>
+  <tr><td>Chance</td><td>56.1</td><td>18.6</td><td>66.1</td><td>56.3</td></tr>
+  <tr><td>ImageNet [15] (supervised)</td><td>73.0</td><td>46.9</td><td>72.3</td><td>76.3</td></tr>
+  <tr><td>ObjectFolder 2.0 [22] CMC</td><td>69.4</td><td>36.2</td><td>72.0</td><td>69.0</td></tr>
+  <tr><td>VisGel [42] CMC</td><td>75.6</td><td>39.1</td><td>69.4</td><td>70.4</td></tr>
+  <tr><td><strong>Ours (100% classes) CMC</strong></td><td><strong>78.1</strong></td><td><strong>54.7</strong></td><td><strong>77.3</strong></td><td><strong>79.4</strong></td></tr>
+</table>
+
+<p>Note the cross-dataset grasping win (78.1 vs ImageNet's 73.0) is on Calandra et al.'s
+<em>robot</em> data with different GelSight sensors &mdash; the human-collected features
+transfer to a robotic task. Performance scales cleanly with the fraction of material
+classes used (25%&rarr;100%: grasping 62.3&rarr;78.1, material 25.7&rarr;54.7).</p>
+
+<p><strong>Stylization (Table 3).</strong> Ours beats CycleGAN and the un-stylized
+baseline on both CMC consistency (0.197 vs 0.178 vs 0.165) and material-classifier
+agreement (0.142 vs 0.129 vs 0.107); qualitatively makes surfaces rougher/smoother and
+forms "hybrid" materials (e.g., adding grass) <em>without</em> ever seeing the tactile
+example's source image.</p>
+
+<p><strong>Future touch prediction (Table 4).</strong> Adding visual context gives a
+consistent gain for both backbones under both horizons; for Geng et al. [23] at skip-3,
+touch+vision reaches L1 0.617 / SSIM 0.719 / LPIPS 0.091 vs touch-only 0.628 / 0.708 /
+0.103, and the gap widens at skip-5 (longer horizon).</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Data was mainly collected in one geographic location (near U-Michigan), so it may
+    not generalize to other environments.</li>
+  <li>Humans introduce bias differing from robot/virtual data: they may probe
+    unrepresentative object parts and don't press with consistent force.</li>
+  <li>The collector population may not represent the general population (e.g., skin tone),
+    a fairness concern for the egocentric hand imagery.</li>
+  <li>No explicit force sensor &mdash; force is captured only implicitly through GelSight
+    deformation, since "explicit force readings are not required for many visuo-tactile
+    tasks."</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Static, not contact-rich.</strong> Every datapoint is a brief ~0.7 s
+    press onto a surface &mdash; there is no grasping, sliding, in-hand manipulation, or
+    force modulation. The dataset captures <em>material/texture</em> perception, not the
+    dynamics of contact-rich interaction, which is what manipulation predicates actually
+    need.</li>
+  <li><strong>No actions, no language.</strong> Despite being slotted into a
+    "language + multimodal sensing" batch, the dataset has no language annotations beyond
+    a flat material-category label, and no robot actions. It's an unsupervised
+    representation resource, not a policy dataset.</li>
+  <li><strong>Material labels are noisy by construction.</strong> Categories come from
+    crowd workers labeling visual frames (5 per image), and "smooth/rough" labels are
+    assigned from the <em>visual</em> image &mdash; so the tactile ground truth for the
+    rough/smooth task is itself vision-derived, a subtle circularity.</li>
+  <li><strong>Press detector quality gates everything.</strong> A 97%-accurate ResNet-18
+    press detector trims the videos; mis-detections silently inject not-in-contact frames
+    into all downstream training, and that error rate isn't propagated into the app-level
+    results.</li>
+  <li>The visuo-tactile gains are real but the linear-probe deltas over ImageNet on the
+    binary hard/soft and rough/smooth tasks are modest (~1&ndash;5 pts) given chance is
+    already ~56&ndash;66%.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>Relative to <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>,
+this is an <strong>adjacent data/representation paper, not a manipulation or
+abstraction-learning paper</strong> &mdash; and I want to be honest about that. BLADE's
+predicates (<code>turned-on(faucet)</code>, <code>is_grasped</code>) are learned from
+robot demos and currently evaluated <em>visually</em>; Touch and Go offers no actions,
+no language, and no contact-rich interaction, so it does not directly extend BLADE's
+pipeline.</p>
+<p>Where it <em>is</em> relevant to my thesis &mdash; that many manipulation predicates
+(<code>is_inserted</code>, <code>surface_is_rough</code>, <code>is_screwed_tight</code>)
+live in touch/force rather than pixels &mdash; is as the canonical evidence that
+<strong>tactile signal carries material/surface information that vision alone misses and
+that this information is learnable self-supervised at scale</strong>. The
+<code>surface_is_rough</code>-style predicate is almost literally what the rough/smooth
+probe measures. So Touch and Go is best filed as the <em>diverse, in-the-wild tactile
+data foundation</em> that later touch-language and tactile-foundation-model work
+(TVL, UniTouch, Sparsh) builds on; it's a building block for grounding non-visual
+predicates, not a method I'd adopt. Its strongest transferable idea for my work is the
+<em>human-collected, walk-the-world</em> data-collection recipe &mdash; a way to get
+predicate-relevant tactile diversity that a single robot arm can't.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We argue that many aspects of the visuo-tactile world are currently best learned by
+  observing physical interactions <em>performed by humans</em>.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.2</span>
+</blockquote>
+<blockquote>
+  Our dataset spans a wide range of indoor and outdoor environments, such as classrooms,
+  gyms, streets, and hiking trails. The objects and "stuff" they contain are thus
+  significantly more diverse than those of existing datasets.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.2</span>
+</blockquote>
+<blockquote>
+  We find that the learned features significantly outperform supervised ImageNet features
+  on a robotic manipulation task, and on recognizing materials in our dataset.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.2</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[21] Gao et al. 2021 &mdash; ObjectFolder</strong> (CoRL) &mdash; the
+    simulated multisensory-object alternative this dataset positions against.
+    <a href="../../raw/papers/objectfolder_dataset_implicit_representations.pdf">PDF</a></li>
+  <li><strong>[22] Gao et al. 2022 &mdash; ObjectFolder 2.0</strong> (CVPR) &mdash; direct
+    sim baseline in Table 1 / Table 2.
+    <a href="../../raw/papers/objectfolder_2_multisensory_sim2real.pdf">PDF</a></li>
+  <li><strong>[73] Yuan, Dong, Adelson &mdash; GelSight</strong> (Sensors 2017) &mdash;
+    the sensor used; foundational hardware reference.
+    <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">PDF</a></li>
+  <li><strong>[36] Lambeta et al. 2020 &mdash; DIGIT</strong> (RA-L) &mdash; the
+    competing low-cost vision-based tactile sensor.
+    <a href="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">PDF</a></li>
+  <li><strong>[38] Lee et al. 2018 &mdash; Making Sense of Vision and Touch</strong>
+    &mdash; visuo-tactile fusion for contact-rich tasks; the manipulation counterpoint.
+    <a href="../../raw/papers/making_sense_of_vision_and_touch.pdf">PDF</a></li>
+  <li><strong>[63] Tian, Krishnan, Isola &mdash; Contrastive Multiview Coding</strong>
+    (ECCV 2020) &mdash; the contrastive backbone adapted here (not in batch list).</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="objectfolder_dataset_implicit_representations.html">ObjectFolder</a>,
+    <a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a>, and
+    <a href="objectfolder_benchmark_neural_real.html">ObjectFolder Benchmark</a>
+    &mdash; the simulated multisensory-object datasets Touch and Go explicitly contrasts
+    with (real in-the-wild vs. virtual rigid objects).</li>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL (Touch, Vision, and Language Dataset)</a>
+    &mdash; the natural successor: adds <em>language</em> to the visuo-tactile pairing
+    Touch and Go pioneered, enabling the predicate-grounding angle this dataset lacks.</li>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a> and
+    <a href="touch100k_touch_language_vision_dataset.html">Touch100k</a>
+    &mdash; touch-language-vision datasets/binders that build on the in-the-wild
+    visuo-tactile premise.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a> and
+    <a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>
+    &mdash; self-supervised tactile foundation models; the representation-learning
+    direction Touch and Go's CMC result motivates.</li>
+  <li><a href="gelsight_high_resolution_tactile_sensors.html">GelSight</a> and
+    <a href="digit_low_cost_compact_tactile_sensor.html">DIGIT</a>
+    &mdash; the vision-based tactile sensor hardware underpinning this whole line.</li>
+</ul>
+
+</body>
+</html>

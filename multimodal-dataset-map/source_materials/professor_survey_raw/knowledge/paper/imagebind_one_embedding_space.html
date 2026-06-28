@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ImageBind: One Embedding Space To Bind Them All</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Girdhar, El-Nouby, Liu, Singh, Alwala, Joulin, Misra">
+<meta name="year" content="2023">
+<meta name="venue" content="CVPR 2023">
+<meta name="arxiv_id" content="2305.05665">
+<meta name="url" content="https://arxiv.org/abs/2305.05665">
+<meta name="pdf" content="../../raw/papers/imagebind_one_embedding_space.pdf">
+<meta name="tags" content="multimodal-binding, representation-learning, foundation-models, zero-shot, self-supervised-learning, multisensory, audio-sensing, thermal-sensing">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>ImageBind: One Embedding Space To Bind Them All</h1>
+<p class="meta">
+  Rohit Girdhar*, Alaaeldin El-Nouby*, Zhuang Liu, Mannat Singh, Kalyan Vasudev Alwala, Armand Joulin, Ishan Misra*
+  &middot; FAIR, Meta AI
+  &middot; CVPR 2023
+  &middot; <a href="https://arxiv.org/abs/2305.05665">arXiv:2305.05665</a>
+  &middot; <a href="../../raw/papers/imagebind_one_embedding_space.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Train a contrastive model that aligns five
+"naturally paired-with-image" modalities (audio, depth, thermal, IMU, plus
+text) each to a frozen CLIP image encoder &mdash; and the image space acts as
+a hub, so modalities you never trained <em>together</em> (e.g. audio&harr;text,
+audio&harr;depth) become aligned <em>emergently</em>, giving zero-shot
+cross-modal retrieval, classification, arithmetic, and "upgrade-an-existing-CLIP-model"
+for free.
+
+<h2>Problem &amp; motivation</h2>
+<p>CLIP-style models give one shared (image, text) space, but extending that
+to a <em>true joint</em> embedding over many sensory modalities normally
+requires datasets where <em>all</em> modalities co-occur for the same instance
+&mdash; which is infeasible to collect. Prior multimodal work is therefore
+limited to one or two modalities per pair (video&ndash;audio, image&ndash;depth),
+and those embeddings are siloed: a video&ndash;audio encoder can't be used for
+image&ndash;text tasks. The paper's key observation: <em>images already
+co-occur with everything</em> (web image&ndash;text, video&ndash;audio, RGB-D
+depth, thermal&ndash;image, egocentric video&ndash;IMU). So you don't need
+all-modality data &mdash; <em>image-paired data is sufficient</em> to bind the
+whole set, because the image embedding is a natural anchor every modality
+already sees.</p>
+
+<h2>Method</h2>
+<p><strong>Binding via image as hub.</strong> ImageBind only ever trains pairs
+of the form <code>(&#8492;, &#8499;)</code> where <code>&#8492;</code> is image/video
+and <code>&#8499;</code> is one other modality. Given aligned observations
+<code>I<sub>i</sub></code> and <code>M<sub>i</sub></code>, deep encoders produce
+normalized embeddings <code>q<sub>i</sub> = f(I<sub>i</sub>)</code> and
+<code>k<sub>i</sub> = g(M<sub>i</sub>)</code>, optimized with a symmetric
+InfoNCE loss (Eq 1): <code>L<sub>&#8492;,&#8499;</sub> + L<sub>&#8499;,&#8492;</sub></code>,
+treating every other example in the mini-batch as a negative, with a learnable
+temperature <code>&tau;</code>.</p>
+
+<p><strong>Emergent alignment.</strong> Because each modality
+<code>&#8499;<sub>1</sub></code>, <code>&#8499;<sub>2</sub></code> is independently
+pulled toward image embeddings, the two also become aligned to each other
+<em>without ever seeing a <code>(&#8499;<sub>1</sub>, &#8499;<sub>2</sub>)</code>
+pair</em> (Fig 2). This is what unlocks zero-shot audio&harr;text classification
+despite training audio only against images. The paper notes the analogy to
+emergent zero-shot translation in multilingual MT when languages share a latent
+space.</p>
+
+<p><strong>Encoders.</strong> A Transformer for every modality (ViT for images;
+same encoder for video via temporally inflating the patch-projection layer and
+sampling 2 frames over 2s). Audio: 2s @16kHz &rarr; 128 mel-spectrogram bins,
+treated as a 2D image, ViT with patch 16 / stride 10. Thermal and depth are
+treated as one-channel images and ViT-encoded (depth converted to disparity
+maps for scale invariance). IMU: 5s of accelerometer+gyroscope across X,Y,Z &rarr;
+2K-timestep readings projected with a 1D conv (kernel 8), then a Transformer.
+Each encoder gets a modality-specific linear projection head to a fixed
+<code>d</code>-dim embedding.</p>
+
+<p><strong>Initialization.</strong> The image and text encoders are taken from
+a <em>pretrained, frozen</em> OpenCLIP (ViT-H 630M image / 302M text params); the
+audio, depth, thermal, and IMU encoders are trained from scratch to align to
+that fixed image space. Naturally-paired non-text data is replicated 50&times;
+for training since those datasets (SUN RGB-D, LLVIP) are small.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Training pairs &mdash; web
+    (image, text) [OpenCLIP]; (video, audio) from Audioset; (image, depth) from
+    SUN RGB-D; (image, thermal) from LLVIP; (video, IMU) from Ego4D. Evaluation
+    (Table 1): Audioset Audio-only, ESC, Clotho, AudioCaps, VGGSound (audio
+    cls/retrieval); SUN-D, NYU-v2 (depth scene cls); LLVIP (thermal person cls);
+    Ego4D (IMU scenario cls); plus standard ImageNet/Places-365/K400/MSR-VTT.</li>
+  <li><strong>Hardware / simulator:</strong> <em>not reported</em> (no robot;
+    this is a representation-learning paper). Compute hardware unspecified.</li>
+  <li><strong>Baselines:</strong> AudioCLIP [27] and AVFIC [51] (audio&ndash;text
+    with explicit supervision); MIL-NCE, SupportSet, FIT (video retrieval);
+    self-supervised AudioMAE and supervised models for few-shot; MultiMAE for
+    depth; OpenCLIP / "Text Paired" CLIP applied directly as upper-bound foils;
+    DINO vs DeiT image encoders for the evaluation-tool experiment.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (epoch counts given for
+    ablations &mdash; 16 vs 32 vs 64; IMU encoder 8 epochs &mdash; but no
+    GPU-hours / device counts).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: ImageBind sets a new state of the art on <em>emergent</em>
+zero-shot recognition across non-visual modalities, often matching or beating
+specialist supervised models &mdash; all without training on text pairs for
+those modalities.</p>
+
+<p>Emergent zero-shot classification (Table 2, top-1 / Recall@1 / mAP as noted):</p>
+<table>
+  <tr><th>Method</th><th>AS-A (audio, mAP)</th><th>VGGS (audio)</th><th>ESC (audio)</th><th>SUN-D (depth)</th><th>NYU-D (depth)</th><th>LLVIP (thermal)</th><th>Ego4D (IMU)</th></tr>
+  <tr><td>Random</td><td>0.62</td><td>0.32</td><td>5.26</td><td>5.26</td><td>10.0</td><td>2.75</td><td>0.9</td></tr>
+  <tr><td><strong>ImageBind</strong></td><td><strong>17.6</strong></td><td><strong>27.8</strong></td><td><strong>66.9</strong></td><td><strong>35.1</strong></td><td><strong>54.0</strong></td><td><strong>63.4</strong></td><td><strong>25.0</strong></td></tr>
+  <tr><td>Text Paired (CLIP direct)</td><td>28.4&dagger;</td><td>&mdash;</td><td>68.6&dagger;</td><td>25.4*</td><td>41.9*</td><td>&mdash;</td><td>&mdash;</td></tr>
+</table>
+<p>(&dagger; AudioCLIP-style, uses AS class names as supervision &mdash; not
+truly zero-shot; * OpenCLIP on grayscale-rendered depth.)</p>
+
+<p>Where it wins and loses:</p>
+<ul>
+  <li><strong>Audio retrieval (Table 3):</strong> ImageBind doubles AVFIC's
+    Clotho performance (R@1 6.0 vs 3.0) <em>without any audio&ndash;text
+    supervision</em>; on ESC classification (66.9) it's comparable to supervised
+    AudioCLIP (68.6).</li>
+  <li><strong>Text&rarr;audio/video retrieval (Table 4, MSR-VTT 1k-A):</strong>
+    audio-only ImageBind (R@1 6.8) is competitive with prior <em>video</em>
+    methods (MIL-NCE 8.6); A+V together jumps to 36.8 &mdash; beating all prior
+    work and showing the modalities compose.</li>
+  <li><strong>Few-shot (Fig 3):</strong> beats self-supervised AudioMAE by
+    ~40% top-1 at &le;4-shot on ESC; outperforms supervised at &le;2-shot;
+    beats MultiMAE across all few-shot depth settings.</li>
+  <li><strong>Loses / weaker:</strong> on AS-A and ESC, the AudioCLIP "Text
+    Paired" upper bound (which uses class-name supervision) still edges
+    ImageBind. Standard image/video zero-shot just matches OpenCLIP (expected,
+    since those encoders are frozen-inherited).</li>
+</ul>
+
+<p><strong>Applications.</strong> (1) <em>Embedding-space arithmetic</em> (Fig 4):
+adding an image embedding + an audio embedding retrieves images combining both
+concepts (fruit image + bird sound &rarr; birds among fruit). (2) <em>Audio-promptable
+object detection</em> (Fig 5): swap Detic's CLIP text "class" embeddings for
+ImageBind audio embeddings &rarr; detector localizes a dog from a bark, no
+retraining. (3) <em>Audio-to-image generation</em> (Fig 1): feed audio embeddings
+to a DALLE-2 decoder built for CLIP text embeddings. (4) <em>Vision-model
+evaluation tool</em> (Table 8): DINO beats DeiT on emergent multimodal binding,
+and binding quality is <em>not</em> correlated with ImageNet accuracy &mdash;
+so ImageBind measures a different axis of vision-model quality. Ablations
+(Tables 5&ndash;7): a stronger (ViT-H vs ViT-B) image encoder lifts emergent
+zero-shot on <em>all</em> modalities (+7% depth, +4% audio), confirming the
+hub-quality thesis; fixed temperature, linear projection heads, longer training,
+spatially-aligned crops, and temporally-aligned audio all help.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors (&sect;6):</em></p>
+<ul>
+  <li>Embeddings are trained with no specific downstream task, so they lag
+    task-specialist models; adapting general-purpose embeddings to structured
+    tasks (e.g. detection) is open.</li>
+  <li>The image-alignment loss could be enriched with other alignment data
+    (modalities paired with text, or with each other, e.g. audio+IMU) &mdash;
+    currently only image-paired data is used.</li>
+  <li>Explicitly called "a research prototype" not ready for real-world use.</li>
+  <li>New benchmarks are needed to measure emergent multimodal abilities.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The hub-and-spoke design means <em>all</em> emergent alignment quality is
+    gated by the image encoder. Modalities that are weakly image-correlated by
+    nature (a "is_screwed_tight" sound, a faint vibration) have no path into the
+    space except through whatever the image happened to capture &mdash; an
+    information bottleneck the paper never stresses-tests.</li>
+  <li>Audio is a fixed 2s mel-spectrogram clip &mdash; fine for environmental
+    sound classes, but contact events in manipulation are sub-second transients;
+    the temporal granularity may be far too coarse for force/contact reasoning.</li>
+  <li>Reported numbers are single-run; no seeds / variance bars on the main
+    Table 2, so the margins over baselines (especially the 4-point audio
+    retrieval gaps) lack a statistical claim.</li>
+  <li>"Binding" is purely <em>perceptual co-occurrence</em>, not causal or
+    physical &mdash; the model learns that birds and chirps appear together, not
+    that a screw <em>becoming</em> tight produces a particular torque-sound. That
+    gap matters a lot for the manipulation thesis below.</li>
+</ul>
+
+<h2>Why I care</h2>
+<!-- Off-genre: this is an audio-visual / multimodal representation-learning paper with no robot. Marked as a METHOD ANCHOR, not a manipulation paper, per brief Cluster H. -->
+<p><strong>Method anchor, not a manipulation paper.</strong> ImageBind is the
+canonical "bind any modality into one embedding space" result, and it's the
+direct ancestor of the touch/force/audio robot papers in this batch &mdash;
+<a href="binding_touch_to_everything_unitouch.html">UniTouch</a> literally
+applies the ImageBind recipe with touch as a new spoke, and
+<a href="beyond_sight_fuse_heterogeneous_sensors_language.html">FuSe</a> leans on
+image-as-hub binding to fuse heterogeneous sensors under language. So it earns a
+place here as the representation-learning template the embodied work specializes.</p>
+
+<p>The connection to my thesis (relative to
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>):
+many manipulation predicates &mdash; <code>is_grasped</code>, <code>is_inserted</code>,
+<code>is_full</code>, <code>surface_is_rough</code>, <code>is_screwed_tight</code> &mdash;
+are <em>not visually evaluable</em>; they live in touch, force, and sound.
+ImageBind is the clearest existence proof that you can fold those non-visual
+channels into a <em>single shared space</em> using only naturally-paired data,
+without per-predicate text labels. The tantalizing version for BLADE: if a
+predicate classifier <code>f<sub>&theta;</sub>(p)</code> could read from a bound
+audio/tactile embedding rather than RGB pixels, the categorical abstraction layer
+would finally have access to the sensory channels where these predicates actually
+live.</p>
+
+<p>But two caveats sharpen rather than soften the point: (1) ImageBind binds via
+<em>image co-occurrence</em>, and the predicates I care about are precisely the
+ones where the image is <em>uninformative</em> (you can't see torque) &mdash; so
+naive image-as-hub binding may be the wrong topology for force/touch; UniTouch and
+the tactile-foundation-model line are the papers testing that. (2) The binding is
+perceptual, not symbolic/causal, so it complements rather than replaces BLADE's
+structured precondition/effect reasoning. The interesting research question is the
+seam between them: a bound multisensory embedding feeding learned
+<em>symbolic</em> predicates.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  We show that all combinations of paired data are not necessary to train such a
+  joint embedding, and only image-paired data is sufficient to bind the modalities
+  together.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  We observe an emergent behavior in the embedding space that aligns two pairs of
+  modalities (&#8499;<sub>1</sub>, &#8499;<sub>2</sub>) even though we only train using
+  the pairs (&#8492;, &#8499;<sub>1</sub>) and (&#8492;, &#8499;<sub>2</sub>).
+  <span class="quote-cite">&mdash; &sect;3.2, Emergent alignment</span>
+</blockquote>
+
+<blockquote>
+  The emergent capabilities improve with the strength of the image encoder ... and
+  ImageBind serves as a new way to evaluate vision models for visual and non-visual
+  tasks.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>AudioCLIP</strong> [27] (Guzhov et al.) &mdash; closest baseline;
+    adds audio to CLIP with explicit (audio, text) supervision.
+    <a href="../../raw/papers/audioclip_extending_clip.pdf">PDF (if dropped)</a>.</li>
+  <li><strong>CLIP</strong> [60] (Radford et al.) &mdash; the (image, text) backbone
+    whose frozen encoders ImageBind inherits and extends.</li>
+  <li><strong>AVID</strong> [50] (Morgado et al.) &mdash; audio-visual instance
+    discrimination with cross-modal agreement; the (video, audio) training-pair
+    lineage.</li>
+  <li><strong>DALLE-2 / unCLIP</strong> [61] &mdash; the diffusion decoder ImageBind
+    repurposes for audio&rarr;image generation.</li>
+  <li><strong>OmniMAE / Omnivore</strong> [20, 21] (Girdhar et al.) &mdash; same
+    authors' single-model-many-visual-modalities precursors.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a> &mdash; the
+    direct embodied successor: applies the ImageBind recipe with <em>touch</em> as
+    a new modality bound through images, exactly the touch-channel extension my
+    "Why I care" wants.</li>
+  <li><a href="languagebind_language_anchored.html">LanguageBind</a> &mdash; sibling
+    binding paper that swaps the hub from image to <em>language</em>; the obvious
+    contrast in anchor choice.</li>
+  <li><a href="meta_transformer_unified_modalities.html">Meta-Transformer</a> &mdash;
+    unified frozen-encoder-across-12-modalities alternative; a different route to
+    "one model, many modalities."</li>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">FuSe</a> &mdash;
+    builds on image-as-hub binding to fuse heterogeneous robot sensors under
+    language; the manipulation-policy payoff of this representation idea.</li>
+  <li><a href="audioclip_extending_clip.html">AudioCLIP</a> and
+    <a href="clap_audio_concepts_language.html">CLAP</a> &mdash; the audio&ndash;language
+    binding line ImageBind is measured against (Tables 3&ndash;4).</li>
+  <li><a href="palm_e_embodied_multimodal_lm.html">PaLM-E</a> &mdash; the other
+    Cluster-H anchor: embodied multimodal LM; complementary "tokens-into-an-LLM"
+    route vs ImageBind's "contrastive shared space."</li>
+  <li><a href="any2policy_any_modality_visuomotor.html">Any2Policy</a> &mdash;
+    any-modality visuomotor policy; downstream consumer of bound multimodal
+    representations.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FACTR: Force-Attending Curriculum Training for Contact-Rich Policy Learning</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Jingzhou Liu, Li, Shaw, Tao, Salakhutdinov, Pathak">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2502.17432">
+<meta name="url" content="https://arxiv.org/abs/2502.17432">
+<meta name="pdf" content="../../raw/papers/factr_force_attending_curriculum_training.pdf">
+<meta name="tags" content="force-torque, imitation-learning, contact-rich, curriculum-learning, force-control, proprioception, teleoperation, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>FACTR: Force-Attending Curriculum Training for Contact-Rich Policy Learning</h1>
+<p class="meta">
+  Jason Jingzhou Liu*, Yulong Li*, Kenneth Shaw, Tony Tao, Ruslan Salakhutdinov, Deepak Pathak
+  &middot; Carnegie Mellon University
+  &middot; 2025 (arXiv preprint, 24 Apr 2025)
+  &middot; <a href="https://arxiv.org/abs/2502.17432">arXiv:2502.17432</a>
+  &middot; <a href="../../raw/papers/factr_force_attending_curriculum_training.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> FACTR stops a behavior-cloning policy from
+ignoring its force channel by <em>blurring away the vision channel early in
+training</em> and gradually un-blurring it &mdash; a curriculum that forces the
+network to learn from external joint torques first, yielding +40% success on
+unseen objects in contact-rich tasks; it ships alongside a low-cost
+actuated leader-follower teleoperation rig that relays follower-arm torques
+back to the operator's hands.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Contact-rich tasks (box lifting, dough rolling, prehensile pivoting) hinge
+on force feedback, yet two gaps keep force underused. (1) <em>Data side:</em>
+popular low-cost leader-follower teleoperation rigs (GELLO, ALOHA) are passive
+and unilateral &mdash; the operator never feels the follower arm's contact
+forces, so they can't teleoperate delicate contact tasks well. (2)
+<em>Learning side:</em> even when force is recorded and fed as policy input,
+the policy tends to <em>overfit to vision and ignore force</em>. The paper's
+diagnosis is that contact-force signals are weakly discriminative &mdash; they
+sit near zero for long stretches when the arm isn't touching anything &mdash;
+so gradient descent latches onto the always-informative visual modality and
+the force encoder never learns. This caps a vision-only policy's ability to
+generalize to objects whose appearance/geometry change but whose force
+signature is the discriminating cue (e.g., lifting boxes of varied color but
+similar mechanics). FACTR attacks both gaps: a force-feedback teleop system
+and a force-attending training curriculum.</p>
+
+<h2>Method</h2>
+
+<p><strong>Bilateral force-feedback teleoperation (Sec. III).</strong> A
+low-cost actuated leader arm (off-the-shelf servos, 3D-printed, kinematically
+equivalent to the follower) relays the follower's external joint torques back
+as motor torques the operator feels. The leader control law (Eq. 5) sums five
+terms: <code>&tau;_feedback</code> (relays follower external torque
+<code>&tau;_ext</code>, scaled by a mediating constant <code>&mu;_f</code>, with
+PD damping &mdash; Eq. 1), <code>&tau;_null</code> (null-space projection
+<code>(I &minus; J&dagger;J)</code> to a user-set resting posture for
+customizable redundancy resolution &mdash; Eq. 3, Fig. 3), <code>&tau;_grav</code>
+(gravity compensation via RNEA inverse dynamics &mdash; Eq. 4),
+<code>&tau;_friction</code>, and <code>&tau;_limit</code> (artificial potential
+keeping the leader inside the follower's joint limits). Gripper force feedback
+uses the follower gripper's servo current as a proxy (Eq. 2), EMA-smoothed.
+Crucially, only <em>external</em> torques are relayed, so the operator doesn't
+feel the follower's own inertia/friction during free motion.</p>
+
+<p><strong>Base policy (Sec. IV-A).</strong> An encoder-decoder action-chunking
+transformer (ACT-style). A pretrained ViT <code>f_&phi;</code> tokenizes image
+<code>I_t</code> into vision tokens <code>z_t^V</code>; an MLP force encoder
+<code>g_&psi;</code> maps the external joint torque <code>&tau;_t</code> to a
+single force token <code>z_t^F</code>. Concatenated tokens go through a
+transformer encoder, then <em>k</em> action tokens cross-attend to vision+force
+in the decoder, projected to future joint-position targets
+<code>q&#770;_{t:t+k}</code>. Trained by BC with MSE on joint targets (Eq. 6).</p>
+
+<p><strong>Force-Attending Curriculum (Sec. IV-B, Algorithm 1, Fig. 4).</strong>
+The core idea. A blurring operator with scale <code>&sigma;_n</code>, large at
+the start and decayed to ~0 over <em>N</em> steps, corrupts the visual branch so
+the force branch dominates early gradients. Two operator families: Gaussian
+blur and downsampling (MaxPool+nearest interp). Two spaces:
+<strong>pixel-space</strong> <code>&beta;_P(I, &sigma;)</code> blurs the raw
+image, or <strong>latent-space</strong> <code>&beta;_L(z^V, &sigma;)</code> blurs
+the vision tokens. As <code>&sigma; &rarr; &infin;</code>, all visual inputs
+collapse toward the same tensor, so the only way to reduce loss is to learn from
+force &mdash; then vision is gradually unveiled. Five schedulers for
+<code>&sigma;_n</code> (constant / linear / cosine / exponential / step), with an
+optional warm-up that fixes <code>&sigma;_0</code> for some steps to let the
+randomly-initialized force encoder catch up. Appendix VII grounds the intuition
+in Neural Tangent Kernels: a Gaussian-blurred input acts as a low-pass filter;
+in the <code>&sigma; &rarr; &infin;</code> limit the NTK matrix becomes rank-1
+(all-ones), so the network can only fit a single global visual output, redirecting
+gradient capacity to the force encoder.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected real-robot demos,
+    50 teleoperated demonstrations per task across four contact-rich tasks &mdash;
+    <em>Box Lift</em> (bimanual, lift+balance a box &ge;2s), <em>Non-Prehensile
+    Pivot</em> (flip an item against a fixture corner by 90&deg;), <em>Fruit Pick
+    and Place</em> (grasp soft/delicate fruit, place in bowl), <em>Rolling
+    Dough</em> (roll dough into a cylinder &ge;8s). Train vs. test object splits
+    evaluate generalization (Fig. 5); 5&ndash;10 trials per object.</li>
+  <li><strong>Hardware / simulator:</strong> Real-world only. Franka Panda
+    arm(s) with OpenManipulator-X grippers; external joint torque from the
+    Panda's built-in torque sensing. Front ZED2 camera + wrist cameras (RGB).
+    Low-cost actuated leader arm (servos + 3D-printed parts); teleop on the KUKA
+    LBR iiwa also mentioned as a compatible torque-sensing arm.</li>
+  <li><strong>Baselines:</strong> <em>ACT (Vision-Only)</em> [32]; <em>ACT
+    (Vision+Force)</em> [13,14] &mdash; same force input as FACTR but no
+    curriculum; <em>FACTR (Ours)</em> &mdash; ACT + force-attending curriculum
+    (default: latent-space, Gaussian blur, linear scheduler). Teleop user study
+    compares against an un-actuated leader-follower with mechanical joint
+    regulation (GELLO-like).</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Headline:</strong> FACTR improves unseen-object success by an average
+of +40.0% over the same policy with force-but-no-curriculum, and the abstract
+states +43% generalization improvement over baseline approaches without a
+curriculum. On test objects, vision-only averages 21.3% success, naive
+vision+force 61.2%, and FACTR 87.5% (Sec. V-C).</p>
+
+<table>
+  <tr><th>Policy (test objects)</th><th>Avg. success</th></tr>
+  <tr><td>ACT (Vision-Only)</td><td>21.3%</td></tr>
+  <tr><td>ACT (Vision+Force), no curriculum</td><td>61.2%</td></tr>
+  <tr><td><strong>FACTR (Ours)</strong></td><td><strong>87.5%</strong></td></tr>
+</table>
+
+<p>Per-task test-object trials (read from Fig. 6, FACTR vs. Vision-Force vs.
+Vision-Only):</p>
+<table>
+  <tr><th>Task (test)</th><th>FACTR</th><th>ACT V+F</th><th>ACT V-only</th></tr>
+  <tr><td>Box Lift</td><td>55/60</td><td>35/60</td><td>19/60</td></tr>
+  <tr><td>Pivot</td><td>38/50</td><td>21/50</td><td>13/50</td></tr>
+  <tr><td>Fruit Pick-Place</td><td>14/15</td><td>11/15</td><td>4/15</td></tr>
+  <tr><td>Rolling Dough</td><td>8/10</td><td>7/10</td><td>0/10</td></tr>
+</table>
+
+<p>On <em>train</em> objects most policies tie near-ceiling, except vision-only
+fails Rolling Dough completely (0/10) &mdash; it "smashes the dough without any
+rolling actions" because the oscillatory rolling motion is visually
+near-indistinguishable while the torque norm has a distinctive oscillatory
+pattern (Fig. 8). <strong>Recovery (Table I):</strong> after a lifted box is
+knocked down, force-attending policies recover on test objects 27/30 (FACTR) vs.
+16/30 (V+F) vs. 4/30 (vision-only); vision-only policies "remain static after
+the box is knocked down," whereas force policies detect the torque drop and
+retry. <strong>Mode switching (Fig. 9):</strong> attention visualization shows
+FACTR's action tokens shift attention toward force exactly at contact onset.
+<strong>Teleop user study (Fig. 7):</strong> the force-feedback rig gives +64.7%
+task completion rate, &minus;37.4% completion time, +83.3% subjective ease of
+use over the un-actuated baseline. <strong>Where it loses / is flat:</strong>
+the curriculum-parameter ablation (Table II, pivoting task, 5 test objects)
+shows <em>no uniform winner</em> across the 2 spaces &times; 2 operators &times;
+5 schedulers grid (scores cluster 15&ndash;21/25); the authors conclude FACTR is
+"relatively robust" to these choices, i.e., the specific operator/scheduler
+doesn't matter much &mdash; only that <em>some</em> decaying curriculum beats a
+fixed scale.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors (Sec. VI):</em></p>
+<ul>
+  <li>External joint-torque sensing on the follower arm has limited precision;
+    too noisy for subtle fine-grained force adjustments. They suggest
+    high-resolution tactile sensors / haptic gloves to improve feedback fidelity.</li>
+  <li>The method assumes an arm with external joint-torque sensing; adapting to
+    an end-effector force/torque sensor is future work.</li>
+  <li>Many hyperparameters (blur operator, scheduler) require per-application
+    tuning; adaptive/self-tuning curricula are flagged as future work.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Small-N statistics.</strong> Headline test-object counts are
+    out-of-N successes (e.g., 14/15, 8/10), not rates with seeds/CIs, and the
+    central ablation (Table II) is a single hard task (pivoting), 5 objects
+    &times; 5 trials = 25 attempts per cell. The "robust to parameters" claim
+    rests on differences of 2&ndash;5 successes out of 25, well within noise.</li>
+  <li><strong>The curriculum is a regularizer, not force-specific.</strong>
+    Blurring vision to force attention onto a weak modality is a general
+    co-training trick (cf. their cited [28] on multimodal training); nothing
+    ties it to <em>force</em> per se &mdash; it should equally rebalance audio,
+    tactile, or any under-attended channel. That's a feature, but the paper
+    doesn't test it, so the generality is asserted, not shown.</li>
+  <li><strong>No latent-space "what does vision still contribute" probe.</strong>
+    If the final policy must see unblurred vision (their own ablation says a
+    fully-blurred final policy underperforms), how much of the +40% is force vs.
+    just better-regularized vision? A force-input-zeroed ablation at test time
+    would isolate that; it's absent.</li>
+  <li>Force here is <em>joint torque</em> (proprioceptive), not tactile/contact
+    sensing &mdash; coarse, and as the authors admit, near-zero off-contact. The
+    discriminative signal is essentially "am I touching / how hard," which is
+    exactly the binary <code>is_grasped</code>/<code>in_contact</code> predicate
+    flavor (see below), not fine texture/material.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>FACTR is squarely on the batch thesis: <strong>many manipulation predicates
+live in force, not pixels.</strong> Its cleanest result &mdash; vision-only
+policies <em>cannot</em> roll dough or detect a dropped box because the visual
+observation is near-constant while the torque norm carries the signal (Figs. 8,
+9) &mdash; is direct evidence that mode-switch predicates like
+<code>in_contact</code>, <code>is_grasped</code>, and <code>is_lifted</code> are
+force-evaluable, not visually evaluable. That's the exact gap I flagged in
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+BLADE's contact-primitive segmentation already keys off gripper state, and its
+"Limitations" notes caging grasps / contact-rich tasks need richer contact
+detection, and that continuous force parameters sit opaquely inside the
+diffusion policy. FACTR is the low-level, force-channel counterpart &mdash; it
+shows the policy <em>can</em> learn to attend to force, but as an entangled BC
+representation, not a symbolic predicate. The open question this sharpens for my
+line: could a FACTR-style force encoder feed a <em>learned classifier</em> for
+force-grounded predicates (<code>is_grasped(x)</code>,
+<code>surface_is_rough</code>, <code>is_screwed_tight</code>) that the planner
+reasons over, rather than leaving force implicit in the controller? That would
+let BLADE's predicate layer cover the non-visual half of the state.</p>
+<p>FACTR's attention-rebalancing curriculum is also a generic tool for any
+multimodal policy that under-uses a weak modality &mdash; relevant to the
+audio/tactile VLA papers in this batch where the same overfit-to-vision failure
+recurs.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  This issue arises because contact force signals are typically less
+  discriminative, often remaining near zero for extended periods when the arm is
+  not in contact with the environment during an episode. Hence, without proper
+  care during training, policies tend to ignore force input and rely primarily on
+  visual information.
+  <span class="quote-cite">&mdash; &sect;I (Introduction) / p.2</span>
+</blockquote>
+<blockquote>
+  FACTR systematically reduces the reliance on visual information during training
+  by applying operators such as Gaussian blurring or downsampling with varying
+  scales to visual inputs. A scheduler gradually decreases the blurring scale and
+  increases the fidelity of the visual inputs.
+  <span class="quote-cite">&mdash; &sect;I / p.2</span>
+</blockquote>
+<blockquote>
+  For the rolling dough task &hellip; the vision-only policy smashes the dough
+  without any rolling actions and fails completely. &hellip; the visual
+  observations are hard to distinguish during the oscillatory rolling motions,
+  while the force signals form a corresponding oscillatory pattern.
+  <span class="quote-cite">&mdash; &sect;V-C / Fig. 8, p.7</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[8] He et al. &mdash; FoAR: Force-aware Reactive Policy</strong>
+    &mdash; explicitly predicts contact / non-contact phases to regulate
+    vision-force fusion; FACTR positions itself against FoAR's need for extra
+    labeling. <a href="../../raw/papers/foar_force_aware_reactive_policy.pdf">expected PDF</a>.</li>
+  <li><strong>[30] Wu et al. &mdash; Tacdiffusion: Force-domain diffusion
+    policy</strong> &mdash; infers a 6D wrench for low-level control via diffusion;
+    the force-conditioned-diffusion counterpart.</li>
+  <li><strong>[32] Zhao et al. &mdash; ACT / ALOHA</strong> &mdash; the
+    action-chunking transformer backbone and the un-actuated teleop baseline.</li>
+  <li><strong>[4] Chi et al. &mdash; Diffusion Policy</strong> &mdash; the
+    standard contact-rich BC baseline FACTR contrasts with.</li>
+  <li><strong>[29] Wu et al. &mdash; GELLO</strong> and <strong>[13] Kobayashi
+    et al. &mdash; bilateral leader-follower</strong> &mdash; the low-cost
+    teleoperation lineage FACTR's rig extends with force feedback.</li>
+  <li><strong>[11] Jacot et al. &mdash; Neural Tangent Kernel</strong> and
+    <strong>[2] Boix-Adsera et al. &mdash; When can transformers reason with
+    abstract symbols?</strong> &mdash; the theory backbone of Appendix VII.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="foar_force_aware_reactive_policy.html">FoAR</a> &mdash; the
+    contact/non-contact-phase reactive policy FACTR contrasts against (Cluster F);
+    FACTR argues its curriculum avoids FoAR's explicit phase-labeling.</li>
+  <li><a href="factr2_external_force_sensing_commodity_arms.html">FACTR 2</a>
+    &mdash; same authors' follow-up on external force sensing for commodity arms;
+    direct successor.</li>
+  <li><a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive Diffusion Policy</a>
+    and <a href="tactile_conditioned_diffusion_policy_force_aware.html">Tactile-Conditioned Diffusion Policy</a>
+    &mdash; sibling force/tactile-aware controllers in Cluster F; alternative
+    fusion mechanisms to FACTR's curriculum.</li>
+  <li><a href="making_sense_of_vision_and_touch.html">Making Sense of Vision and Touch</a>
+    &mdash; the classic visuo-tactile multimodal-fusion-for-manipulation
+    representation paper; FACTR's "vision dominates force" diagnosis is the
+    training-dynamics counterpart.</li>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>,
+    <a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>,
+    and <a href="favla_force_adaptive_fast_slow_vla.html">FAVLA</a> &mdash;
+    Cluster C force/tactile VLA policies tackling the same overfit-to-vision
+    failure at VLA scale; FACTR is the curriculum-side answer.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+    &mdash; situates the force-underutilization problem FACTR targets.</li>
+</ul>
+
+</body>
+</html>

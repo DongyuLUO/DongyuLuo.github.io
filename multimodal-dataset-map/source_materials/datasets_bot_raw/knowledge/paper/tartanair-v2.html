@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TartanAir V2</title>
+<meta name="type" content="paper">
+<meta name="authors" content="">
+<meta name="year" content="2024">
+<meta name="venue" content="datasets.bot public catalog">
+<meta name="arxiv_id" content="2003.14338">
+<meta name="url" content="https://arxiv.org/abs/2003.14338">
+<meta name="pdf" content="https://arxiv.org/abs/2003.14338">
+<meta name="tags" content="datasets-bot,open-data,mobile,simulated,depth,event,point-cloud,proprioception,segmentation,rgb,custom">
+<meta name="status" content="datasets-bot-crosscheck">
+<meta name="ingested" content="2026-06-28">
+<meta name="source_prompt" content="datasets.bot public catalog cross-check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .meta { color: #777; font-size: 0.9em; }
+  a { color: #2962ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>TartanAir V2</h1>
+<p class="meta">CMU AirLab &middot; 2024 &middot; datasets.bot &middot; <a href="https://datasets.bot/datasets/tartanair-v2">datasets.bot page</a></p>
+<p><strong>One-liner.</strong> Next-generation photorealistic synthetic SLAM and navigation dataset from CMU AirLab, spanning 65 Unreal Engine environments with multimodal sensor data (RGB, depth, segmentation, optical flow, LiDAR, IMU, event cameras) and customizable pinhole, fisheye, and equirectangular camera models.</p>
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> TartanAir V2 is a large-scale photorealistic synthetic dataset built on Unreal Engine 4 with the AirSim plugin, developed by CMU's AirLab (castacks) to push the limits of visual SLAM, navigation, and robotics perception. It contains 65 highly distinct simulated environments covering urban, rural, domestic, infrastructure, thematic, and nature scenarios, both indoor and outdoor, with some environments split into sub-environments for weather/time-of-day variation. Data is collected from pre-recorded, challenging and realistic trajectories of a generic free-flying 6-DoF camera that mimic real-world robot motion (trajectories are sampled in free space, connected via RRT*, refined for loop closures, and smoothed for physically plausible motion). In each environment 12 perfectly synchronized cameras (two stereo sets of six cameras pointing in six directions to cover a 360-degree view) capture raw pinhole RGB at 640x640, 90-degree FoV, 10 Hz, with a 0.25 m stereo baseline. Raw data is processed into a rich set of modalities: stereo RGB images (plus 1000 Hz MP4 video of the left-front camera), float32 depth maps (compressed losslessly to 4-channel 8-bit PNG), category-level semantic segmentation spanning 1447 semantic classes (manually labeled, with per-environment seg_label_map.json and statistics), optical flow (CUDA-accelerated, generatable across any camera-model pair, stored as npz with covisibility/FoV masks), LiDAR point clouds sampled from depth following Velodyne VLP-16 (and VLP-32C) patterns, IMU with configurable noise modeling, event-camera data generated at 1000 Hz via the ESIM simulator with contrast thresholds 0.2-1.0, occupancy maps, and ground-truth camera poses. The accompanying tartanairpy toolkit supports sampling customizable camera models including pinhole, fisheye (doublesphere / Linear Spherical model), and equirectangular/panoramic views, plus tools for adding noise and motion blur. The dataset is downloaded and managed through the 'tartanair' Python package (pip install tartanair), with data hosted on the AirLab server and Hugging Face (theairlabcmu/tartanair, ~1.11 TB). It succeeds TartanAir V1 (IROS 2020, the official CVPR 2020 Visual SLAM Challenge dataset), adding more scenes, more modalities, and the new fisheye/panoramic camera support; it also underpins the related TartanGround ground-robot dataset. License: CC-BY-4.0. Download: https://www.tartanair.org/.</li>
+  <li><strong>Hardware / simulator:</strong> Embodiment: not listed. Environment: home, industrial, office, outdoor, simulation. Realness: simulated.</li>
+</ul>
+<h2>Schema</h2>
+<p>Per-environment trajectories with 12 synchronized cameras (two 6-camera stereo rings covering 360 degrees), 640x640 at 10 Hz, 0.25 m baseline. Per timestep: stereo RGB PNG (8-bit), float32 depth (stored as 4-channel 8-bit PNG), semantic segmentation (1447 classes via seg_label_map.json), camera poses; derived modalities: optical flow (npz with covisibility/FoV masks), LiDAR point clouds (VLP-16/VLP-32C), IMU with noise, event-camera streams from 1000 Hz MP4 via ESIM, occupancy maps; customizable pinhole/fisheye/equirectangular camera sampling.</p>
+<h2>Links</h2>
+<ul>
+  <li><a href="https://datasets.bot/datasets/tartanair-v2">datasets.bot page</a></li>
+  <li><a href="https://www.tartanair.org/">Homepage</a></li>
+  <li><a href="https://arxiv.org/abs/2003.14338">Paper</a></li>
+  <li><a href="https://www.tartanair.org/">Download</a></li>
+</ul>
+</body>
+</html>

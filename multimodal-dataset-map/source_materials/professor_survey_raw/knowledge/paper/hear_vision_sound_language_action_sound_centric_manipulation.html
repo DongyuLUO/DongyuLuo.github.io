@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Towards the Vision-Sound-Language-Action Paradigm: The HEAR Framework for Sound-Centric Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Nie, Deng, Wang, Liu, Wang">
+<meta name="year" content="2026">
+<meta name="venue" content="arXiv preprint (SAGE journal format)">
+<meta name="arxiv_id" content="2603.16086">
+<meta name="url" content="https://arxiv.org/abs/2603.16086">
+<meta name="pdf" content="../../raw/papers/hear_vision_sound_language_action_sound_centric_manipulation.pdf">
+<meta name="tags" content="vision-language-action, audio-sensing, contact-audio, world-models, closed-loop, process-monitoring, temporal-reasoning, manipulation, audio-language, foundation-models">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-25">
+<meta name="source_prompt" content="related-work ingest: dynamic state-change concept grounding for manipulation">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1>Towards the Vision-Sound-Language-Action Paradigm: The HEAR Framework for Sound-Centric Manipulation</h1>
+<p class="meta">
+  Chang Nie, Tianchen Deng, Guangming Wang, Zhe Liu, Hesheng Wang
+  &middot; Shanghai Jiao Tong University / University of Cambridge
+  &middot; 2026
+  &middot; arXiv preprint (SAGE journal format)
+  &middot; <a href="https://arxiv.org/abs/2603.16086">arXiv:2603.16086</a>
+  &middot; <a href="../../raw/papers/hear_vision_sound_language_action_sound_centric_manipulation.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> HEAR formalizes <em>Vision-Sound-Language-Action</em>
+(VSLA) &mdash; VLA conditioned on <em>continuous streaming audio</em> under
+delayed, low-rate, open-loop decision loops &mdash; and instantiates it with a
+four-module architecture (streaming causal audio memory + omni-VLM reasoner +
+predictive audio world-model + flow-matching policy) so a robot can listen
+<em>while acting</em> and commit to actions only <em>after</em> a fleeting
+acoustic cue (a beep, a click, the onset of a rolling boil) has actually
+occurred.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Existing VLA models treat sound as a static pre-execution prompt (ASR
+transcripts appended to the language input) or as a waveform rendered into a
+2D "camera-view" image, and they predominantly handle human <em>speech</em>.
+The authors argue this misses the regime where <em>fleeting environmental
+acoustics</em> provide the only reliable, low-level state-verification signal
+during execution &mdash; the sputtering of boiling liquid, a microwave "ding",
+an impact click. Two structural obstacles motivate the work. (1) <strong>The
+Blind Execution Interval (BEI):</strong> because large backbones run below the
+control rate, modern VLAs use <em>action chunking</em> &mdash; predict an
+H-step chunk and execute it open-loop &mdash; creating a gap during which the
+robot is oblivious to new observations. Combined with end-to-end latency, a
+transient cue (50&ndash;200&nbsp;ms) can begin and end inside this gap and
+"vanish" before the next windowed audio observation, permanently destroying
+the evidence of a state transition. (2) <strong>Temporal Motion Collapse /
+temporal aliasing:</strong> sound-centric tasks have long monitoring phases
+where vision is quasi-static; snapshot-conditioned policies see nearly
+identical inputs across many decisions yet the correct behavior changes with
+elapsed time, so the robot drifts or freezes during the "waiting dilemma."
+Unlike vision (which is forgiving of delay because objects persist in view),
+audio's decision-critical information is concentrated in brief, non-repeatable
+events &mdash; so a delay that merely makes a visual frame slightly stale can
+cause catastrophic failure on an audio-gated task.</p>
+
+<h2>Method</h2>
+<p>The paper has two parts: a <strong>formalism</strong> (the VSLA paradigm)
+and an <strong>architecture</strong> (HEAR).</p>
+
+<p><strong>VSLA formalism.</strong> A robot runs a low-level controller at
+<em>f<sub>c</sub></em>&nbsp;Hz but the policy is queried only at sparse decision
+times <em>{t<sub>k</sub>}</em> with an integer end-to-end latency
+<em>&tau;<sub>sys</sub></em>. The per-decision observation is
+<em>o<sub>t<sub>k</sub></sub> = (multi-view RGB, a causal audio window
+A<sub>t<sub>k</sub></sub> of the last T<sub>win</sub> seconds, language l,
+proprioception)</em>. The paper makes the audio interface explicitly
+<em>causal</em> (the window depends only on samples that have arrived by the
+delayed boundary) and derives the condition (Eq. 7) under which a transient
+event terminates strictly before the next window begins &mdash;
+"evidence vanishing." Success is judged by a <strong>timing-sensitive
+criterion</strong> (Eq. 10): reaching the geometric goal <em>before</em> the
+required acoustic cue fires is counted as <em>failure</em>, even if the final
+state looks visually correct. This enforces sound-causality and rejects
+visual shortcuts.</p>
+
+<p><strong>HEAR architecture</strong> (Fig. 2), four modules decoupling
+high-frequency sensing from low-frequency decisions:</p>
+<ul>
+  <li><strong>Historizer</strong> &mdash; a <em>Streaming Stateful
+  Transformer</em> that maintains a compact causal audio memory
+  <em>h<sub>t<sub>k</sub></sub></em> updated <em>independently of the policy
+  query cadence</em>. Incoming audio between decisions is partitioned into
+  short causal packets (L&nbsp;=&nbsp;640 samples / 40&nbsp;ms each) and folded
+  into a 16-token memory via a 4-layer transformer, so short-lived cues that
+  arrive during the BEI persist into the next decision (resolves Challenge 1).</li>
+  <li><strong>Envisioner</strong> &mdash; a coarse-to-fine hierarchical reasoner.
+  A high-level omni-modal VLM (Qwen3-Omni) fuses multi-view RGB + language +
+  proprioception + audio window + the Historizer memory, emitting (i) a semantic
+  latent <em>z<sub>t<sub>k</sub></sub></em>, (ii) a key-value cache reused by a
+  lightweight low-level LLM (Qwen3-0.6B) that produces a control feature
+  <em>u<sub>t<sub>k</sub></sub></em>, and (iii) a <strong>structured JSON stage
+  description</strong> (e.g. <code>{"stage":"wait","subgoal":"listen for
+  beep"}</code>) trained by token-level NLL (<em>L<sub>text</sub></em>). The
+  stage text forces the latent to separate phases that are visually quasi-static
+  but acoustically distinct.</li>
+  <li><strong>Advancer</strong> &mdash; a decoder-only <em>audio world model</em>
+  (4 layers) that, from <em>z<sub>t<sub>k</sub></sub></em>, predicts the
+  <em>near-future</em> discrete audio codes (Mimi neural tokenizer) for the
+  interval up to the next decision, trained by cross-entropy on codebook indices
+  (<em>L<sub>adv</sub></em>). This injects a predictive temporal-dynamics signal
+  so the shared latent tracks the flow of time even when vision is static
+  (resolves Challenge 2 / Temporal Motion Collapse). At deployment it need not
+  actually generate audio &mdash; it only shapes the latent during training.</li>
+  <li><strong>Realizer</strong> &mdash; a <em>conditional flow-matching</em>
+  (CFM) policy conditioned on <em>u<sub>t<sub>k</sub></sub></em> via FiLM-style
+  adaptive normalization; generates a smooth H-step joint-position action chunk
+  with a small fixed number of Euler ODE steps (N<sub>ODE</sub>&nbsp;=&nbsp;8),
+  executed open-loop. Smooth chunks reduce mechanical ego-noise that would mask
+  weak cues during listening.</li>
+</ul>
+<p>Total loss <em>L<sub>total</sub> = L<sub>flow</sub> + w<sub>adv</sub>
+L<sub>adv</sub> + w<sub>text</sub> L<sub>text</sub></em>, trained by imitation
+from expert action chunks (H&nbsp;=&nbsp;32), with a two-stage recipe:
+pretrain on OpenX-Sound, then fine-tune per task.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> <em>OpenX-Sound</em> &mdash; ~120k
+  Open X-Embodiment episodes retrospectively augmented with time-aligned
+  synthesized audio tracks (16&nbsp;kHz) via video-to-audio generation models;
+  manual audit reported 98.7% synchronization within 100&nbsp;ms tolerance.
+  <em>HEAR-Bench</em> &mdash; the first sound-centric manipulation benchmark,
+  built on a real-time audio-physics co-simulation engine over RoboTwin2;
+  7 tasks across 4 cue categories (event-triggered alarms: Alarm Clock,
+  Microwave; human speech: Check Yes, Interrupt; continuous process: Pour Water,
+  Boil Water; physical interaction feedback: Check Materials), 100 trials each,
+  with strict timing-sensitive success rules.</li>
+  <li><strong>Hardware / simulator:</strong> Simulation on dual-arm RoboTwin2
+  (3 RGB views + streaming mic). Real world on a single-arm Franka Panda with
+  head + arm cameras and a <em>standard workspace microphone</em> (deliberately
+  no contact mics or ear-in-hand arrays), 4 tasks (Moka Coffee, Answer Phone,
+  Shake Bottle, Real Alarm Clock), 100 trials each. Control at
+  f<sub>c</sub>&nbsp;=&nbsp;30&nbsp;Hz with a simple PD controller, no IK /
+  motion planning / collision checking.</li>
+  <li><strong>Baselines:</strong> VLA backbones OpenVLA and &pi;<sub>0.5</sub>,
+  each with two audio adapters &mdash; <em>-Waveform</em> (render 1D audio window
+  as a 2D line-plot "camera") and <em>-ASR</em> (transcribe to text prompt);
+  plus compact audio-native policies <em>Play it by Ear</em> and
+  <em>ManiWAV</em>. All baselines share the identical two-stage protocol,
+  visual inputs, causal audio segments, and qpos action chunks.</li>
+  <li><strong>Compute:</strong> Ubuntu 22.04 workstation, 2&times; NVIDIA RTX
+  5090 GPUs, PyTorch/CUDA. AdamW, lr 1e-4, T<sub>win</sub>&nbsp;=&nbsp;4.0&nbsp;s
+  (64,000 samples), 200k pretrain steps + 50k (sim) / 30k (real) fine-tune steps
+  per task; w<sub>adv</sub>&nbsp;=&nbsp;0.1, w<sub>text</sub>&nbsp;=&nbsp;0.05.</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Simulation (HEAR-Bench, Table 3, success rate over 100 trials/task):</strong></p>
+<table>
+  <tr><th>Method</th><th>VLA</th><th>Avg.</th><th>Pour Water</th><th>Boil Water</th><th>Microwave</th></tr>
+  <tr><td>OpenVLA</td><td>Y</td><td>0.10</td><td>0.00</td><td>0.00</td><td>0.00</td></tr>
+  <tr><td>&pi;<sub>0.5</sub>-Waveform</td><td>Y</td><td>0.61</td><td>0.31</td><td>0.43</td><td>0.52</td></tr>
+  <tr><td>&pi;<sub>0.5</sub>-ASR</td><td>Y</td><td>0.35</td><td>0.09</td><td>0.04</td><td>0.52</td></tr>
+  <tr><td>Play it by Ear</td><td>N</td><td>0.28</td><td>0.15</td><td>0.10</td><td>0.12</td></tr>
+  <tr><td>ManiWAV</td><td>N</td><td>0.26</td><td>0.12</td><td>0.17</td><td>0.08</td></tr>
+  <tr><td><strong>HEAR</strong></td><td>Y</td><td><strong>0.81</strong></td><td><strong>0.51</strong></td><td><strong>0.81</strong></td><td><strong>0.85</strong></td></tr>
+</table>
+<p>HEAR wins every task (avg 0.81 vs 0.61 for the best baseline,
+&pi;<sub>0.5</sub>-Waveform). Waveform rendering is the strongest baseline on
+loud spikes but is brittle to where the onset lands in the window; ASR helps
+only on explicit speech and discards non-speech timbre/prosody; vision-only
+backbones collapse (the early-press shortcut is rejected by the causal success
+rule).</p>
+
+<p><strong>Real robot (Table 4, 100 trials/task):</strong> HEAR 0.54 avg vs
+0.39 (&pi;<sub>0.5</sub>-Waveform), 0.34 (Play it by Ear / ManiWAV).
+Long-horizon real-world process monitoring is hard for everyone &mdash; Moka
+Coffee 0.18, Answer Phone 0.15 &mdash; but HEAR triples the best baseline on
+those; on Shake Bottle 0.88 and Real Alarm Clock 0.96 it is strongly robust.</p>
+
+<p><strong>Ablations (HEAR-Bench avg over 7 tasks, Table 5):</strong> removing
+OpenX-Sound pretraining 0.81&rarr;0.69; removing the <strong>Historizer</strong>
+is the most damaging, 0.81&rarr;0.57 (causal-GRU memory 0.67, EMA-pooling 0.62,
+all below the Streaming Stateful Transformer); removing the
+<strong>Advancer</strong> 0.81&rarr;0.73 (worst on continuous process tasks);
+removing stage text 0.77; replacing CFM Realizer with direct regression 0.70.
+<strong>Temporal Motion Collapse</strong> (Table 6, fraction of low-motion
+&lt;2&nbsp;mm steps): full HEAR 0.15 vs 0.33 (no Advancer) / 0.38 (regression
+Realizer) &mdash; the Advancer + CFM keep motion continuous during listening.
+<strong>Replanning frequency</strong> (Table 7): aggressive re-querying does
+<em>not</em> substitute for causal memory (execute-first-action-only drops to
+0.71); open-loop chunk execution with the Historizer is best (0.81).
+<strong>Error decomposition</strong> (Table 8): HEAR cuts both false-trigger
+(act early) to 0.02 and miss-detection (fail to act after cue) to 0.04, vs e.g.
+0.91/0.57 for OpenVLA.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>OpenX-Sound audio is <em>synthesized</em> from video; generated audio may
+  omit subtle contact cues, alter event timing, or hallucinate sounds, capping
+  the value of purely-offline pretraining &mdash; real fine-tuning remains
+  necessary. They call for native datasets with synchronized mics + acoustic
+  metadata.</li>
+  <li>Single workspace microphone &mdash; cannot localize sources or separate
+  overlapping events (the cocktail-party problem); multi-mic arrays + beamforming
+  are future work.</li>
+  <li>Trained entirely by offline imitation, so robustness is bounded by the
+  noise/timing diversity in demos; real-world ego-noise and reverberation
+  degrade perception. Online fine-tuning / RL is flagged.</li>
+  <li>Long-horizon unconstrained real-world cooking acoustics (Moka Coffee 0.18)
+  remain an open challenge.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The "concepts" here are <strong>implicit and task-tied</strong>: the
+  audio world model predicts <em>raw future audio codes</em>, and stage labels
+  are free-text JSON (<code>"wait"</code>, <code>"listen for beep"</code>) baked
+  into one network &mdash; there is no <em>named, reusable, transferable</em>
+  audio predicate (no <code>is_boiling(pot)</code> classifier you could drop
+  into a planner). State transitions are tracked in a latent, not exposed as
+  precondition/effect symbols.</li>
+  <li>Success criteria are hand-authored per task in the simulator (timestamps
+  of cue onset vs goal). The audio "concept" of <em>completion</em> is supplied
+  by the benchmark's privileged trigger, not <em>learned</em> as a transferable
+  recognizer &mdash; so generalization to a genuinely novel sound-defined state
+  is untested.</li>
+  <li>Closed-loop here means re-querying after each open-loop chunk with a
+  persistent memory; it is reactive timing, not <em>semantic
+  replanning</em> over a symbolic state &mdash; there is no explicit
+  failure-detection / recovery module, no planner.</li>
+  <li>arXiv ID 2603.16086 and the "Chi et al. 2025 / Intelligence et al. 2025"
+  citations imply a future/placeholder dating; treat venue as preprint.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is the <strong>closest existing prior art on the AUDIO axis</strong> of
+the dynamic-state-change idea, and it both validates and partially threatens it.
+Mapped against <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+and the "ground dynamic state-transitions on non-visual sensing, monitored over
+time, to drive closed-loop correction" thesis:</p>
+<ul>
+  <li><strong>It covers the dynamic-over-time axis squarely.</strong> Pour Water
+  and Boil Water are exactly the "coming to a boil" / "is full now" continuous
+  process-monitoring cases &mdash; sound evolves while vision is quasi-static.
+  Its audio world model (Advancer) explicitly learns <em>temporal dynamics</em>
+  of the soundscape, and its timing-sensitive success rule operationalizes
+  "act only after the state has actually changed." This is the strongest
+  demonstration in the corpus that <em>non-visual, time-evolving</em> evidence
+  can gate manipulation. BLADE's Boil Water demo is visual + endogenous; HEAR
+  shows the acoustic, exogenous version of the same task.</li>
+  <li><strong>It threatens the novelty on "monitor a state transition via
+  audio."</strong> If the pitch is merely "robots can use boiling/pouring sound
+  to know when to act," HEAR already does it end-to-end with a benchmark. The
+  defensible delta must live elsewhere (below).</li>
+  <li><strong>What it explicitly does NOT do &mdash; the open territory:</strong>
+  (1) <em>No open-vocabulary, learned, transferable concepts.</em> The audio
+  "state" is an implicit latent + per-task free-text stage label trained jointly;
+  there is no reusable <code>is_boiling</code>/<code>became_slippery</code>
+  recognizer transferable across tasks or composable. (2) <em>No planner-level
+  predicates.</em> Nothing enters a symbolic state with preconditions/effects;
+  there is no bi-level planning, no PDDL operator, no logical goal formula
+  &mdash; exactly BLADE's contribution. (3) <em>No semantic replanning /
+  failure-correction loop.</em> "Closed-loop" = re-query-with-memory, not
+  detect-violation-and-replan as in
+  <a href="reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>
+  or <a href="inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>.
+  So the live research wedge is: <strong>learn <em>named, transferable, open-vocab</em>
+  audio/multimodal state-change predicates and lift them to a planner</strong>
+  &mdash; combine HEAR's continuous audio world-model evidence with BLADE-style
+  predicate grounding so a boil/pour cue becomes a planner-usable effect, not a
+  latent that drives one open-loop policy.</li>
+  <li><strong>Contrast on the modality axis:</strong> HEAR is the audio analogue
+  of the tactile/force work
+  (<a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>,
+  <a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>)
+  but goes further on <em>dynamics</em> (a predictive world model over future
+  sound). It complements
+  <a href="audio_vla_contact_audio_perception.html">Audio-VLA</a> /
+  <a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a> (which it beats as
+  baselines) by adding causal memory + temporal grounding. The pouring-sound
+  thread connects to
+  <a href="making_sense_audio_vibration_pouring.html">Making Sense of Audio
+  Vibration</a> and the
+  <a href="the_sound_of_water_physical_properties_pouring.html">Sound of Water</a>
+  &mdash; but those infer <em>physical properties</em>, not closed-loop control.</li>
+</ul>
+
+<h2>Quotable</h2>
+<blockquote>
+  This problem is exacerbated by action chunking with open-loop execution,
+  which creates a Blind Execution Interval where important acoustic events are
+  lost between discrete audio observation windows.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  Reaching the geometric goal before the relevant acoustic cue should be counted
+  as failure, even if the final state looks visually correct.
+  <span class="quote-cite">&mdash; &sect;3.4.1, Timed Success Criteria</span>
+</blockquote>
+<blockquote>
+  Our results suggest that robust sound-centric manipulation necessitates causal
+  persistence and explicit temporal learning &hellip; a policy that listens while
+  moving must also move in ways that make listening possible.
+  <span class="quote-cite">&mdash; Abstract / &sect;6.4.5</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>Zhao et al. 2023 &mdash; Action Chunking (ACT/ALOHA)</strong> &mdash;
+  source of the "action chunk" / Temporal Motion Collapse framing HEAR builds on.
+  Not in corpus.</li>
+  <li><strong>Lipman et al. 2023 &mdash; Flow Matching</strong> &amp;
+  <strong>Chi et al. &mdash; Diffusion Policy</strong> &mdash; the action-generation
+  backbone (Realizer); Diffusion Policy is also BLADE's low-level controller.</li>
+  <li><strong>D&eacute;fossez et al. 2024 &mdash; Mimi / neural audio codec</strong>
+  &mdash; the discrete tokenizer the Advancer predicts over.</li>
+  <li><strong>Sinapov et al. 2009/2014 &mdash; Interactive Perception of material
+  via acoustics</strong> &mdash; classical root; the
+  <a href="interactive_perception_action_in_perception.html">Interactive
+  Perception survey</a> is the corpus entry for this line.</li>
+</ul>
+<p>Related papers already in the corpus:</p>
+<ul>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+  &mdash; the anchor: learns named predicates with preconditions/effects and
+  bi-level-plans. HEAR is the audio-grounded, planner-free, implicit-latent
+  counterpoint; the gap between them (transferable audio predicates &rarr;
+  planner) is the research wedge.</li>
+  <li><a href="audio_vla_contact_audio_perception.html">Audio-VLA</a>,
+  <a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a>,
+  <a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a> &mdash;
+  contact/in-the-wild audio in manipulation; ManiWAV is a HEAR baseline it
+  outperforms. HEAR adds causal memory + a predictive audio world model.</li>
+  <li><a href="making_sense_audio_vibration_pouring.html">Making Sense of Audio
+  Vibration (pouring)</a> and
+  <a href="the_sound_of_water_physical_properties_pouring.html">The Sound of
+  Water</a> &mdash; the pouring-acoustics thread; property inference vs HEAR's
+  closed-loop control.</li>
+  <li><a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>,
+  <a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>,
+  <a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a> &mdash;
+  the other non-visual modalities; HEAR is the audio cousin, distinguished by
+  temporal-dynamics modeling.</li>
+  <li><a href="reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>
+  and <a href="inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>
+  &mdash; multimodal failure explanation / closed-loop replanning; the
+  <em>semantic</em> closed loop HEAR does <em>not</em> implement (it does
+  reactive re-query-with-memory instead).</li>
+  <li><a href="real_world_cooking_robot_system_from_recipes_with_foundation_models_and_pddl.html">Kanazawa cooking robot</a>
+  &mdash; food-state&rarr;PDDL cooking; HEAR's Moka/Boil tasks are the
+  sound-gated, non-symbolic version of the same cooking-state-change problem.</li>
+</ul>
+
+</body>
+</html>

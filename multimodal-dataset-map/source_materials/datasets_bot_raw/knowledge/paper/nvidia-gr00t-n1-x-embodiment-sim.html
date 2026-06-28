@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NVIDIA GR00T X-Embodiment Sim</title>
+<meta name="type" content="paper">
+<meta name="authors" content="">
+<meta name="year" content="2025">
+<meta name="venue" content="datasets.bot public catalog">
+<meta name="arxiv_id" content="2505.12705">
+<meta name="url" content="https://arxiv.org/abs/2505.12705">
+<meta name="pdf" content="https://arxiv.org/abs/2505.12705">
+<meta name="tags" content="datasets-bot,open-data,manipulator,simulated,language,proprioception,rgb,lerobot">
+<meta name="status" content="datasets-bot-crosscheck">
+<meta name="ingested" content="2026-06-28">
+<meta name="source_prompt" content="datasets.bot public catalog cross-check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .meta { color: #777; font-size: 0.9em; }
+  a { color: #2962ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>NVIDIA GR00T X-Embodiment Sim</h1>
+<p class="meta">NVIDIA (GEAR Lab / Isaac) &middot; 2025 &middot; datasets.bot &middot; <a href="https://datasets.bot/datasets/nvidia-gr00t-n1-x-embodiment-sim">datasets.bot page</a></p>
+<p><strong>One-liner.</strong> NVIDIA's open simulated humanoid/arm manipulation dataset used to post-train the GR00T N1 foundation model; LeRobot format, CC-BY-4.0.</p>
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> The public, downloadable dataset behind NVIDIA's Isaac GR00T N1 humanoid foundation model. It bundles simulated post-training trajectories across multiple embodiments (Fourier GR1 humanoid in arms-only/full-upper-body/arms+waist configs, single-arm and bimanual Franka Panda with gripper and dexterous-hand variants, and a Unitree G1 loco-manipulation set) covering cross-embodied bimanual manipulation, humanoid tabletop manipulation, and robot-arm kitchen manipulation. Released on Hugging Face under CC-BY-4.0 in a LeRobot-compatible per-task layout (data/meta/videos), it has surpassed 10M downloads. The related DreamGen / GR00T-Dreams release (arXiv 2505.12705, Apache-2.0) is a synthetic-trajectory generation method plus code/benchmark, not a standalone downloadable trajectory dataset. License: CC-BY-4.0. Download: https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-X-Embodiment-Sim.</li>
+  <li><strong>Hardware / simulator:</strong> Embodiment: franka_panda, humanoid_other, unitree_humanoid. Environment: simulation, kitchen, tabletop. Realness: simulated.</li>
+</ul>
+<h2>Schema</h2>
+<p>Multiple per-embodiment/per-task LeRobot datasets (data/meta/videos) -&gt; episodes -&gt; steps -&gt; {observation (rgb images + state/proprioception), action, language task annotation}</p>
+<h2>Links</h2>
+<ul>
+  <li><a href="https://datasets.bot/datasets/nvidia-gr00t-n1-x-embodiment-sim">datasets.bot page</a></li>
+  <li><a href="https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-X-Embodiment-Sim">Homepage</a></li>
+  <li><a href="https://arxiv.org/abs/2505.12705">Paper</a></li>
+  <li><a href="https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-X-Embodiment-Sim">Download</a></li>
+</ul>
+</body>
+</html>

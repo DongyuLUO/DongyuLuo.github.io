@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DoReMi: Grounding Language Model by Detecting and Recovering from Plan-Execution Misalignment</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Guo, Wang, Zha, Chen">
+<meta name="year" content="2024">
+<meta name="venue" content="arXiv preprint (2307.00329v4)">
+<meta name="arxiv_id" content="2307.00329">
+<meta name="url" content="https://arxiv.org/abs/2307.00329">
+<meta name="pdf" content="../../raw/papers/doremi_grounding_language_plans_detecting_recovering.pdf">
+<meta name="tags" content="llm-planning, failure-detection, closed-loop, replanning, vlm, manipulation, process-monitoring, foundation-models">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-25">
+<meta name="source_prompt" content="related-work ingest: dynamic state-change concept grounding for manipulation">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1>DoReMi: Grounding Language Model by Detecting and Recovering from Plan-Execution Misalignment</h1>
+<p class="meta">
+  Yanjiang Guo*, Yen-Jen Wang*, Lihan Zha, Jianyu Chen&dagger;
+  &middot; Tsinghua University (IIIS) / Shanghai Qi Zhi
+  &middot; 2024 (arXiv 2307.00329v4)
+  &middot; <a href="https://arxiv.org/abs/2307.00329">arXiv:2307.00329</a>
+  &middot; <a href="../../raw/papers/doremi_grounding_language_plans_detecting_recovering.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> DoReMi makes the LLM emit not just a high-level
+plan but also, for each skill, a set of natural-language <em>constraints</em>
+("robot holds box", "red block on green block"); a VLM "constraint detector"
+then checks those constraints <em>continuously during low-level execution</em>
+(every 0.2&nbsp;s), and the instant one is violated the skill is aborted and
+the LLM re-plans &mdash; closing the loop <em>inside</em> a skill rather than
+only between skills.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>LLM task planners that decompose an instruction into a sequence of
+pre-trained low-level skills are typically <em>open-loop</em>: the skill is
+assumed to execute the plan step perfectly. In the real world it doesn't &mdash;
+environmental perturbations or imperfect controllers cause the low-level
+execution to drift from the high-level plan <em>at any moment during a skill</em>
+(the paper's running example: a humanoid carrying a box accidentally drops it
+while "go to the gray table"; continuing is futile). Prior feedback methods
+(ReAct, Reflexion, and especially
+<a href="inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>)
+inject feedback into the LLM prompt only <em>after</em> a skill <em>finishes</em>
+&mdash; delayed, low-frequency, step-level feedback. DoReMi's pitch is that
+misalignment must be detected <em>during</em> execution, continuously and at high
+frequency, with detectors cheap enough to run in the loop.</p>
+
+<h2>Method</h2>
+<p>Two-stage framework (Fig 2c, Algorithm 1):</p>
+<p><strong>1. LLM for plan + constraint generation.</strong> The LLM plays a
+<em>dual role</em>. Via few-shot in-context prompting it (i) selects the next
+skill <code>&pi;<sub>n</sub></code> from the skill set, and (ii) generates the
+<em>constraints</em> <code>c<sub>n</sub></code> that must hold while that skill
+executes, drawing on its commonsense physical knowledge of the task. The prompt
+is constructed so that after the LLM picks the next step it continues generation
+starting from "<code>Constraint:</code>" to derive the constraints. Example: after
+"pick up box", the LLM emits the constraint "robot holds box"; violation signals
+a failed pick or a drop. Constraints are arbitrary text predicates ("red block
+on blue block", "no obstacles in front of the robot", "robot is holding an apple").
+They run Vicuna-13B locally (pick next skill at max output probability) and also
+test GPT-4 (zero temperature) as the planner.</p>
+<p><strong>2. VLM as constraint detector.</strong> During the chosen skill's
+execution, a pre-trained VLM (BLIP-2) is queried every &Delta;t&nbsp;=&nbsp;0.2&nbsp;s.
+Each LLM-generated constraint <code>c<sub>j</sub></code> is auto-templated into a
+yes/no question "Question: Is the <em>constraint c<sub>j</sub></em> satisfied?
+Answer:", and the VLM picks from {"Yes", "No"} &mdash; a tiny output (&lt;0.1&nbsp;s,
+&lt;0.1&nbsp;USD). If any constraint reads False, the skill is aborted, the
+violation text is appended to the LLM prompt, and re-planning is triggered for
+immediate recovery. Key design point (Fig 3): forcing the VLM into a focused
+binary query about an LLM-specified constraint is far less ambiguous than asking
+the VLM for an open-ended scene description (the failure mode they attribute to
+Inner Monologue's scene descriptors). For complex scenes (prepare-food) they
+LoRA-fine-tune BLIP-2 on a small dataset to sharpen the detector; the framework
+also notes detectors in <em>other modalities</em> could run in parallel at
+different frequencies, though only the vision VLM is implemented.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Robot-arm tasks adapted from
+    <em>Ravens</em> / Transporter Nets (Pick-and-Place, Stack-blocks-in-order)
+    with CLIPort-style pre-trained pick/place primitives; humanoid tasks
+    (Obstacle-avoidance, Move-box, Prepare-food, plus real Prepare-food-real and
+    Stack-real). A 128 image-text pair fine-tuning set (5 fruit demos) for the
+    VLM-FT variant.</li>
+  <li><strong>Hardware / simulator:</strong> Sim UR5e arm with suction gripper
+    (third-view camera); a 20-DoF humanoid (6 DoF/leg, 4 DoF/arm) with a
+    DeepMimic RL locomotion policy + model-based manipulation; real humanoid with
+    dexterous/factory pick primitives, LLMs/VLMs on the cloud communicating at
+    1&nbsp;Hz.</li>
+  <li><strong>Baselines:</strong> SayCan (LLM step decomposition, open-loop);
+    CLIPort (multi-task policy + VLM success detector, step-level repeat);
+    <a href="inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue (IM)</a>
+    (VLM scene descriptors + success detector, re-plan on step completion);
+    IM-Oracle (Inner Monologue with oracle feedback &mdash; an upper bound that
+    doesn't exist in practice). DoReMi-FT denotes DoReMi with the fine-tuned VLM.</li>
+  <li><strong>Compute:</strong> VLM LoRA fine-tuning on a single Nvidia A100;
+    BLIP-2 detector query &lt;0.1&nbsp;s. Otherwise <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Across both robot-arm (Table I) and humanoid (Table II) tasks under injected
+disturbances (random box-drop probability <em>p</em>, placement noise <em>n</em>,
+obstacle density <em>d</em>, pick-failure), DoReMi reports higher success rates
+<em>and</em> shorter execution times than SayCan / CLIPort / Inner Monologue,
+trailing only the (impractical) IM-Oracle &mdash; and on some humanoid tasks
+DoReMi-FT even surpasses IM-Oracle on execution time because immediate detection
+avoids wasted motion.</p>
+<ul>
+  <li>SayCan fails consistently under disturbance (no detector, no re-planning).</li>
+  <li>On stack-blocks with collapse (Fig 5 left), CLIPort+success-detector keeps
+    repeating the previous step and fails; DoReMi detects the misalignment and
+    re-plans to fix the collapsed block first.</li>
+  <li>On the box-drop humanoid task (Fig 5 right), Inner Monologue (even
+    oracle) only re-plans after the skill finishes &mdash; delayed recovery;
+    DoReMi aborts mid-skill and recovers faster.</li>
+  <li>Humanoid Move-box with drop <em>p</em>=0.04: DoReMi 96&plusmn;4 vs SayCan
+    42&plusmn;9 / IM 46&plusmn;9 success. Real humanoid: Prepare-food-real
+    90% and Stack-real 80% for DoReMi-FT vs 20% / 10&ndash;20% for IM.</li>
+  <li>Zero-shot VLM degrades as scene complexity rises (prepare-food); LoRA
+    fine-tuning on 128 pairs lifts BLIP-2 detector accuracy markedly (Table III)
+    and generalizes to unseen objects, backgrounds, and tasks (Fig 6). Ablation
+    (Table IV): BLIP-2 &asymp; Instruct-BLIP, all zero-shot VLMs weak on
+    prepare-food.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Zero-shot VLM detector performance "diminishes as the scene complexity
+    increases" &mdash; complex multi-object scenes need fine-tuning to be reliable.</li>
+  <li>Constraints are checked through a single vision VLM; detectors in other
+    modalities are described as "compatible" but not implemented.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>All constraints are vision-checkable boolean predicates.</strong>
+    The whole pipeline assumes the relevant misalignment is visible to a camera
+    ("box dropped", "block collapsed"). State changes that are invisible &mdash;
+    "water is hot now", "grasp is slipping", "surface became slippery", "screw is
+    tight" &mdash; have no detector here. This is the central gap relative to my
+    direction.</li>
+  <li>Constraints are <em>LLM-generated text</em>, not grounded learned
+    predicates. Their truth depends on the VLM correctly parsing free-form
+    language into a yes/no judgement; there is no learned classifier per concept
+    and no guarantee the VLM and LLM share a grounding of the phrase.</li>
+  <li>Constraints are largely <em>static spatial/possession</em> facts checked
+    repeatedly, not <em>temporal transitions</em>. DoReMi monitors "is constraint
+    X still true?" but does not reason about a process unfolding ("is it coming to
+    a boil?", "has it become cooked?") &mdash; a transition would have to be
+    encoded as a static end-state predicate.</li>
+  <li>Re-planning latency vs detection frequency tension: detector runs at 5&nbsp;Hz
+    but the cloud LLM/VLM loop on the real humanoid is 1&nbsp;Hz; how detection
+    frequency trades against re-plan cost in faster-dynamics tasks is untested.</li>
+  <li>No measure of false-positive aborts: an over-eager constraint detector that
+    spuriously fires would abort good executions; the cost of detector precision
+    isn't analyzed.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>DoReMi is a clean exemplar of the <strong>closed-loop replanning axis</strong>
+I want my work to live on: the LLM emits constraints, a perception model checks
+violations <em>continuously</em>, and recovery/replanning is triggered the moment
+a constraint breaks. That continuous-monitoring-plus-recovery loop is exactly the
+control structure I want for dynamic state-change concepts &mdash; it is the
+"detect misalignment during execution, not after" insight made concrete, and a
+sharper version of the step-level feedback in
+<a href="inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>
+and the post-hoc explanation in
+<a href="reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>.</p>
+<p>But it covers only half the axes of my idea and misses the half I care about
+most. (1) <strong>Vision-only constraint checking:</strong> every detector is a
+VLM looking at a camera, so it can only catch <em>visible</em> misalignments.
+The dynamic concepts I target &mdash; "hot enough now", "became slippery after
+wetting", "coming to a boil", a slipping grasp &mdash; are exactly the ones a
+camera can't read; they need tactile/audio/thermal/force monitoring (the modality
+my line, with <a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>,
+<a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>,
+<a href="audio_vla_contact_audio_perception.html">Audio-VLA</a> etc., is built on).
+(2) <strong>Constraints are LLM-text, not grounded multimodal change-predicates:</strong>
+unlike <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+learned predicate classifiers with preconditions/effects, DoReMi's constraints are
+free-form phrases the VLM zero-shot-parses, with no learned grounding and no notion
+of effect-as-state-transition. (3) <strong>Static facts, not transitions:</strong>
+it monitors persistence of a static predicate, not the temporal evolution of a
+process. So DoReMi gives me the loop architecture I want but stops at vision +
+text + static facts; my contribution sits precisely in swapping its vision-VLM
+constraint detector for grounded, multimodal, time-series <em>change</em>-predicates
+that drive the same recovery loop. It pairs naturally with
+<a href="code_as_monitor_constraint_aware_failure_detection.html">Code-as-Monitor</a>
+(constraints as executable visual programs) as the two "constraint-as-monitor"
+points to position against.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We leverage LLMs to play a dual role, aiding not only in high-level planning but
+  also generating constraints that can indicate misalignment during execution.
+  Then vision language models (VLMs) are utilized to detect constraint violations
+  continuously.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  Inner Monologue needs manually designed queries to get information from
+  environments, which is impractical and hard to obtain at high frequency. In
+  contrast to this, our framework enables precise and high-frequency feedback with
+  practical detectors automatically.
+  <span class="quote-cite">&mdash; &sect;II, Related Works</span>
+</blockquote>
+<blockquote>
+  For each query, the VLM only needs to select an answer from {"Yes", "No"}, which
+  consists of very short token lengths and costs less than 0.1 second.
+  <span class="quote-cite">&mdash; &sect;III-C, VLM as Constraint Detector</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that could be ingested next (PDF not yet in corpus):</p>
+<ul>
+  <li><strong>Huang et al. 2022 &mdash; Inner Monologue</strong> &mdash; the
+    closest prior; DoReMi's step-level-feedback foil. (Already in corpus, linked
+    below.)</li>
+  <li><strong>Li et al. 2023 &mdash; BLIP-2</strong> &mdash; the VLM used as the
+    constraint detector; foundational dependency.</li>
+  <li><strong>Ahn et al. 2022 &mdash; SayCan</strong> &mdash; open-loop LLM
+    planner baseline.</li>
+  <li><strong>Shridhar et al. 2022 &mdash; CLIPort</strong> &mdash; the
+    pick/place primitive policy + success-detector baseline.</li>
+  <li><strong>Peng et al. 2018 &mdash; DeepMimic</strong> &mdash; the humanoid
+    locomotion-policy backbone.</li>
+  <li><strong>Shinn et al. 2023 &mdash; Reflexion</strong> / <strong>Yao et al.
+    2022 &mdash; ReAct</strong> &mdash; the discrete-scene LLM-feedback line DoReMi
+    contrasts with.</li>
+</ul>
+<p>Related papers already in the corpus:</p>
+<ul>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; the anchor: learned predicate classifiers with preconditions/effects +
+    replan-after-each-behavior. DoReMi is the text-constraint, vision-only,
+    intra-skill-monitoring counterpart to BLADE's symbolic, multimodal-capable,
+    inter-behavior replanning.</li>
+  <li><a href="inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>
+    &mdash; the direct baseline DoReMi sharpens: step-level vs continuous feedback,
+    open-ended scene descriptors vs focused binary constraint queries.</li>
+  <li><a href="reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>
+    &mdash; multimodal post-hoc failure explanation + correction; DoReMi is the
+    online, in-the-loop analogue (detect-during vs explain-after).</li>
+  <li><a href="code_as_monitor_constraint_aware_failure_detection.html">Code-as-Monitor</a>
+    &mdash; the other "constraint-as-monitor" point: constraints compiled to
+    executable visual programs rather than VLM yes/no queries.</li>
+</ul>
+
+</body>
+</html>

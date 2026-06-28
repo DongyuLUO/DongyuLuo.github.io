@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FoAR: Force-Aware Reactive Policy for Contact-Rich Robotic Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="He, Fang, Chen, Fang, Lu">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint (ICRA 2025)">
+<meta name="arxiv_id" content="2411.15753">
+<meta name="url" content="https://arxiv.org/abs/2411.15753">
+<meta name="pdf" content="../../raw/papers/foar_force_aware_reactive_policy.pdf">
+<meta name="tags" content="force-torque, diffusion-policy, contact-rich, force-control, sensory-fusion, imitation-learning, robot-learning, multisensory">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>FoAR: Force-Aware Reactive Policy for Contact-Rich Robotic Manipulation</h1>
+<p class="meta">
+  Zihao He*, Hongjie Fang*, Jingjing Chen, Hao-Shu Fang&dagger;, Cewu Lu&dagger;
+  &middot; Shanghai Jiao Tong University
+  &middot; 2025 (arXiv:2411.15753v2; ICRA 2025)
+  &middot; <a href="https://arxiv.org/abs/2411.15753">arXiv:2411.15753</a>
+  &middot; <a href="../../raw/papers/foar_force_aware_reactive_policy.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> FoAR bolts high-frequency (100&nbsp;Hz)
+force/torque sensing onto the RISE point-cloud diffusion policy and lets a
+learned <em>future-contact predictor</em> gate <em>when</em> the force
+channel is allowed to influence actions &mdash; so noisy F/T data helps during
+the wipe/peel/chop and stops poisoning the non-contact grasp/move phases &mdash;
+while a reactive controller nudges the end-effector toward more contact when
+forces read too low, all under plain position control.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Vision-only policies can't see contact: RGB and point clouds look nearly
+identical just before and just after the eraser touches the whiteboard
+(Fig&nbsp;1 left), so the policy can't tell whether it is actually pressing.
+Force/torque is the obvious complementary signal &mdash; contact <em>produces</em>
+force, directly and in real time. But prior force-augmented policies
+([21] ForceMimic, [31] TacDiffusion-style hybrid force/position, [46]
+impedance-feedforward) fuse F/T with vision <em>throughout the whole
+trajectory</em>, ignoring that force is <strong>sparsely activated</strong>:
+in a wiping task only the wipe phase is contact-rich, and during the
+pick-up/place phases the raw sensor noise actively degrades the policy. Many
+of these methods also sidestep the problem by assuming the object is already
+grasped or rigidly fixed to the arm. FoAR's premise: the policy should learn
+to <em>modulate</em> force usage by predicted contact, not fuse it
+uniformly.</p>
+
+<h2>Method</h2>
+<p>FoAR extends <strong>RISE</strong> [44], a real-world imitation policy that
+maps a single-view RGB-D point cloud <code>p<sub>t</sub></code> to an action
+chunk <code>a<sub>t:t+T<sub>a</sub></sub></code> via a sparse-3D (Minkowski)
+encoder + transformer + diffusion head. FoAR adds a force/torque stream and a
+contact-gated fusion (Fig&nbsp;2).</p>
+
+<p><strong>1. Two encoders.</strong> The point cloud is encoded to a scene
+feature <code>h<sup>s</sup><sub>t</sub> &isin; R<sup>512</sup></code>
+(RISE backbone). The force/torque history
+<code>f<sub>t&minus;T<sub>o</sub>:t</sub> &isin; R<sup>T<sub>o</sub>&times;6</sup></code>
+&mdash; sampled at ~100&nbsp;Hz over <code>T<sub>o</sub>=200</code> steps
+(~2&nbsp;s) &mdash; goes through a 3-layer MLP per timestep, then a transformer
+with sinusoidal temporal positional encodings, producing a force feature
+<code>h<sup>f</sup><sub>t</sub> &isin; R<sup>512</sup></code>. Note the two
+streams run at different rates: F/T history at 100&nbsp;Hz, action prediction
+at ~10&nbsp;Hz.</p>
+
+<p><strong>2. Contact-gated feature fusion (the core idea).</strong> A
+<em>future contact predictor</em> outputs <code>&phi;(t) &isin; [0,1]</code>,
+the probability that contact will occur in the near future. Fusion is:</p>
+<blockquote>
+  <code>h<sub>t</sub> = [ h<sup>s</sup><sub>t</sub> ;
+  &phi;(t)&middot;h<sup>f</sup><sub>t</sub> + (1&minus;&phi;(t))&middot;h<sup>*</sup> ]</code>
+</blockquote>
+<p>where <code>h<sup>*</sup></code> is a <em>learnable neutral embedding</em>.
+When contact is likely (<code>&phi;&rarr;1</code>) the real force feature is
+concatenated to the scene feature; when not (<code>&phi;&rarr;0</code>) the
+force slot is replaced by the neutral embedding, blocking sensor noise from
+the non-contact phases. The fused <code>h<sub>t</sub></code> conditions the
+diffusion action head.</p>
+
+<p><strong>3. The contact predictor is deliberately a separate, lightweight
+head.</strong> It takes the current RGB image <code>I<sub>t</sub></code>
+(ResNet18 encoder) plus the F/T history (MLP), concatenates, and a linear
+layer outputs <code>&phi;</code>. Two design notes from the paper: (i) RGB is
+used instead of the point cloud because it performs comparably for
+contact-state classification but is lighter; (ii) crucially, the predictor
+must <em>not</em> share the policy's sparse-3D encoder &mdash; the ablation
+<code>FoAR (3D-cls)</code> that shares it collapses below RISE, because the
+predictor wants coarse "is the tool over the board" features while the policy
+wants precise object/end-effector geometry, and shared attention conflicts.</p>
+
+<p><strong>4. Supervision.</strong> Action loss <code>L<sub>action</sub></code>
+is standard L2 in the diffusion process. The <em>ground-truth future contact
+label</em> is auto-extracted from demos: within a window
+<code>[t&minus;2s, t+2s]</code>, contact is true if F/T magnitude exceeds a
+per-task threshold <code>&delta;<sub>demo</sub></code> (read off the
+demonstrations manually). It supervises <code>&phi;</code> via BCE
+<code>L<sub>predictor</sub></code>. Total loss
+<code>L = L<sub>action</sub> + &alpha;L<sub>predictor</sub></code>,
+<code>&alpha;=0.1</code>.</p>
+
+<p><strong>5. Reactive control at deployment (Alg&nbsp;1).</strong> No
+compliance/impedance/hybrid control &mdash; plain end-effector position control.
+At each inference step the predictor's <code>&phi;</code> is thresholded by
+<code>&delta;<sub>&phi;</sub>=0.9</code>: if below, the action goes to a
+non-contact temporal-ensemble buffer; if above (contact imminent), the
+controller checks current force/torque, and if it reads <em>insufficient</em>
+(<code>force &lt; &delta;<sub>f</sub>=8N</code> or
+<code>torque &lt; &delta;<sub>t</sub>=5N&middot;m</code>) it nudges the
+predicted action positions by a small step
+<code>&epsilon;=0.006m</code> along the predicted future direction
+<code>d</code> (toward more contact). Separate ensemble buffers for contact vs
+non-contact phases prevent the two regimes from blurring each other's
+trajectories.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected real-world demos,
+    no public benchmark. Three contact-rich tasks (Fig&nbsp;3) in two
+    categories &mdash; <em>surface force control</em> (Wiping, Wiping&nbsp;General,
+    Peeling) and <em>instantaneous force impact</em> (Chopping). 50
+    teleoperated demos each for Wiping/Peeling, 40 for Chopping, collected via
+    haptic teleoperation (RH20T-style [14]).</li>
+  <li><strong>Hardware / simulator:</strong> Real robot only &mdash; Flexiv
+    Rizon arm, Dahuan AG-95 gripper, <em>OptoForce</em> 6-axis F/T sensor
+    mounted between flange and gripper, single Intel RealSense D435 front
+    camera, 45&times;60&times;40&nbsp;cm workspace. Training on 2&times;A100;
+    data collection/eval on i9-10900K + RTX&nbsp;3090.</li>
+  <li><strong>Baselines:</strong> Vision-only ACT [52], Diffusion Policy [10],
+    RISE [44]; plus three ablation variants &mdash; RISE (force-token):
+    F/T as extra transformer tokens; RISE (force-concat): F/T feature
+    concatenated to vision feature; FoAR (3D-cls): predictor shares the
+    policy's 3D encoder. Oracle = the demonstrations themselves (Chopping).</li>
+  <li><strong>Compute:</strong> Training on 2&times;NVIDIA A100, batch size
+    240, lr 3&times;10<sup>-4</sup>, cosine schedule, 2000 warmup steps.
+    Diffusion head: 100 train / 20 inference (DDIM) steps,
+    <code>T<sub>a</sub>=20</code>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: on all three surface tasks FoAR roughly doubles the score over
+the strongest baseline and hits 100% action-success on both grasp and the
+contact operation. Surface tasks (Table&nbsp;I, "Score" = task quality 0&ndash;1;
+ASR = action success rate %):</p>
+
+<table>
+  <tr><th>Method</th><th>Wiping Score</th><th>Wiping (Gen) Score</th><th>Peeling Score</th></tr>
+  <tr><td>ACT [52]</td><td>0.275</td><td>0.250</td><td>0.120</td></tr>
+  <tr><td>Diffusion Policy [10]</td><td>0.400</td><td>0.350</td><td>0.386</td></tr>
+  <tr><td>RISE [44]</td><td>0.500</td><td>0.500</td><td>0.377</td></tr>
+  <tr><td>RISE (force-token)</td><td>0.575</td><td>0.600</td><td>0.487</td></tr>
+  <tr><td>RISE (force-concat)</td><td>0.475</td><td>0.675</td><td>0.524</td></tr>
+  <tr><td>FoAR (3D-cls)</td><td>0.175</td><td>0.200</td><td>0.270</td></tr>
+  <tr><td><strong>FoAR (ours)</strong></td><td><strong>0.875</strong></td><td><strong>0.850</strong></td><td><strong>0.756</strong></td></tr>
+</table>
+
+<p>Chopping (Table&nbsp;II) &mdash; FoAR more than doubles RISE's segment count
+and roughly halves length error:</p>
+<table>
+  <tr><th>Method</th><th># Segments &uarr;</th><th>Avg. Norm. Len &darr;</th><th>Std &darr;</th><th>Place ASR</th></tr>
+  <tr><td>RISE [44]</td><td>1.8 &plusmn; 0.6</td><td>0.727</td><td>0.411</td><td>30</td></tr>
+  <tr><td><strong>FoAR</strong></td><td><strong>3.9 &plusmn; 0.9</strong></td><td><strong>0.353</strong></td><td><strong>0.094</strong></td><td><strong>70</strong></td></tr>
+  <tr><td><em>Oracle (demo)</em></td><td>5.0 &plusmn; 0.0</td><td>0.200</td><td>0.056</td><td>100</td></tr>
+</table>
+
+<p>Key findings:</p>
+<ul>
+  <li><strong>Naive fusion barely helps and sometimes hurts.</strong> RISE
+    (force-token) and (force-concat) only modestly beat vision-only RISE, and
+    force-token actually <em>lowers</em> grasp ASR (non-contact phase) because
+    of noise &mdash; direct evidence for the sparse-activation thesis.</li>
+  <li><strong>The fusion gate is the load-bearing idea, not just adding
+    force.</strong> FoAR (3D-cls), which adds force but shares the encoder,
+    collapses <em>below</em> RISE (0.175 vs 0.500 on Wiping) &mdash; showing the
+    separation of predictor and policy is essential.</li>
+  <li><strong>Ablations (Table&nbsp;III, Wiping):</strong> removing reactive
+    control drops Score 0.875&rarr;0.650; future-<em>prediction</em> beats
+    contact-<em>detection</em> (detection makes contact late/misses);
+    100&nbsp;Hz F/T &gt; 10&nbsp;Hz (0.875 vs 0.800) &gt; 2&nbsp;Hz (0.625).</li>
+  <li><strong>Robustness (Table&nbsp;IV):</strong> under Rewrite / Move /
+    Rewrite+Move disturbances to Wiping (General), FoAR holds 0.800&ndash;0.850
+    while RISE (force-token) degrades to ~0.45&ndash;0.60.</li>
+  <li><strong>Encoder ablation (Table&nbsp;V):</strong> a transformer F/T
+    encoder beats a plain MLP (Peeling 0.588 vs 0.426), though even the MLP
+    version beats vision-only RISE (0.293).</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Static, manually-set force/torque thresholds
+    (<code>&delta;<sub>f</sub></code>, <code>&delta;<sub>t</sub></code>,
+    <code>&delta;<sub>demo</sub></code>) &mdash; effective here but expected to
+    struggle in more complex environments.</li>
+  <li>Reactive control is just simple end-effector position control with a
+    fixed nudge; future work wants compliance / hybrid force-position
+    control.</li>
+  <li>Demonstrated only on a single arm; extending to dual-arm, humanoids, and
+    dexterous hands is flagged future work.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Tiny-N statistics.</strong> 20 trials per method for surface
+    tasks, but only <em>10 trials</em> for Chopping &mdash; and Chopping is
+    evaluated only for FoAR vs RISE, dropping the four other baselines "to
+    conserve resources." Scores like 0.875 then rest on 20 trials with no
+    confidence intervals on the Score metric (only #Segments has &plusmn;).</li>
+  <li><strong>The reactive nudge can launder credit.</strong> Reactive control
+    actively pushes the end-effector toward more contact when force is low.
+    That means part of FoAR's contact-consistency win comes from a
+    hand-tuned deployment-time controller (<code>&epsilon;=0.006m</code>,
+    <code>T<sub>f</sub>=5</code>), not the learned policy alone &mdash; the
+    Table&nbsp;III ablation shows ~0.225 of the 0.875 is reactive control.
+    Fair, but it muddies "the policy learned contact."</li>
+  <li><strong>Contact-label leakage risk.</strong> The future-contact
+    ground-truth is derived by thresholding the <em>same</em> F/T signal the
+    policy consumes, within a &plusmn;2s window. The predictor is essentially
+    learning a smoothed version of the live force reading; under distribution
+    shift (a stiffer object, a different tool) the threshold-defined label may
+    no longer correspond to "useful contact."</li>
+  <li><strong>No language, no composition.</strong> Tasks are single-skill
+    (one wipe, one peel); the multi-phase structure is handled implicitly by
+    <code>&phi;</code> rather than any explicit phase/skill abstraction. There
+    is no long-horizon chaining and no symbolic state.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>FoAR is a clean, narrow instantiation of a thesis that sits underneath
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+<strong>many manipulation predicates are not visually evaluable.</strong>
+Whether the eraser is <em>actually pressing</em> the board, whether the peeler
+is <em>engaged</em> with the skin &mdash; these are
+<code>is_in_contact</code>-style predicates that live in force, and FoAR's
+Fig&nbsp;1 makes the point starkly: RGB before/after contact is nearly
+identical. BLADE's own limitations section explicitly flags that continuous
+force parameters sit invisibly inside the diffusion policy and that
+gripper-state segmentation can't handle contact-rich tasks; FoAR is a concrete
+demonstration of why that gap matters and one mechanism (a learned contact
+probability <code>&phi;</code>) to fill it.</p>
+<p>The most BLADE-relevant idea is that <code>&phi;(t)</code> is a learned,
+self-supervised <em>contact predicate</em> grounded in force &mdash; auto-labeled
+from demonstrations, exactly the spirit of BLADE's every-frame predicate
+auto-labeling, but for a predicate vision can't ground. A natural research
+move: lift FoAR's binary contact gate into BLADE's symbolic layer, so that
+<code>is_contacting(tool, surface)</code> becomes a force-grounded predicate
+with preconditions/effects, rather than a continuous knob hidden in the
+controller. That marries "structured abstractions over imitation-learned
+skills" with non-visual sensing &mdash; the through-line of this whole
+2026-06-24 batch.</p>
+<p>FoAR is squarely on-theme as a <em>force-grounded skill controller</em>, but
+note what it is <em>not</em>: no language, no planning, no composition, no
+predicate <em>invention</em>. It is the low-level layer, comparable in role to
+the diffusion policies BLADE composes &mdash; an upgraded contact-aware version
+of them.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  &hellip; they often combine force/torque data with vision data through the
+  whole manipulation process, ignoring the fact that force/torque are
+  <em>sparsely activated</em>.
+  <span class="quote-cite">&mdash; &sect;II / p.2</span>
+</blockquote>
+<blockquote>
+  The future contact predictor dynamically adjusts the weight of the force
+  feature &hellip; ensuring that the force data is strongly emphasized during
+  contact phases while minimizing its impact during non-contact phases by
+  blending it with a neutral embedding <em>h*</em>.
+  <span class="quote-cite">&mdash; &sect;III-B, Feature Fusion / p.3</span>
+</blockquote>
+<blockquote>
+  Visual differences in either RGB images or point clouds before and after
+  contact are minimal, making it difficult to determine contact states. In
+  contrast, force/torque data provides clear and reliable indicators of
+  contact.
+  <span class="quote-cite">&mdash; &sect;III-A / p.2</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[44] RISE (Wang et al. 2024)</strong> &mdash; the point-cloud
+    diffusion-policy backbone FoAR extends; the direct vision-only comparison
+    and ancestor.</li>
+  <li><strong>[10] Diffusion Policy (Chi et al. RSS 2023)</strong> &mdash; the
+    action head and the canonical IL baseline; same dependency as BLADE.</li>
+  <li><strong>[52] ACT (Zhao et al. RSS 2023)</strong> &mdash; action-chunking
+    transformer; baseline and the temporal-ensemble source.</li>
+  <li><strong>[31] ForceMimic (Liu et al. 2024)</strong> and
+    <strong>[46] TacDiffusion (Wu et al. 2024)</strong> &mdash; force-domain
+    diffusion policies for hybrid/admittance control; the "fuse force
+    throughout" methods FoAR argues against.</li>
+  <li><strong>[21] Adaptive Compliance Policy (Hou et al. 2024)</strong> and
+    <strong>[53] Admittance Visuomotor Policy (Zhou et al. 2024)</strong> &mdash;
+    diffusion-guided compliance / admittance control; the control-side
+    alternatives FoAR sidesteps with plain position control.</li>
+  <li><strong>[41] Suomalainen et al. 2022 &mdash; A Survey of Robot Manipulation
+    in Contact</strong> (RAS) &mdash; the framing survey for contact-rich
+    manipulation.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive Diffusion Policy</a>
+    &mdash; nearest sibling: a slow-fast visuo-tactile diffusion policy with a
+    reactive fast loop for contact-rich tasks; same "reactive control over a
+    diffusion policy" pattern with tactile instead of F/T.</li>
+  <li><a href="tactile_conditioned_diffusion_policy_force_aware.html">Tactile-Conditioned Diffusion Policy</a>
+    &mdash; the force-aware diffusion-policy cousin; direct method comparison on
+    how the contact modality conditions the action head.</li>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>
+    &mdash; the VLA-scale analogue: a force-aware mixture-of-experts for
+    contact-rich tasks; FoAR's contact-gated fusion vs ForceVLA's MoE routing
+    are two answers to "when should force matter."</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+    &mdash; situates FoAR in the broader push to bring force into
+    foundation-scale policies.</li>
+  <li><a href="making_sense_of_vision_and_touch.html">Making Sense of Vision and Touch</a>
+    &mdash; foundational multimodal (vision+force+proprioception) representation
+    for contact-rich tasks; the lineage FoAR's fusion sits in.</li>
+  <li><a href="hybrid_position_force_control_manipulators.html">Hybrid Position/Force Control (Raibert &amp; Craig 1981)</a>
+    &mdash; the classical control method FoAR explicitly avoids (using position
+    control + reactive nudge instead); the control-theory baseline.</li>
+  <li><a href="factr_force_attending_curriculum_training.html">FACTR</a>
+    and <a href="kinedex_tactile_kinesthetic_teaching.html">KineDex</a>
+    &mdash; other force/tactile policy-learning approaches in cluster F; adjacent
+    points of comparison on how proprioceptive/force signals enter the
+    policy.</li>
+</ul>
+
+</body>
+</html>

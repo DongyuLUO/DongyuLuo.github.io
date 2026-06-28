@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ManiWAV: Learning Robot Manipulation from In-the-Wild Audio-Visual Data</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Liu, Chi, Cousineau, Kuppuswamy, Burchfiel, Song">
+<meta name="year" content="2024">
+<meta name="venue" content="CoRL 2024">
+<meta name="arxiv_id" content="2406.19464">
+<meta name="url" content="https://arxiv.org/abs/2406.19464">
+<meta name="pdf" content="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">
+<meta name="project_page" content="https://maniwav.github.io/">
+<meta name="tags" content="audio-visual, contact-audio, acoustic-sensing, imitation-learning, diffusion-policy, contact-rich, robot-learning, learning-from-demonstration, multisensory">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>ManiWAV: Learning Robot Manipulation from In-the-Wild Audio-Visual Data</h1>
+<p class="meta">
+  Zeyi Liu, Cheng Chi, Eric Cousineau, Naveen Kuppuswamy, Benjamin Burchfiel, Shuran Song
+  &middot; Stanford / Columbia / Toyota Research Institute
+  &middot; 2024 &middot; CoRL 2024
+  &middot; <a href="https://arxiv.org/abs/2406.19464">arXiv:2406.19464</a>
+  &middot; <a href="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">PDF</a>
+  &middot; <a href="https://maniwav.github.io/">project</a>
+</p>
+
+<p><strong>One-liner.</strong> Glue a cheap piezoelectric contact microphone onto a UMI-style handheld gripper finger so anyone can collect in-the-wild audio-visual demos without a robot, then train a diffusion policy on the synchronized vision+sound — and the contact <em>sound</em> turns out to be a free, scalable substitute for tactile/force sensing on contact-rich tasks like flipping, wiping, pouring, and material-discriminating taping.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Most vision-based manipulation systems can't sense contact, yet "selecting and executing good contact is at the core of robot manipulation." Tactile and force/torque sensors fill the gap but are expensive, fragile, low-availability, and require domain expertise. Audio is the under-explored alternative: a contact microphone hears contact <em>events</em> (eraser touching whiteboard), contact <em>modes</em> (spatula poking the bagel vs. sliding under it), surface <em>materials</em> (furry "loop" vs. rough "hook" velcro), and object <em>states</em> (whether a cup contains dice) — sometimes without direct contact. Audio is also cheap, robust, and natively encoded in standard MP4 video pipelines, so it can be collected <em>in the wild</em> with a handheld device, breaking the prior constraint that audio manipulation data required a teleoperated robot with a mic bolted to it. The catch the paper must solve: a large audio domain gap between the quiet handheld recordings and noisy robot deployment.</p>
+
+<h2>Method</h2>
+<p><strong>Ear-in-hand hardware.</strong> Built on the Universal Manipulation Interface (UMI) handheld gripper. They redesign one 3D-printed parallel-jaw finger to embed a <em>piezoelectric contact microphone</em> under high-friction grip tape; the tape both improves grasping and (per Fig 2) provides natural haptic feedback to the human demonstrator. The mic plugs into the 3.5mm external mic port of the GoPro media mod, so audio (48 kHz) streams synchronously with 60 Hz video into a single MP4. At deployment the same instrumented finger is mounted on a UR5; images+audio stream in real-time through an Elgato HD60 X capture card.</p>
+<p><strong>Audio domain-gap augmentation.</strong> The key algorithmic move. Deployment audio differs from handheld audio because of (1) nonlinear robot motor noise and (2) out-of-distribution collision sounds. To force the model onto task-relevant invariant signals, they augment training audio by overlaying, each with probability 0.5: background noises randomly sampled from ESC-50 (normalized to the same scale as collected sound) and 10 recorded robot-motor-noise samples captured under random trajectories with the same contact-mic placement as deployment.</p>
+<p><strong>Encoders + fusion (Fig 3).</strong> Vision: CLIP-pretrained ViT-B/16 on 224&times;224 fisheye RGB (random crop + color jitter), images at 20 Hz over the past 2 timesteps, each encoded via the CLS token. Audio: the last 2&ndash;3 s of waveform resampled 48&rarr;16 kHz (downsampling filters high-freq noise and improves spectrogram frequency resolution), converted to a log-mel spectrogram (FFT/window 400, hop 160, 64 mel bins, normalized to <code>[-1,1]</code>), then encoded by an Audio Spectrogram Transformer (AST) trained <em>from scratch</em>; CLS token from the last hidden layer is used. The authors argue a transformer beats a CNN here because CNN shift-invariance is wrong for spectrograms (a time/frequency shift changes the meaning). A transformer-encoder layer (8 heads) adaptively fuses vision+audio (audio weighted up on contact, vision on reaching), output projected to dim 768 and concatenated with end-effector poses (20 Hz, 2 timesteps).</p>
+<p><strong>Policy.</strong> A diffusion-policy UNet head (Chi et al.) conditioned on the fused observation at each denoising step, end-to-end trained with the noise-prediction MSE loss over the next 16-step trajectory; outputs 10-DoF actions (EE position, 6D rotation, 1D gripper). Audio latency calibrated to 0.23 s (clapperboard-style tap) and compensated as in UMI.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected handheld demos per task: flipping 283 in-lab + 274 in-the-wild (7 environments, 4 pans); wiping 119; pouring 145; taping 193. ESC-50 used as augmentation noise source. No standard benchmark — custom real-world tasks.</li>
+  <li><strong>Hardware / simulator:</strong> UMI handheld gripper with embedded piezoelectric contact mic + GoPro (48 kHz audio, 60 Hz video); deployment on a UR5 arm via Elgato HD60 X capture card into an Ubuntu 22.04.3 desktop. No simulator (real-world only).</li>
+  <li><strong>Baselines:</strong> Vision-only diffusion policy; MLP policy (vs. diffusion head); MLP fusion (vs. transformer fusion); ResNet18 audio encoder (w/ CoordConv); AVID (9-layer CNN pre-trained on AudioSet); No-noise-aug; Noise-masking (mask &lt;500 Hz); test-time noise-reduction algorithm; Env-Mic (Rode directional mic instead of contact mic); audio-history-length ablations (1 s / 10 s).</li>
+  <li><strong>Compute:</strong> Each model end-to-end trained on 2 NVIDIA GeForce RTX 3090 GPUs, 60 epochs, batch 64, AdamW (lr 1e-4) with EMA.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Audio + noise augmentation + transformer fusion wins on all four contact-rich tasks. Overall task success rates (their method "OURS" vs. key baselines):</p>
+<table>
+  <tr><th>Task (rollouts)</th><th>OURS</th><th>Vision-only</th><th>Other</th></tr>
+  <tr><td>Flipping (20)</td><td>90%</td><td>25%</td><td>MLP 60% &middot; ResNet 35% &middot; AVID 55%</td></tr>
+  <tr><td>Wiping (20)</td><td>85%</td><td>40%</td><td>MLP-fusion 35% &middot; noise-mask 50% &middot; no-aug 35%</td></tr>
+  <tr><td>Pouring (12)</td><td>85%</td><td>40%</td><td>1s-audio &amp; 10s-audio both lower (see breakdown)</td></tr>
+  <tr><td>Taping (10)</td><td>~80% (0.7+ bar)</td><td>20%</td><td>Env-mic ~30% &middot; noise-reduction ~30%</td></tr>
+</table>
+<p>Key claims: (1) <strong>contact audio improves robustness/generalization</strong> — pouring jumps 40&rarr;85% because the wrist camera can't see whether dice remain in the cup, while a "shake" action makes the state audible (Fig 11 shows empty vs. dice vs. screws spectrograms; screws generalize because they sound like dice). (2) <strong>Training-time noise augmentation &gt; test-time noise reduction</strong> — the noise-reduction algorithm degrades the signal and reopens a domain gap (Fig 12); noise-masking helps slightly but still presses too hard. (3) <strong>From-scratch AST &gt; CNN encoders</strong> (ResNet, AVID) because self-attention focuses on task-relevant frequency bands. (4) <strong>In-the-wild data enables environment generalization</strong> — flipping policy trained on in-the-wild data beats in-lab-only on two unseen scenes (black stovetop, white countertop). (5) <strong>Contact mic &gt; environment mic</strong> for subtle material discrimination (taping). Attention-viz (Fig 4) shows audio co-training attends to task-relevant regions (drawing shape, free space in pan) while vision-only overfits to background edges as a contact shortcut.</p>
+<p><strong>Where it loses:</strong> In flipping, MLP-policy (60%) and AVID (55%) are respectable; OURS's win over them is real but not dominant. In the wiping per-scenario table (Table 3), noise-masking (50%) is close, and OURS still fails some board-orientation and table-height cases. Pouring substep table (Table 1) shows vision-only actually grasps (100%) and 10s-audio matches grasp but both collapse on the pour/place substeps.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><strong>Author-stated.</strong> The contact mic may be useless when interactions generate no salient sound (deformable objects like cloth, quasi-static tasks), and salient signals can be drowned by robot motor noise at deployment. On the policy side, they don't exploit that audio arrives at higher frequency than images and could drive more <em>reactive</em> behaviors; they suggest a hierarchical architecture (MReST) inferring high-frequency actions from audio.</p>
+<p><strong>What I noticed reading it.</strong> (a) Statistics are thin: 10&ndash;20 rollouts per policy, so a "90% vs 85%" gap is 1&ndash;2 episodes; the bar charts have no error bars or seeds. (b) Each task is a separately trained single-task policy on a few hundred demos — there's no multi-task or language conditioning, so the "in-the-wild scalability" pitch is demonstrated only on flipping (1 of 4 tasks), where in-the-wild data was collected; the other three tasks are in-lab. (c) "Materials" sensing (velcro hook/loop) is binary discrimination, not the fine-grained material spectrum the intro implies. (d) The 10-DoF action output and diffusion head are inherited verbatim from UMI+Diffusion Policy; the genuinely novel parts are the contact-mic hardware mod and the robot-motor-noise augmentation recipe — both task/embodiment-specific (10 robot-noise clips recorded for the UR5). (e) No comparison against an actual tactile/force sensor, so "audio is a cheaper tactile substitute" is asserted, not measured against the thing it replaces.</p>
+
+<h2>Why I care</h2>
+<p>This is a direct, load-bearing data point for the batch thesis that <em>many manipulation predicates are not visually evaluable</em>. ManiWAV's four tasks are essentially audio-grounded predicate classifiers in disguise: <code>is_in_contact</code> (flipping/wiping contact events), <code>contact_mode</code> (poking vs. sliding), <code>cup_is_empty</code> (pouring — explicitly "audio provides critical state information beyond visual observations"), and <code>surface_is_rough</code>/<code>is_hook_tape</code> (taping material discrimination). Each is precisely the kind of touch/sound-resident predicate that <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s visual predicate classifiers cannot evaluate from RGB alone. The pouring result — vision grasps fine but cannot tell if dice remain, so it skips the pour — is a clean existence proof that a planner relying on visual predicates would mis-fire on a precondition that lives in sound.</p>
+<p>For BLADE specifically: BLADE learns visual predicate classifiers + diffusion controllers and composes them by bi-level planning. ManiWAV shows (i) the diffusion controller can be conditioned on a contact-audio representation for contact-rich primitives, and (ii) a cheap contact mic is a plausible sensor for grounding non-visual predicates in a future audio-augmented BLADE. The gap ManiWAV leaves open and BLADE could fill: ManiWAV bakes contact reasoning <em>implicitly</em> into an end-to-end policy with no symbolic predicate or planning layer — it cannot tell you <em>why</em> it acted, nor compose these skills over a long horizon. That is exactly the abstraction layer BLADE provides. Also methodologically relevant: the in-the-wild handheld-data + diffusion-policy recipe is the same UMI lineage Weiyu's manipulation work lives near.</p>
+
+<h2>Quotable</h2>
+<blockquote>Selecting and executing good contact is at the core of robot manipulation. However, most vision-based robotic systems nowadays are limited in their capability to sense and utilize contact information.
+<span class="quote-cite">&mdash; &sect;1 / p.1</span></blockquote>
+<blockquote>By leveraging audio feedback to infer the object state (whether there are objects in the cup or not), our method is able to reliably guide the policy to pour objects and place the cup, whereas the baselines either never execute the pour action or the place action.
+<span class="quote-cite">&mdash; &sect;B.2.1 / p.12</span></blockquote>
+<blockquote>A policy co-trained with audio attends more to the task-relevant regions ... In contrast, the vision-only policy often overfits to background structures as a shortcut to estimate contact.
+<span class="quote-cite">&mdash; Fig 4 / p.4</span></blockquote>
+
+<h2>Related</h2>
+<p><strong>Cited here, worth ingesting next (forward refs):</strong></p>
+<ul>
+  <li><a href="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">Play it by Ear (Du et al.)</a> &mdash; audio-visual imitation amidst occlusion; ManiWAV's MLP-fusion baseline derives from it.</li>
+  <li><a href="../../raw/papers/that_sounds_right_auditory_self_supervision.pdf">That Sounds Right (Thankaraj &amp; Pinto)</a> &mdash; auditory self-supervision for dynamic manipulation; prior passive-audio policy learning.</li>
+  <li><a href="../../raw/papers/see_hear_feel_sensory_fusion.pdf">See, Hear, and Feel (Li et al.)</a> &mdash; the transformer sensory-fusion design ManiWAV adapts; also the MLP-policy and ResNet baselines trace to it.</li>
+  <li><a href="../../raw/papers/hearing_touch_audio_visual_pretraining.pdf">Hearing Touch (Mejia et al.)</a> &mdash; audio-visual pretraining for contact-rich manipulation; source of the AVID baseline framing.</li>
+  <li><a href="../../raw/papers/active_acoustic_sensing_manipulation.pdf">Active Acoustic Sensing for Robot Manipulation (Lu &amp; Culbertson)</a> &mdash; the active counterpart to ManiWAV's passive contact sensing.</li>
+</ul>
+<p><strong>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</strong></p>
+<ul>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a> &mdash; in-hand acoustic-vibration sensing; same "sound reveals object properties" thesis, in-hand rather than ear-in-hand.</li>
+  <li><a href="vibecheck_active_acoustic_tactile_sensing.html">VibeCheck</a> &mdash; active acoustic-tactile sensing; contrasts with ManiWAV's passive contact audio.</li>
+  <li><a href="making_sense_audio_vibration_pouring.html">Making Sense of Audio Vibration (pouring)</a> &mdash; directly comparable pouring-via-audio task.</li>
+  <li><a href="sound_of_simulation_generative_audio_sim2real.html">The Sound of Simulation</a> &mdash; generative audio sim2real; an alternative to ManiWAV's real-data noise-augmentation domain-gap fix.</li>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">Beyond Sight (FuSe)</a> &mdash; fuses heterogeneous sensors incl. audio with language; the VLA-scale generalization of ManiWAV's fusion idea.</li>
+  <li><a href="audio_vla_contact_audio_perception.html">Audio-VLA</a> &mdash; contact-audio perception inside a VLA; closest follow-on framing of ManiWAV's contact-audio signal.</li>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a> &mdash; anchor; the symbolic predicate + bi-level planning layer ManiWAV's implicit contact reasoning lacks.</li>
+</ul>
+
+</body>
+</html>

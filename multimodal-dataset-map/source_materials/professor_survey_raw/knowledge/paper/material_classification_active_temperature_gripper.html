@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Material Classification Using Active Temperature Controllable Robotic Gripper</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Osawa, Kase, Domae, Furukawa, Kheddar">
+<meta name="year" content="2021">
+<meta name="venue" content="arXiv preprint (cs.RO)">
+<meta name="arxiv_id" content="2111.15344">
+<meta name="url" content="https://arxiv.org/abs/2111.15344">
+<meta name="pdf" content="../../raw/papers/material_classification_active_temperature_gripper.pdf">
+<meta name="tags" content="thermal-sensing, material-recognition, active-sensing, haptics, contact-rich, robot-learning, multisensory">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Material Classification Using Active Temperature Controllable Robotic Gripper</h1>
+<p class="meta">
+  Yukiko Osawa*, Kei Kase*, Yukiyasu Domae, Yoshiyuki Furukawa, Abderrahmane Kheddar
+  &middot; AIST (Japan) / CNRS-University of Montpellier, LIRMM
+  &middot; 2021
+  &middot; <a href="https://arxiv.org/abs/2111.15344">arXiv:2111.15344</a>
+  &middot; <a href="../../raw/papers/material_classification_active_temperature_gripper.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A robotic gripper with an actively temperature-controlled
+(water-circulating, Peltier-driven) cover deliberately sets a temperature gap
+&Delta;<em>T<sub>md</sub></em> between its surface and a grasped object, then classifies the
+object's material from the 10&nbsp;s temperature transient with an LSTM &mdash; making
+thermal material recognition robust to the object's unknown ambient temperature, the
+condition under which passive thermal sensors fail.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Thermal cues are a cheap, real-time channel for reading the material of a contacted
+surface: when two bodies touch, their contact-surface temperature converges to a value
+set by each material's <em>thermal effusivity</em> (<code>&radic;&lambda;&rho;c</code>),
+so the temperature transient is a material signature. But passive thermal sensing has a
+fatal failure mode &mdash; the response depends on the initial temperatures of <em>both</em>
+the finger and the object, and when the object's temperature equals the gripper's
+(&Delta;<em>T<sub>md</sub></em>&nbsp;=&nbsp;0) there is no heat flow and <em>no signal at all</em>.
+Ambient drift (e.g. a part hot off a machining process) likewise degrades accuracy. Most
+prior thermal-recognition rigs cannot actively control the finger surface temperature, so
+they inherit this brittleness. The paper's move: make the finger temperature a controlled
+input, forcing a known heat flow regardless of the object's ambient state.</p>
+
+<h2>Method</h2>
+<p><strong>Thermal model (the why).</strong> Each contact is idealized as two semi-infinite
+solids obeying the heat equation <code>&part;T/&part;t = &alpha; &part;&sup2;T/&part;x&sup2;</code>
+with an error-function solution (Eq. 4). Conserving heat flux across the interface gives the
+contact temperature <code>T<sub>s</sub> = (T<sub>mi</sub> + T<sub>devi</sub>&gamma;)/(1+&gamma;)</code>,
+where <code>&gamma; = &radic;&lambda;<sub>dev</sub>&rho;<sub>dev</sub>c<sub>dev</sub> / &radic;&lambda;<sub>m</sub>&rho;<sub>m</sub>c<sub>m</sub></code>
+is the effusivity ratio (Eqs. 7&ndash;8). The device's initial temperature is regulated to
+<code>T<sub>devi</sub> = T<sub>mi</sub> &plusmn; &Delta;T<sub>md</sub></code> (Eq. 9); heat flow
+through the interface scales with &Delta;<em>T<sub>md</sub></em> and contact area <em>A</em>
+(Eq. 12). Fig. 3 / Table I show metals (copper, zinc, brass, iron) have close effusivities and
+are hard to separate from each other, while wood is far off; larger &Delta;<em>T<sub>md</sub></em>
+spreads the material curves apart and reduces sensitivity to the ~0.3&ndash;0.7&nbsp;&deg;C
+run-to-run noise.</p>
+
+<p><strong>Active-temperature gripper (the hardware).</strong> A soft cover (from the authors'
+prior work [23],[24]) embeds a Nickel-graphite electric pipe in silicone foam with an attached
+thermocouple; the contact face is a high-conductivity (900&nbsp;W/mK) graphite sheet (Fig. 2).
+Surface temperature is set by circulating temperature-controlled water (chosen for its
+semi-infinite-solid-like thermal behavior and high heat capacity, so the heat source does not
+perturb the contact during sensing &mdash; "emulating the human blood system"). Two Peltier
+devices on a copper water tank heat/cool the loop under <strong>Model Predictive Control</strong>
+(Fig. 4).</p>
+
+<p><strong>Sensing + classification pipeline (Fig. 5).</strong> (1) Given the object's known
+ambient temperature and a target &Delta;<em>T<sub>md</sub></em>, command the gripper surface to
+<code>T<sub>devi</sub></code> via MPC + per-Peltier PI loops. (2) Turn the water pump off and grasp
+for 10&nbsp;s, letting the contact evolve per the semi-infinite-solid model; the system reads the
+gripper-surface temperature (it cannot directly measure <code>T<sub>s</sub></code>, but the surface
+response is driven by it). (3) Feed the 10&nbsp;s temperature time series to an <strong>LSTM</strong>
+(Python) for material classification. ROS handles communication and control. Training data are
+augmented 100&times; by adding Gaussian noise and shifting the initial temperature.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected. Five 2&times;2&nbsp;cm blocks &mdash;
+    copper, zinc, brass, iron, wood. Objects pre-heated to 43&nbsp;&deg;C or cooled to 18&nbsp;&deg;C
+    with a cup warmer/cooler. LSTM dataset size 500 (5-material task) and 300 (3-material task) after
+    100&times; augmentation; batch size 100, 2000 epochs.</li>
+  <li><strong>Hardware / simulator:</strong> Vstone Academic SCARA Robot (VS-ASR), soft active-temperature
+    gripper on one fingertip, water pump + copper water tank + two Peltier devices (heat sink, fans),
+    thermocouple sensing, Linux PC, ROS. Real hardware; no simulator.</li>
+  <li><strong>Baselines:</strong> No external baselines. Internal contrast is the proposed
+    <em>cooled-gripper</em> condition [1-A] vs. a <em>heated-gripper</em> condition [1-B] that
+    "simulates a conventional passive heating system," plus a sweep over &Delta;<em>T<sub>md</sub></em>.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: with a controlled 20&nbsp;&deg;C gap the five-material heated-block task reaches
+<strong>100% accuracy</strong> (Fig. 8 confusion matrix), versus <strong>40%</strong> when the gripper
+is heated to 38&nbsp;&deg;C against hot objects (&Delta;<em>T<sub>md</sub></em>&nbsp;=&nbsp;5&nbsp;&deg;C,
+Fig. 10) &mdash; the small-gap regime where curves overlap. Accuracy rises monotonically with the gap:</p>
+
+<table>
+  <tr><th>Case</th><th>&Delta;<em>T<sub>md</sub></em> [&deg;C]</th><th>Accuracy [%]</th></tr>
+  <tr><td>2-A</td><td>0</td><td>33.33</td></tr>
+  <tr><td>2-B</td><td>5</td><td>66.66</td></tr>
+  <tr><td>2-C</td><td>10</td><td>100</td></tr>
+  <tr><td>2-D</td><td>15</td><td>100</td></tr>
+  <tr><td>2-E</td><td>20</td><td>100</td></tr>
+</table>
+
+<p>Materials are "completely classified" once &Delta;<em>T<sub>md</sub></em>&nbsp;&ge;&nbsp;10&nbsp;&deg;C
+(Table II). <strong>Ambient-invariance (Experiment 3):</strong> holding the gap at 20&nbsp;&deg;C, the
+3-material task (copper/iron/wood) hits 100% in all three ambient regimes &mdash; cooled gripper vs. hot
+objects [3-A], heated gripper vs. room-temperature objects [3-B], heated gripper vs. cooled objects [3-C]
+(Figs. 11&ndash;13). <strong>Where it loses:</strong> cooled five-metal classification with a heated gripper
+degrades because metals have near-identical effusivity &mdash; Fig. 14 shows zinc confused with brass
+(224/400 zinc samples mislabeled brass) even using a longer 40&nbsp;s window.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Requires a 10&nbsp;s contact window; they suggest using the derivative of the response to shorten
+    recognition time (citing Bhattacharjee et al. [19],[21]).</li>
+  <li>Needs the object's initial temperature known in advance; propose acquiring it with a cheap IR camera
+    or extra "poking" step rather than assuming ambient.</li>
+  <li>Metal-vs-metal accuracy is the weak point (close effusivities); they suggest fusing with vision.</li>
+  <li>Heat flow rate and direction (beyond the surface temperature difference used here) could add
+    discriminative signal.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Tiny, augmentation-inflated dataset.</strong> The 100% numbers come from datasets of 300&ndash;500
+    samples generated by 100&times; augmenting a small number of real 10&nbsp;s grasps. Train/test appear drawn
+    from the same augmented distribution (same blocks, same conditions); there is no held-out object instance,
+    no novel-geometry or novel-contact-area generalization test. "100%" is closer to "the LSTM separated these
+    five curves" than evidence of robust real-world recognition.</li>
+  <li><strong>No reported number of physical trials or seeds.</strong> Aside from the "5 repetitions &rarr;
+    0.3&ndash;0.7&nbsp;&deg;C std" note, sample counts per class before augmentation and run-to-run variance of
+    the <em>accuracy</em> are not given &mdash; the confusion matrices are single runs.</li>
+  <li><strong>Contact area / grasp pose held fixed</strong> at 2&times;2&nbsp;cm blocks. Eq. 12 makes heat flow
+    scale with area <em>A</em>, so real grasps of irregular objects with variable, partial contact would change
+    the very signal the LSTM keys on &mdash; untested.</li>
+  <li><strong>"Known ambient temperature" is doing a lot of work.</strong> The whole ambient-invariance claim
+    presumes you already measured the object temperature to set &Delta;<em>T<sub>md</sub></em>; that requirement
+    partly re-introduces the sensing problem it claims to solve.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>Squarely on the thesis that drives the <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+line: <strong>many manipulation predicates are not visually evaluable.</strong> "What material is this surface"
+(and downstream, <code>is_metal</code>, <code>surface_is_conductive</code>, even <code>is_hot</code>) lives in
+the thermal/contact channel, invisible to an RGB camera. This paper is a clean, almost textbook demonstration
+that a property a vision-only system can only guess at becomes <em>directly and reliably classifiable</em> from a
+short contact transient &mdash; exactly the kind of non-visual percept BLADE's predicate classifiers would need a
+sensor for. Two BLADE-specific hooks: (1) the <em>active-sensing</em> framing &mdash; the robot deliberately
+perturbs the world (sets &Delta;<em>T<sub>md</sub></em>) to make a latent property observable &mdash; is the
+manipulation analogue of "probe to resolve a predicate's truth value," relevant to belief-space / information-gathering
+behaviors. (2) The effusivity model gives a <em>physics-grounded</em> reason why some predicate distinctions are easy
+(metal vs. wood) and some are hard (zinc vs. brass), which is the sort of structure a learned classifier confidence
+should respect.</p>
+<p>Caveats on relevance: this is a single-property, single-sensor recognition paper, <strong>not</strong> a
+language, policy, or planning paper &mdash; there is no demonstration learning, no abstraction, no LLM, and the
+"learning" is a small LSTM. So it anchors the <em>sensing-substrate</em> argument (thermal predicates exist and are
+learnable) rather than the abstraction/planning machinery. It is the thermal cousin of the audio/tactile work in this
+batch that argues the same point through different modalities.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  A given object's material cannot be recognized when its temperature is the same as the robotic grippertip. We
+  present a material classification system using active temperature controllable robotic gripper to induce heat flow.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  Since the gripper surface can be regulated to any temperature [&hellip;] it can actively induce heat flow to
+  elucidate materials' thermal properties.
+  <span class="quote-cite">&mdash; &sect;II / p.2</span>
+</blockquote>
+<blockquote>
+  The materials can be completely classified when &Delta;T<sub>md</sub> is more than 10&nbsp;&deg;C [&hellip;]
+  large &Delta;T<sub>md</sub> reduces the impact of the temperature variation on the classification accuracy.
+  <span class="quote-cite">&mdash; &sect;IV-B / p.5</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>Bhattacharjee, Wade &amp; Kemp 2015 &mdash; "Material recognition from heat transfer given varying
+    initial conditions and short-duration contact" (RSS [19])</strong> &mdash; the closest passive-thermal
+    predecessor; the recognition-time and derivative-feature ideas this paper defers to.</li>
+  <li><strong>Bhattacharjee et al. 2020 &mdash; "Material recognition via heat transfer given ambiguous initial
+    conditions" (arXiv:2012.02176 [22])</strong> &mdash; <a href="../../raw/papers/material_recognition_heat_transfer_ambiguous.pdf">already a batch target</a>;
+    directly addresses the same ambiguous-initial-condition problem from the passive side.</li>
+  <li><strong>Chu et al. 2015 &mdash; "Robotic learning of haptic adjectives through physical interaction" (RAS [18])</strong>
+    &mdash; HMM-based property learning from multimodal contact; the haptic-adjective framing close to predicate learning.</li>
+  <li><strong>Xu, Loeb &amp; Fishel 2013 &mdash; "Tactile identification of objects using Bayesian exploration" (ICRA [16])</strong>
+    &mdash; canonical active-tactile-sensing baseline (BioTAC thermistor + Bayesian probing).</li>
+  <li><strong>Yuan, Mo, Wang &amp; Adelson 2018 &mdash; "Active clothing material perception using tactile sensing and
+    deep learning" (ICRA [1])</strong> &mdash; GelSight-based material perception; the visuo-tactile counterpart.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="material_recognition_heat_transfer_ambiguous.html">Material Recognition via Heat Transfer (ambiguous initial conditions)</a>
+    &mdash; same Cluster G thermal problem; the passive-sensing answer to the ambient-ambiguity issue this paper solves
+    actively. Direct sibling.</li>
+  <li><a href="material_recognition_thermal_tactile_database.html">Thermal Tactile Material Recognition (database)</a>
+    &mdash; the dataset-side companion in Cluster G; benchmark material for thermal classifiers.</li>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a>
+    &mdash; multisensory fusion for manipulation; the broader "non-visual percepts matter" argument this thermal paper
+    contributes one modality to.</li>
+  <li><a href="making_sense_of_vision_and_touch.html">Making Sense of Vision and Touch</a>
+    &mdash; learns a fused vision+touch representation; the fusion the authors flag as future work (add vision to
+    disambiguate metals).</li>
+</ul>
+
+</body>
+</html>

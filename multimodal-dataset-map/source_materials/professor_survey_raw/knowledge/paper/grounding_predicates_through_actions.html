@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Grounding Predicates through Actions</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Toki Migimatsu, Jeannette Bohg">
+<meta name="year" content="2022">
+<meta name="venue" content="ICRA 2022">
+<meta name="arxiv_id" content="2109.14718">
+<meta name="url" content="https://arxiv.org/abs/2109.14718">
+<meta name="pdf" content="../../raw/papers/grounding_predicates_through_actions.pdf">
+<meta name="tags" content="predicate-grounding, weakly-supervised, manipulation, predicate-learning, action-effects, robot-learning, learning-from-video">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-05-28">
+<meta name="source_prompt" content="user batch ingest 2026-05-28 targeted search">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .ablation-target { background: #ffebee; border-left: 4px solid #e53935;
+                     padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Grounding Predicates through Actions</h1>
+<p class="meta">
+  Toki Migimatsu, Jeannette Bohg
+  &middot; Stanford
+  &middot; ICRA 2022
+  &middot; <a href="https://arxiv.org/abs/2109.14718">arXiv:2109.14718</a>
+  &middot; <a href="../../raw/papers/grounding_predicates_through_actions.pdf">PDF</a>
+</p>
+
+<div class="ablation-target">
+  <strong>Direct ablation target for BLADE.</strong> This is the paper that
+  <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+  (Liu et al., CoRL 2024) explicitly compares against as the closest prior on
+  predicate-grounding from action segments. Migimatsu &amp; Bohg use only the
+  <em>first and last frame</em> of each segment as supervision; BLADE labels
+  <em>every frame</em> within the segment by propagating effects forward.
+  BLADE reports +20.7% F1 overall, +16.3% on object states, and +38.6% on
+  spatial relations from this single change.
+</div>
+
+<p><strong>One-liner.</strong> Trains a visual predicate classifier from
+weak supervision &mdash; just an action label per video &mdash; by using
+PDDL pre- and post-conditions to derive partial symbolic state labels for
+the first and last frame of each clip, then optimizing a DNF
+cross-entropy loss; demonstrates near-fully-supervised F1 in Gridworld
+and closed-loop pick-and-place planning on a real robot using a
+classifier trained only on 20BN human-activity videos.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Long-horizon robot planning needs grounded symbols ("drawer is open",
+"cup on table"), but state-of-the-art predicate classifiers
+[3, 6&ndash;8] require dense per-image symbolic-state labels, which are
+prohibitively expensive: the authors estimate manually labeling 132,853
+20BN videos would take 2,760 8-hour work days. Furthermore, labels don't
+transfer across planning domains, because different problems use
+different predicates. The paper reframes the supervision problem: action
+labels are cheap to collect; PDDL pre/post-conditions are written once
+per action class; together they yield <em>partial</em> symbolic-state
+labels at the start and end of each video clip, for free.</p>
+
+<h2>Method</h2>
+<p><strong>1. From PDDL to partial state labels.</strong> Given an action
+<code>a</code> with pre-condition formula and post-condition formula in
+PDDL, the authors convert each formula to disjunctive normal form (DNF):
+a disjunction of conjunctions of positive and negative propositions. Each
+conjunction is a candidate partial state. They then <em>collapse</em>
+each DNF to a single partial state by intersecting positive states and
+intersecting negative states across all disjuncts (Eq. 6). Theorem 1.1
+(Appx. B) proves this collapsed set is the <em>largest</em> set of
+propositions whose truth values are fully determined by the DNF; any
+proposition outside the collapsed set could be either true or false
+without violating the DNF. The before-frame <em>I<sub>pre</sub></em> is
+labeled with the collapsed pre-condition; the after-frame
+<em>I<sub>post</sub></em> with the collapsed post-condition.</p>
+
+<p><strong>2. Predicate classifier.</strong> Network takes an RGB image
+plus <em>M</em> bounding boxes (ordered predicate arguments) and outputs
+a length-<em>P</em> vector of predicate probabilities (Eq. 4). Querying
+with different argument orderings yields different propositions, e.g.,
+<code>in(spoon, cup)</code> vs <code>in(cup, spoon)</code>. Architecture
+(Appx. C) is based on Inayoshi et al.'s bounding-box channel net [25]:
+ResNet-50 backbone, RoIAlign-normalized image features (7&times;7&times;1024)
+on the union-box, plus binary spatial-mask features (7&times;7&times;256<em>M</em>)
+and per-argument object features (7&times;7&times;1024<em>M</em>),
+concatenated and passed through a ResNet-50 head. The bounding-box choice
+is presented as orthogonal to the labeling method.</p>
+
+<p><strong>3. DNF cross-entropy loss.</strong> For each training instance
+(<em>I<sub>pre</sub></em>, <em>I<sub>post</sub></em>, action <em>a</em>):
+collapse the pre- and post-condition DNFs to (<em>s<sup>+</sup></em>,
+<em>s<sup>&minus;</sup></em>) pairs; apply
+<em>CE<sub>DNF</sub>(y, &scaron;) = &minus;s<sup>+</sup> log &sigma;(y) &minus; s<sup>&minus;</sup> log &sigma;(&minus;y)</em>
+(Eq. 7), which only contributes loss on the propositions the DNF
+constrains. Total loss is the sum on pre- and post-images (Eq. 8).
+A class-balanced variant (DNF WCE) using Cui et al. [35] addresses the
+heavy skew toward rare predicates.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong>
+    <ul>
+      <li><em>20BN Something Something v2</em> [9]: 220,847 short human
+        manipulation videos of 174 action classes. Authors define
+        pre/post-conditions for 172 actions and 35 predicates (151 total
+        propositions); bounding boxes come from Something-Else [34]. Used
+        subset: 132,853 videos.</li>
+      <li><em>Gridworld</em>: synthetic toy with 8 objects, 6 predicates,
+        8 actions involving universal/existential/conditional quantifiers
+        (172 propositions). Used to compare partial-label vs full-label
+        training because ground-truth state is available.</li>
+    </ul>
+  </li>
+  <li><strong>Hardware / simulator:</strong> Real-robot pick-and-place
+    (arm <em>not reported</em>) using YOLOv5 [36] for predicate bounding
+    boxes and Mediapipe [37] for inter-frame tracking; full pipeline
+    perception&rarr;planner runs at 10 Hz.</li>
+  <li><strong>Baselines:</strong> On 20BN there is no oracle (no
+    ground-truth full state available), so DNF CE vs DNF WCE are compared
+    against a random-classifier expectation. In Gridworld: Oracle (full
+    supervision), DNF CE, Half DNF (ablation that sees only one image of
+    each pre/post pair, with 2&times; the data for fairness). Related
+    work to Ahmadzadeh et al. [31] is acknowledged but only learns a
+    single predicate (<code>far(a)</code>).</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+
+<p><strong>20BN (Table I):</strong> Both DNF CE and DNF WCE reach 0.92
+test F1 overall (0.96 train F1), 0.93 test accuracy. The interesting
+delta is per-predicate average F1: DNF CE 0.60 &rarr; DNF WCE 0.65,
+showing class-balanced loss helps rare predicates (e.g.,
+<code>broken</code> 0.35&rarr;0.53, <code>deformed</code>
+0.09&rarr;0.34) at slight cost to common ones. Random baseline would
+yield 0.36 F1 (positives appear at 36% rate). Predicates like
+<code>visible</code>, <code>is-holdable</code>, <code>fits</code>,
+<code>close</code>, <code>touching</code>, <code>onsurface</code>,
+<code>in</code> exceed 0.89 F1.</p>
+
+<p><strong>Gridworld (Fig. 4):</strong></p>
+<table>
+  <tr><th>Method</th><th>Train Size</th><th>Test F1</th></tr>
+  <tr><td>Oracle (full labels)</td><td>10,000</td><td>1.00</td></tr>
+  <tr><td>DNF CE (partial labels)</td><td>10,000</td><td>0.96</td></tr>
+  <tr><td>Half DNF (pre OR post only)</td><td>20,000</td><td>0.94</td></tr>
+</table>
+<p>At 100,000 training examples, all DNF variants reach perfect F1
+(reported, not shown). Key takeaway: weak partial labels match Oracle
+with enough data; the ablation that loses paired
+before/after frames is worse even with twice the data &mdash; visual
+<em>change</em> between frames is more informative than additional
+single-frame instances.</p>
+
+<p><strong>Closed-loop real-robot planning (Fig. 3):</strong> The
+20BN-trained DNF WCE classifier is zero-shot transferred to a tabletop
+fruit-into-container scene. Goal
+<code>in(banana, drawer)</code> is achieved through
+<code>open(drawer) &rarr; pick(banana) &rarr; put-into(banana, drawer) &rarr; close(drawer)</code>,
+with the planner re-planning at 10 Hz from updated predicate predictions.
+Qualitative only (no real-robot success-rate table).</p>
+
+<p><strong>Annotation cost (Appx. A):</strong> Defining pre/post for 171
+actions at ~10 min each: ~30 hours, or 4 8-hour days. Manually labeling
+the same partial states would take 690 days &mdash; a 172&times;
+reduction.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Predicates that aren't manipulated by any action ("sky is blue")
+    can't be learned this way &mdash; the method requires symbolic states
+    that actions change.</li>
+  <li>Predicates from a general dataset like 20BN may not match the
+    symbol vocabulary of a custom planning domain; the framework's
+    biggest value is when the user defines their own actions.</li>
+  <li>Noisy/skewed predicate distributions hurt rare predicates &mdash;
+    weak supervision techniques like Snorkel [32] / Snuba [33] are
+    flagged as future work.</li>
+  <li>Natural-language acquisition of pre/post-conditions [38, 39] is
+    proposed as future work, since manual PDDL authoring is still a
+    bottleneck per new domain.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>First/last frame only.</strong> Every other frame in the
+    clip is unused supervision &mdash; precisely the gap BLADE later
+    exploits by forward-propagating effects through every observation,
+    yielding +20.7% F1 (BLADE Table 2).</li>
+  <li>Pre/post collapsing throws away information when the DNF has many
+    disjuncts; rare-predicate F1 suggests the bottleneck isn't loss
+    function alone.</li>
+  <li>Real-robot evaluation is a single qualitative trajectory &mdash; no
+    multi-task or perturbation table comparable to BLADE/Text2Motion.</li>
+  <li>The DNF&rarr;single-state collapse is the largest provably-determined
+    set (Theorem 1.1), but it implicitly assumes pre- and post-conditions
+    were authored to be informative enough. In practice, predicates outside
+    pre/post receive no gradient signal except through co-occurrence.</li>
+  <li>The bounding-box conditioning sidesteps the open-vocabulary detection
+    problem but presumes object tracking is already solved &mdash; BLADE
+    integrates an open-vocabulary detector [68] to handle this in the wild.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p><strong>This is the direct ablation target for
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+predicate-grounding component.</strong> BLADE explicitly quotes Migimatsu
+&amp; Bohg [66] as the closest prior approach and frames its own
+contribution as a near-drop-in replacement: instead of supervising the
+classifier only with first/last frames of each demo segment, BLADE
+auto-labels every frame by propagating <em>eff<sub>a</sub></em> forward
+until another behavior alters it. The empirical gap is large and
+load-bearing &mdash; +20.7% F1 overall, +16.3% on object states, +38.6%
+on spatial relations &mdash; and BLADE's CALVIN planning-success gains
+flow directly from this richer classifier supervision. So this paper
+matters to me for three reasons:</p>
+<ul>
+  <li><strong>It validates the DNF-from-PDDL labeling primitive</strong>
+    that BLADE inherits &mdash; symbolic supervision from action labels
+    works at scale (20BN, 132k videos).</li>
+  <li><strong>It defines the baseline that BLADE beats.</strong> Any
+    future predicate-grounding work I do has to clear this bar; any
+    contrast I write up should cite Migimatsu &amp; Bohg as the canonical
+    "frame-pair supervision" reference.</li>
+  <li><strong>It surfaces residual problems BLADE doesn't fully solve:</strong>
+    rare-predicate F1, predicate invention (still PDDL-authored here and
+    in BLADE), and predicates that no action manipulates. These map
+    cleanly onto follow-up directions I've been tracking (see
+    <a href="predicate_invention_for_bilevel_planning.html">Predicate Invention for Bilevel Planning</a>
+    and <a href="interpret_interactive_predicate_learning_from_language_feedback.html">INTERPRET</a>).</li>
+</ul>
+<p>Topic-page worthy: this paper anchors the "predicate grounding from
+action pre/post-conditions" subtree of the
+<a href="../topic/predicate_learning.html">predicate learning</a>
+topic (if/when written) alongside Konidaris [32 in BLADE refs] and
+<a href="learning_neuro_symbolic_relational_transition_models_for_bilevel_planning.html">Chitnis et al.'s bilevel planning</a>.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  Rather than learning visual groundings from direct labels of symbolic
+  state, we propose to learn them indirectly from visual examples of
+  symbolic actions. Actions change the symbolic state in a predefined
+  manner according to their pre- and post-conditions.
+  <span class="quote-cite">&mdash; &sect;I, Introduction</span>
+</blockquote>
+
+<blockquote>
+  &scaron;<sub>DNF</sub> is the largest set of propositions that is
+  fully determined by a DNF.
+  <span class="quote-cite">&mdash; Theorem 1.1, Appx. B</span>
+</blockquote>
+
+<blockquote>
+  Half DNF's worse performance indicates that seeing the visual changes
+  induced by each action is more beneficial than simply receiving more
+  data (twice the amount).
+  <span class="quote-cite">&mdash; &sect;V-B.3, Gridworld results</span>
+</blockquote>
+
+<blockquote>
+  In many cases, predicates learned from a general large-scale dataset
+  may not be applicable to custom task planning domains, where accuracy
+  is critical. However, our labeling framework would perhaps be most
+  useful for these very applications where collecting new datasets is
+  necessary.
+  <span class="quote-cite">&mdash; &sect;VI, Conclusion</span>
+</blockquote>
+
+<h2>Related</h2>
+<ul>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE (Liu et al., CoRL 2024)</a>
+    &mdash; <strong>direct successor that supersedes the frame-pair
+    supervision scheme</strong>. BLADE propagates effects through every
+    intermediate frame, reports +20.7% predicate F1 over this paper's
+    first/last-frame approach, and integrates the learned classifiers
+    into a full bi-level planner with diffusion-policy controllers.</li>
+  <li><a href="learning_neuro_symbolic_relational_transition_models_for_bilevel_planning.html">Learning Neuro-Symbolic Relational Transition Models for Bilevel Planning (Chitnis et al.)</a>
+    &mdash; complementary: this paper learns predicates from actions;
+    Chitnis et al. learn transition models over predicates for bilevel
+    planning. Together they cover the perception-to-symbolic-dynamics
+    stack.</li>
+  <li><a href="predicate_invention_for_bilevel_planning.html">Predicate Invention for Bilevel Planning (Silver et al.)</a>
+    &mdash; addresses the limitation Migimatsu &amp; Bohg flag: predicates
+    are PDDL-authored here. Silver et al. invent the predicate vocabulary
+    itself.</li>
+  <li><a href="learning_planning_abstractions_from_language.html">PARL: Planning Abstractions from Language</a>
+    &mdash; another angle on acquiring predicate/operator structure
+    automatically, this time from language guidance.</li>
+  <li><a href="interpret_interactive_predicate_learning_from_language_feedback.html">INTERPRET: Interactive Predicate Learning from Language Feedback</a>
+    &mdash; interactive variant: instead of weak supervision from pre/post,
+    learns predicates from language feedback over rollouts.</li>
+  <li><strong>Ahmadzadeh et al. (ICRA 2015) [31]</strong> &mdash; closest
+    prior in spirit cited by this paper: learns a single predicate
+    (<code>far(a)</code>) from <code>push</code>/<code>pull</code>
+    demonstrations. Migimatsu &amp; Bohg generalize to arbitrary
+    PDDL operators.</li>
+  <li><strong>Konidaris, Kaelbling, Lozano-P&eacute;rez (JAIR 2018) [2]</strong>
+    &mdash; "From skills to symbols," the canonical classical reference
+    for learning grounded predicates from skill options.</li>
+  <li><strong>Mao et al. (ICLR 2019) [3] &mdash; Neuro-Symbolic Concept Learner</strong>
+    &mdash; cited as the natural-supervision counterpoint; BLADE also
+    cites this lineage.</li>
+</ul>
+
+</body>
+</html>

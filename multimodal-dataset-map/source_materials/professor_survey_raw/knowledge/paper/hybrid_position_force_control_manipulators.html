@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hybrid Position/Force Control of Manipulators</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Raibert, Craig">
+<meta name="year" content="1981">
+<meta name="venue" content="ASME J. Dynamic Systems, Measurement, and Control, Vol. 102">
+<meta name="arxiv_id" content="">
+<meta name="url" content="https://doi.org/10.1115/1.3139652">
+<meta name="pdf" content="../../raw/papers/hybrid_position_force_control_manipulators.pdf">
+<meta name="tags" content="force-control, foundational, manipulation-planning, theory, contact-rich, force-torque, haptics, proprioception">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- Foundational control-theory classic (1981). Per batch brief: Method renamed
+     to "Formalism / framework"; Setup kept brief. Off the language/multimodal
+     theme but ingested as the root formalism for force-aware manipulation. -->
+
+<h1>Hybrid Position/Force Control of Manipulators</h1>
+<p class="meta">
+  M. H. Raibert, J. J. Craig
+  &middot; 1981
+  &middot; ASME J. Dynamic Systems, Measurement, and Control, Vol. 102, pp. 126&ndash;133
+  &middot; <a href="https://doi.org/10.1115/1.3139652">DOI</a>
+  &middot; <a href="../../raw/papers/hybrid_position_force_control_manipulators.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> The founding paper of force-aware manipulation: it
+partitions the task space into orthogonal position-controlled and force-controlled
+directions via a binary <em>compliance selection vector</em>, runs an independent
+servo loop in each, and sums their joint-torque contributions &mdash; so a robot can
+follow a position trajectory in one axis while regulating contact force in another
+(slide along a surface, press a peg into a hole) within one clean architecture.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Assembly and contact tasks demand positioning precision higher than imperfectly
+rigid, gear-driven arms can deliver from joint encoders alone. The authors' insight
+is that <em>relative</em> measurement via contact force is a cheap substitute for
+absolute precision: "small variations in relative position generate large contact
+forces when parts of moderate stiffness interact," so controlling force buys
+effective positional accuracy without the size/weight/cost of a stiffer arm. Prior
+compliant-control schemes (Paul &amp; Shimano's "free-joint" method [6]) were
+approximate &mdash; they force-controlled only a <em>subset</em> of joints and patched
+the resulting position errors on later servo cycles. The goal is a conceptually
+simple, exact architecture for simultaneous position and force trajectory control
+using a wrist-mounted force sensor.</p>
+
+<h2>Formalism / framework</h2>
+<p>The method sits on Mason's compliance theory [4] and Paul's constraint frame.
+Every contact task is described in a task-related Cartesian <strong>constraint frame
+<code>{C}</code></strong> with <code>N</code> degrees of freedom (here "position"
+means position+orientation, "force" means force+torque). The task geometry imposes
+<strong>natural constraints</strong>: along surface <em>normals</em> position is
+constrained (you can't move through a rigid surface); along surface <em>tangents</em>
+force is constrained (a frictionless surface can't sustain tangential force). These
+partition the DOFs into two orthogonal sets. The user then specifies the
+complementary <strong>artificial constraints</strong> &mdash; a desired force
+trajectory along normals, a desired position trajectory along tangents &mdash; which
+preserves consistency with the natural constraints (Fig. 1 works the crank and
+screwdriver examples).</p>
+
+<p><strong>The compliance selection vector.</strong> The core object is a binary
+<code>N</code>-tuple <code>S</code>: <code>S_j = 1</code> marks DOF <code>j</code> as
+force-controlled, <code>S_j = 0</code> as position-controlled. Its diagonal form is
+the selection matrix <code>[S]</code>. The torque applied by actuator <code>i</code>
+sums one contribution per DOF in <code>{C}</code> (Eq. 2):
+<code>&tau;_i = &Sigma;_j { &Gamma;_ij[ s_j &Delta;f_j ] + &psi;_ij[ (1 - s_j) &Delta;x_j ] }</code>,
+where <code>&Gamma;</code> and <code>&psi;</code> are force and position
+compensators and <code>&Delta;f</code>, <code>&Delta;x</code> are force/position
+errors. Each DOF in <code>{C}</code> is governed by exactly one loop, but
+<em>every</em> joint contributes to <em>both</em> subsystems &mdash; this is the
+central idea, and what makes it exact where the free-joint method is approximate
+(no inter-cycle position correction needed).</p>
+
+<p><strong>Coordinate transforms (Fig. 2).</strong> Sensor signals live in their own
+frames &mdash; position in joint space <code>{q}</code>, force in hand frame
+<code>{H}</code> &mdash; and must be lifted into <code>{C}</code> before errors are
+computed: <code>{}^C X = &Lambda;(q)</code> (forward kinematics) and
+<code>{}^C F = [{}^C_H T] {}^H F</code> (a 6&times;6 force transform built from the
+<code>{H}&rarr;{C}</code> rotation and the moment cross-product <code>[V&times;]</code>).
+Errors are formed (Eq. 4), masked by <code>[S]</code> / <code>[I]&minus;[S]</code>
+into the two subspaces, mapped back to joint space through the Jacobian
+(<code>q_e = [J]^{-1\,C}X_e</code> for position, <code>&tau;_e = [J]^T\,{}^C F_e</code>
+for force), and the two torque vectors are summed: <code>&tau; = &tau;_p + &tau;_f</code>.
+The architecture is deliberately agnostic to the regulator: it "does not prescribe
+particular feedback control laws... it suggests a control architecture within which
+such laws can be applied." In the experiments the position loop is PID and the force
+loop is PI plus a saturation limiter and a quasi-static force feed-forward term
+(<code>&tau;_ff = [J]^T\,{}^C F_d</code>).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> <em>not reported</em> &mdash; a 1981
+  control paper; evaluation is by step/ramp trajectory-tracking experiments, not a
+  dataset. Tasks: force step/ramp tracking, position-disturbance rejection,
+  simultaneous force-step + sinusoidal-position, and a peg-in-hole insertion
+  (15.9&nbsp;mm dia, 0.025&nbsp;mm / 1&nbsp;mil clearance, no chamfer).</li>
+  <li><strong>Hardware / simulator:</strong> modified Scheinman Stanford arm (joints
+  1 &amp; 3 for 2-DOF planar motion) with a "Maltese Cross" 16-strain-gauge
+  force-sensing wrist; a numerically-controlled X-Y table supplies reaction forces
+  and disturbance motions; control on a General Automation SPC-16/85 minicomputer.
+  A two-axis dynamics model (Eqs. 5&ndash;11, with Coulomb+static friction and
+  spring-modeled wrist/surface) was simulated alongside the physical rig. Servo rate
+  60&ndash;120&nbsp;Hz.</li>
+  <li><strong>Baselines:</strong> Paul &amp; Shimano's "free-joint" compliant
+  control [6] (discussed qualitatively, not run head-to-head); simulation vs.
+  physical responses cross-checked against each other.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> in modern terms; the authors
+  note the method is "not cheap in the computational sense" &mdash; requiring many
+  coordinate transforms per cycle &mdash; which they argue newer microelectronics now
+  justify.</li>
+</ul>
+
+<h2>Results</h2>
+<p>The controller achieves stable, accurate force and position tracking across all
+test conditions. Headline numbers:</p>
+<table>
+  <tr><th>Test</th><th>Result</th></tr>
+  <tr><td>Force step (1, 5, 10 Nt)</td><td>Rise time ~0.15&nbsp;s, little/no overshoot; steady-state force error &lt; 1.0&nbsp;Nt</td></tr>
+  <tr><td>Position-disturbance rejection (table recedes at 0.65&nbsp;cm/s while holding 5&nbsp;Nt)</td><td>Contact never lost; force error &le; 1.75&nbsp;Nt except at ramp ends (accelerations)</td></tr>
+  <tr><td>Simultaneous force step + sinusoidal position (Eq. 17)</td><td>Force step produces no noticeable position disturbance; loops effectively decoupled</td></tr>
+  <tr><td>Servo rate 60&rarr;80&rarr;120&nbsp;Hz</td><td>Force response improves (less overshoot, better stability); position accuracy unchanged</td></tr>
+  <tr><td>Peg-in-hole (1&nbsp;mil clearance, no chamfer)</td><td>Successful with the controller augmented to 3-DOF planar (X, Y, &theta;)</td></tr>
+</table>
+<p>Simulated and physical step responses agree well. A persistent ~0.5&nbsp;Nt,
+286&nbsp;Hz oscillation rides on every force record &mdash; the hand sits between the
+spring-like wrist sensor and the compliant surface, forming an oscillator; the model
+predicts <code>f_n = (1/2&pi;)&radic;((K_r+K_w)/M_3) &approx; 280&nbsp;Hz</code>,
+matching observation. It is above controller bandwidth and so was low-pass filtered
+(12&nbsp;Hz) out of the plots, not controlled away.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><strong>Author-stated.</strong> (1) The method is computationally expensive
+&mdash; full coordinate transforms per servo cycle &mdash; which is why earlier
+workers preferred the cheaper free-joint approximation. (2) No correction was made
+for the manipulator's nonlinear time-varying dynamics or hand-mass acceleration
+forces (simulations suggested these were small here). (3) Choosing the constraint
+frame and natural constraints for a given task "awaits further research" &mdash; the
+work <em>assumes</em> a valid constraint set is given. (4) The high-frequency
+wrist-hand-surface oscillation is uncontrollable through the software loop. (5) All
+gains were tuned empirically with no optimality criterion.</p>
+<p><strong>What I noticed reading it.</strong> The validation is almost entirely
+2-DOF planar; the headline "controls position and force simultaneously" is
+demonstrated on a single force axis + single position axis, and the only multi-DOF
+result (peg-in-hole) is reported as one successful run with no success-rate
+statistics. The decoupling claim ("force step produces no noticeable disturbance in
+position") is read off plots, not quantified. Stability depended critically on an
+ad-hoc saturation nonlinearity to tame the Coulomb-friction/integral-gain
+interaction &mdash; "without this term the system was stable only when heavily
+overdamped" &mdash; suggesting the clean linear architecture leans on hand-tuned
+hacks at contact. Most consequentially for downstream theory: the framework
+<em>presupposes</em> the task's contact mode (which DOFs are force- vs.
+position-constrained) is known and fixed; it has no machinery for detecting or
+switching contact state, which is exactly where modern learned predicates and
+tactile/force sensing re-enter.</p>
+
+<h2>Why I care</h2>
+<p>This is off the language/multimodal theme of the 2026-06-24 batch, but it is
+deliberately ingested as the <strong>root formalism</strong> from which all
+force-aware manipulation descends. The single move that matters for my thesis:
+partitioning task space into force-controlled and position-controlled directions via
+the binary compliance selection vector <code>S</code>. Every contact-rich policy in
+this batch &mdash;
+<a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>,
+<a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>,
+<a href="foar_force_aware_reactive_policy.html">FoAR</a>,
+<a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive Diffusion Policy</a>
+&mdash; is, at bottom, learning a softer, data-driven version of this same
+position/force decomposition.</p>
+<p>For <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+specifically: BLADE composes long-horizon behavior by learning per-skill
+<em>contact-primitive controllers</em> with diffusion policies. Raibert &amp; Craig
+is the classical controller those primitives generalize &mdash; a BLADE skill like
+<code>insert</code> or <code>wipe</code> implicitly enacts a hybrid position/force
+mode (press normal, move tangent) that this paper specifies in closed form. The big
+idea I keep returning to is that many manipulation predicates &mdash;
+<code>is_inserted</code>, <code>is_screwed_tight</code>, <code>surface_is_rough</code>,
+<code>is_grasped</code> &mdash; are <em>not visually evaluable</em>; they live in the
+force/touch channel. This 1981 paper is the first to make force a
+<em>first-class, separately-controlled signal</em> in the task frame, which is the
+control-side prerequisite for treating force/touch as a predicate-evaluation channel
+the way BLADE treats vision. Its key limitation &mdash; the contact mode must be
+<em>known in advance</em> &mdash; is precisely the gap that learned predicate
+invention and tactile sensing are meant to close: deciding <em>which</em> DOFs to
+force-control is itself a perception/abstraction problem.</p>
+
+<h2>Quotable</h2>
+<blockquote>"these two types of constraint, force and position, partition the
+degrees of freedom of possible hand motions into two orthogonal sets that must be
+controlled according to different criteria."
+<span class="quote-cite">&mdash; Background / p.127</span></blockquote>
+<blockquote>"While each degree of freedom in {C} is controlled by only one loop, both
+sets of loops act cooperatively to control each manipulator joint. This is the
+central idea of hybrid control."
+<span class="quote-cite">&mdash; The Hybrid Controller / p.129</span></blockquote>
+<blockquote>"the method we propose here does not prescribe particular feedback
+control laws for the regulation of errors. Rather it suggests a control architecture
+within which such laws can be applied."
+<span class="quote-cite">&mdash; Introduction / p.126</span></blockquote>
+
+<h2>Related</h2>
+<p><strong>Cited here, worth ingesting next (not yet in corpus):</strong></p>
+<ul>
+  <li>Mason, M. T., "Compliance and Force Control for Computer Controlled
+  Manipulators," MIT AI Memo 515, 1979 [4] &mdash; the natural/artificial constraint
+  theory this paper's task-frame partition is built on. The true conceptual parent.</li>
+  <li>Paul &amp; Shimano, "Compliance and Control," JACC 1976 [6] &mdash; the
+  "free-joint" approximate compliant controller this paper positions itself against.</li>
+  <li>Whitney, D. E., "Force Feedback Control of Manipulator Fine Motions," JACC 1976
+  [12] &mdash; early force-feedback root of the compliance lineage.</li>
+</ul>
+<p><strong>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</strong></p>
+<ul>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a> &mdash;
+  force-aware mixture-of-experts for contact-rich tasks; a learned descendant of the
+  position/force partition.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>
+  &mdash; injects force/tactile feedback into a VLA; the modern data-driven take on
+  controlling contact force as a first-class signal.</li>
+  <li><a href="foar_force_aware_reactive_policy.html">FoAR</a> &mdash; force-aware
+  reactive policy switching behavior by contact state, addressing this paper's
+  fixed-contact-mode limitation.</li>
+  <li><a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive Diffusion Policy</a>
+  &mdash; slow-fast visuotactile policy; learns compliant reactions that the hybrid
+  controller hand-codes.</li>
+  <li><a href="../topic/variable_impedance_control_learning_review.html">Variable Impedance Control and Learning (review)</a>
+  &mdash; the survey that traces the impedance/hybrid-control lineage forward from
+  this paper into learned control.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+  &mdash; situates force control within the foundation-model agenda; this is the
+  classical anchor it builds on.</li>
+</ul>
+
+</body>
+</html>

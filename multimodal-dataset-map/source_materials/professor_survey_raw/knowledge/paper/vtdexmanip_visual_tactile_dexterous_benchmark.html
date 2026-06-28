@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VTDexManip: A Dataset and Benchmark for Visual-tactile Pretraining and Dexterous Manipulation with Reinforcement Learning</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Liu, Cui, Sun, Li, Chen, Ye">
+<meta name="year" content="2025">
+<meta name="venue" content="ICLR 2025">
+<meta name="arxiv_id" content="">
+<meta name="url" content="https://openreview.net/forum?id=jf7C7EGw21">
+<meta name="pdf" content="../../raw/papers/vtdexmanip_visual_tactile_dexterous_benchmark.pdf">
+<meta name="tags" content="multimodal-dataset, visuo-tactile, benchmark, dexterous-manipulation, reinforcement-learning, representation-learning, tactile-sensing, in-hand-manipulation, sim-to-real, contact-rich">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>VTDexManip: A Dataset and Benchmark for Visual-tactile Pretraining and Dexterous Manipulation with Reinforcement Learning</h1>
+<p class="meta">
+  Qingtao Liu, Yu Cui, Zhengnan Sun, Gaofeng Li, Jiming Chen, Qi Ye&ast;
+  &middot; Zhejiang University
+  &middot; ICLR 2025
+  &middot; <a href="https://openreview.net/forum?id=jf7C7EGw21">OpenReview</a>
+  &middot; <a href="../../raw/papers/vtdexmanip_visual_tactile_dexterous_benchmark.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A human-collected visual-tactile dataset (565k
+frames, 10 daily tasks, 182 objects, gathered with a cheap piezoresistive
+sensor glove) plus an Isaac-Gym RL benchmark of six dexterous Shadow-Hand tasks,
+used to show that even <em>binary, sparse</em> tactile signals jointly pretrained
+with vision (MAE-style masked reconstruction) boost manipulation success by
+~40% over vision-only and stay robust to viewpoint, tactile noise, and the
+binarization threshold &mdash; i.e., touch matters most exactly when the hand
+occludes its own view.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Vision and touch are the two senses humans lean on for manipulation, yet
+large-scale pretraining for robotics has stayed visual-and-language-only
+(MVP, R3M, Voltron, RT-2-style data). Existing visual-tactile datasets (Touch
+and Go, SSVTP, TaRF, PHYSICLEAR) are built for texture/material classification,
+tactile localization, or physical-property reasoning &mdash; not for learning
+<em>complex dexterous manipulation skills</em>. High-resolution optical tactile
+sensors (GelSight, DIGIT) are bulky and hard to wear over a long human data
+collection, and online visual-tactile manipulation work (RotateIt, See-to-Touch)
+trains representation jointly with policy for a single task, so it does not
+transfer across tasks. The paper's bet: the <em>combination and tempo of contact
+across fingers</em> carries planning-level information about <em>how</em> to
+manipulate, and that prior can be harvested cheaply from humans wearing a
+low-cost pressure-sensor glove.</p>
+
+<h2>Method</h2>
+<p><strong>1. Dataset &mdash; the wearable glove.</strong> A cloth glove with 20
+commercial piezoresistive pressure sensors (18.3&nbsp;mm pad on thumb tip and
+palm for sensitivity, 10&nbsp;mm elsewhere), read out through an STM32
+microcontroller at 200&nbsp;Hz. Each sensor is calibrated against an F/T sensor
+over 0.5&ndash;7.5&nbsp;N; the fitted force&rarr;voltage law is
+<code>U = 0.7216&middot;F<sup>0.5025</sup> + 0.0398</code> (Eq 1). Vision is
+captured ego-centrically with a HoloLens 2, synchronized with the glove.
+5 subjects collected 2,032 sequences &rarr; <strong>565k visual-tactile frame
+pairs</strong> over 10 tasks (PickUp, BottleCap Turning, In-hand Reorientation,
+Bowl Unstacking, Articulated Manipulation, Peg-in-hole, Water Pouring, Table-top
+Manipulation, Scissors, Pressing) and 182 objects (Table 8). Crucially, the raw
+pressure values are <strong>thresholded into binary contact / no-contact
+signals</strong> to shrink the real-to-sim and sim-to-real gap.</p>
+
+<p><strong>2. Benchmark &mdash; the simulation platform.</strong> Six
+Shadow-Hand tasks in Isaac Gym (Fig 2a): BottleCap Turning, Faucet Screwing,
+Lever Sliding, Table Reorientation, In-hand Reorientation, Bimanual Hand-over.
+Objects come from ShapeNet/DexGraspNet, SAPIEN, YCB, and custom CAD; each task
+has seen + unseen object splits. 20 force sensors are arranged on the simulated
+hand mirroring the glove, and their outputs are binarized with a tactile
+threshold of 0.01&nbsp;N (<code>C<sub>sim</sub></code>).</p>
+
+<p><strong>3. VT-JointPretrain (the fusion model).</strong> An MAE-style masked
+autoencoder over visual-tactile pairs <code>(V, C)</code> (Fig 9). The RGB image
+is patchified and linearly projected to tokens <code>v&#772;</code>; the binary
+tactile vector <code>C &isin; {0,1}<sup>Nc</sup></code> is sliced into
+<code>Nc</code> patches, each MLP-projected to <code>c&#772;</code> (Eq 2). Both
+modalities are randomly masked at ratios <code>&gamma;<sub>v</sub></code>,
+<code>&gamma;<sub>c</sub></code> (Eq 3). A transformer encoder fuses a learnable
+CLS token with the visible tokens to produce
+<code>h = {h<sub>CLS</sub>, h<sub>v</sub>, h<sub>c</sub>}</code> (Eq 4); a
+decoder reconstructs the masked image (MLP reconstructor) and each masked
+tactile patch (ensemble of per-patch MLPs) (Eqs 5&ndash;6). After convergence the
+frozen encoder feeds <code>h<sub>CLS</sub></code> to a policy. Single-modality
+variants <strong>V-Pretrain</strong> and <strong>T-Pretrain</strong> drop the
+other branch; <strong>V-Pretrain+T-Pretrain</strong> concatenates the two
+separately-trained features (a weaker non-fusion baseline).</p>
+
+<p><strong>4. Policy learning.</strong> Each task is an MDP solved with PPO
+(Fig 2c). State <code>S = {h &larr; M<sub>&theta;</sub>(&middot;), P}</code>
+concatenates the frozen representation <code>h</code> with proprioception
+<code>P</code> (joint angles + velocities); <code>M<sub>&theta;</sub></code> is
+the frozen pretrained (or non-pretrained) encoder taking ego-centric
+<code>V<sub>sim</sub></code> and/or binarized <code>C<sub>sim</sub></code>.
+A run that achieves the goal in one episode counts as success; all numbers are
+mean&plusmn;std over 4 random seeds, 100 test episodes.</p>
+
+<p><strong>5. Sim-to-real.</strong> A teacher policy is trained in sim with
+domain randomization (Gaussian noise &sigma;=0.1 on joint angles, velocities,
+actions, and tactile forces), then distilled with DAgger into a student that
+takes augmented visual input. Real hardware: a Shadow Hand, an Azure Kinect, and
+a 20-sensor tactile collection board, binarization threshold 0.2&nbsp;V.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> the new <strong>VTDexManip
+    dataset</strong> (565k visual-tactile frames, 10 daily tasks, 182 objects,
+    2,032 human sequences, RGB + binary pressure) for pretraining; the new
+    six-task <strong>VTDexManip simulation benchmark</strong> (BottleCap Turning,
+    Faucet Screwing, Lever Sliding, Table Reorientation, In-hand Reorientation,
+    Bimanual Hand-over) with seen/unseen object splits for RL evaluation. Source
+    objects from ShapeNet, DexGraspNet (Wang et al.), SAPIEN, YCB.</li>
+  <li><strong>Hardware / simulator:</strong> Isaac Gym + Shadow Hand (24 joints)
+    with 20 simulated force sensors; ego-centric RGB cameras. Data collection:
+    cloth glove with 20 piezoresistive sensors (STM32, 200&nbsp;Hz) + HoloLens 2.
+    Real-world: Shadow Hand, Azure Kinect, 20-sensor tactile board, ROS.</li>
+  <li><strong>Baselines:</strong> non-pretrained <strong>Base</strong>
+    (proprioception only), <strong>T</strong>, <strong>V</strong>,
+    <strong>V+T</strong> (ResNet18 + MLP encoders); pretrained visual encoders
+    V_MVP, V_Voltron, V_R3M, V_CLIP, V_ResNet and their +T concatenation
+    variants; the trained-on-this-dataset V-Pretrain, T-Pretrain,
+    V-Pretrain+T-Pretrain, and the proposed VT-JointPretrain. 18+ methods total.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (PPO, 2000&ndash;3000
+    iterations per task per Fig 3; no GPU-hours given).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: across all six tasks, <strong>VT-JointPretrain reaches 72.2%
+(seen) / 66.8% (unseen) task-mean success</strong>, vs 54.0 / 46.1 for
+V-Pretrain (vision-only) and 34.8 / 27.8 for the Base proprioception-only model
+(Table 2). The abstract's framing: adding binary tactile to the policy buys
+~+20%, and joint pretraining with vision buys a further ~+20%.</p>
+
+<table>
+  <tr><th>Method (task mean)</th><th>Split</th><th>Base</th><th>T-Pretrain</th><th>V-Pretrain</th><th>VT-JointPretrain</th></tr>
+  <tr><td rowspan="2">Success rate (%)</td><td>Seen</td><td>34.8&plusmn;5.8</td><td>55.7&plusmn;8.8</td><td>54.0&plusmn;8.5</td><td><strong>72.2&plusmn;2.4</strong></td></tr>
+  <tr><td>Unseen</td><td>27.8&plusmn;5.0</td><td>49.2&plusmn;9.4</td><td>46.1&plusmn;8.1</td><td><strong>66.8&plusmn;2.7</strong></td></tr>
+</table>
+
+<p>Benchmarking the broader method zoo (Table 3, all six tasks averaged):</p>
+
+<table>
+  <tr><th>Method</th><th>Modality</th><th>Seen</th><th>Unseen</th></tr>
+  <tr><td>T (non-pretrain)</td><td>t</td><td>50.8&plusmn;2.5</td><td>47.0&plusmn;2.5</td></tr>
+  <tr><td>V (non-pretrain)</td><td>v</td><td>24.0&plusmn;3.0</td><td>22.2&plusmn;2.9</td></tr>
+  <tr><td>V+T (non-pretrain)</td><td>v+t</td><td>23.6&plusmn;2.6</td><td>19.3&plusmn;2.9</td></tr>
+  <tr><td>V_CLIP</td><td>v</td><td>61.3&plusmn;1.5</td><td>49.4&plusmn;1.8</td></tr>
+  <tr><td>V_CLIP+T</td><td>v+t</td><td>65.4&plusmn;1.7</td><td>55.9&plusmn;1.7</td></tr>
+  <tr><td>V-Pretrain+T-Pretrain</td><td>v+t</td><td>62.6&plusmn;6.3</td><td>53.3&plusmn;7.3</td></tr>
+  <tr><td><strong>VT-JointPretrain</strong></td><td>v+t</td><td><strong>74.3&plusmn;0.6</strong></td><td><strong>65.7&plusmn;0.7</strong></td></tr>
+</table>
+
+<p>Where it wins and where it is surprising:</p>
+<ul>
+  <li><strong>Touch helps most under occlusion.</strong> Tactile gains are
+    largest on the first four tasks where the hand blocks the object from the
+    camera; on Table/In-hand Reorientation (cleaner vision) the visual advantage
+    grows &mdash; complementary, not redundant.</li>
+  <li><strong>Non-pretrained V (24.0) is barely above noise</strong>, and naive
+    V+T concatenation (23.6) is <em>worse</em> than V alone &mdash; raw
+    multimodal concatenation hurts. Joint masked pretraining is what makes fusion
+    pay off.</li>
+  <li><strong>T-only pretraining (55.7) already beats every vision-only
+    pretrained encoder except V_CLIP+T</strong>, which is a striking result for
+    a 20-bit binary signal.</li>
+  <li><strong>Robustness (Tables 4&ndash;6):</strong> VT-JointPretrain stays
+    strong across ego/arm/3rd-person viewpoints, across binarization thresholds
+    0.01/0.5/1.0&nbsp;N, and across Gaussian tactile noise &sigma;=0.01&ndash;1&nbsp;N
+    when a hysteresis threshold is applied; binary tactile tolerates a 20-fold
+    threshold mismatch (0.05 vs 1.0&nbsp;N) between pretraining and RL.</li>
+  <li><strong>Distillation asymmetry (Table 7):</strong> after joint pretraining,
+    masking tactile at deployment (VT-JointPretrain-MaskT, 73.3/65.7) still beats
+    pure V-Pretrain (70.8/58.5) &mdash; tactile regularizes the visual features;
+    the reverse (mask vision) does not transfer, i.e. vision does not improve the
+    tactile branch.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Tactile signals are reduced to <strong>binary contact</strong>; pressure
+    magnitude, shear, and sensor-sensitivity variation are discarded. They flag
+    the discrete, inherently-sparse nature of touch as an unsolved modeling
+    challenge.</li>
+  <li>Fully exploiting touch needs high-speed, high-fidelity simulation of
+    object-sensor contact, which the field lacks; the sim-to-real gap remains.</li>
+  <li>Vision-to-tactile transfer fails after joint learning (only
+    tactile&rarr;vision works), an open asymmetry.</li>
+  <li>VT-JointPretrain is trained from scratch; integrating large VLMs with
+    tactile data is left as future work.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Human-glove to Shadow-Hand morphology gap is hand-waved.</strong>
+    20 human-glove pressure pads are mapped to 20 simulated force sensors on a
+    24-joint Shadow Hand, but the kinematic mismatch between a human hand and the
+    Shadow Hand is never quantified &mdash; how the pretrained <em>contact
+    pattern</em> prior survives the embodiment change is asserted, not measured.</li>
+  <li><strong>No language modality at all</strong>, despite the dataset being
+    organized by 10 named "tasks." The tasks are labels for collection, not
+    conditioning signals &mdash; the policy is per-task PPO, so there is no
+    multi-task or language-conditioned generalization claim.</li>
+  <li>Success is binary "goal reached in one episode," but the <em>quality</em>
+    of the manipulation (smoothness, force economy) is unmeasured &mdash; ironic
+    for a paper whose thesis is that touch carries the <em>how</em>.</li>
+  <li>The headline "~20% + ~20%" decomposition is an abstract-level rounding;
+    per-task gains in Table 2 vary widely (e.g. Lever Sliding jumps far more than
+    Bimanual Hand-over), so the additive story is a convenient average.</li>
+  <li>Real-world section reports only qualitative deployment on 4&ndash;5 tasks
+    (Fig 4); no real-world success-rate table, so the sim-to-real claim is the
+    weakest-evidenced part of the paper.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This sits squarely on the thesis behind the 2026-06-24 batch: many
+manipulation predicates &mdash; <code>is_grasped</code>, <code>is_inserted</code>,
+<code>is_screwed_tight</code>, <code>cap_is_turning</code> &mdash; are <em>not
+visually evaluable</em>; they live in the tempo and combination of finger
+contact. VTDexManip is the clearest dataset-scale demonstration that this signal
+is real and learnable: a 20-bit binary contact vector, jointly pretrained with
+vision, carries enough of the <em>how</em> to move dexterous RL from ~35% to ~72%
+success, with the biggest gains exactly where vision is occluded by the hand.</p>
+<p>Relative to <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+this is squarely a representation/RL paper, <em>not</em> a planning-abstraction
+or predicate-learning paper, so I shouldn't overclaim a direct method connection.
+But it is load-bearing evidence for a BLADE-flavored research direction. BLADE's
+own "what I noticed" flagged that continuous/force parameters sit entirely inside
+the diffusion policy and the abstraction layer is purely categorical. VTDexManip
+suggests the missing ingredient for force-modulated predicates may be cheap and
+even <em>binary</em>: if a contact-pattern encoder this crude already separates
+"turning" from "slipping," then a BLADE-style classifier
+<code>f<sub>&theta;</sub>(turned-on(faucet))</code> grounded in touch rather than
+pixels is plausible. The dataset's per-finger contact <em>tempo</em> (the t-SNE
+clusters of Fig 1e) is exactly the kind of signal one would want to segment
+contact-primitive bodies from &mdash; a tactile analogue of BLADE's gripper-state
+segmentation. Worth a topic page on tactile-grounded predicates once 2&ndash;3
+of this batch's touch-language papers are ingested.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  Despite the tactile modality used in our experiments being binary and sparse,
+  including it directly in the policy training boosts the success rate by about
+  20% and joint pretraining it with vision gains a further 20%.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  the combination and tempo of touch status of different hand parts may provide
+  abundant information on <em>how</em> to manipulate in a higher planning level.
+  <span class="quote-cite">&mdash; &sect;1, Introduction / p.3</span>
+</blockquote>
+
+<blockquote>
+  in contrast with the existing visual-tactile datasets, our dataset is the first
+  visual-tactile dataset for complex robotic manipulation skill learning.
+  <span class="quote-cite">&mdash; &sect;3 / p.3</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited here that are worth ingesting next (forward references):</p>
+<ul>
+  <li><a href="../../raw/papers/making_sense_of_vision_and_touch.pdf">Making Sense of Vision and Touch (Lee et al. 2020)</a>
+    &mdash; canonical learned multimodal representation for contact-rich tasks;
+    the conceptual ancestor of joint visual-tactile fusion.</li>
+  <li><strong>Liu et al. 2024 &mdash; Masked visual-tactile pre-training for robot
+    manipulation (ICRA)</strong> &mdash; the authors' own prior MAE-style
+    visual-tactile pretraining work that VTDexManip extends to dexterous hands.</li>
+  <li><strong>Radosavovic et al. 2023 &mdash; MVP</strong>, <strong>Nair et al.
+    2022 &mdash; R3M</strong>, <strong>Karamcheti et al. 2023 &mdash;
+    Voltron</strong> &mdash; the visual-pretraining baselines; foundational for
+    the structure-of-the-benchmark comparison.</li>
+  <li><strong>Yang et al. 2022 &mdash; Touch and Go</strong>, <strong>Yu et al.
+    2024 &mdash; PHYSICLEAR/Octopi</strong> &mdash; the prior visual-tactile
+    datasets it positions against (Table 1).</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a> and
+    <a href="objectfolder_benchmark_neural_real.html">ObjectFolder Benchmark</a>
+    &mdash; sibling multisensory dataset/benchmark efforts (vision + touch +
+    audio); the closest dataset-paper neighbors in Cluster I.</li>
+  <li><a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a>
+    &mdash; the human-collected vision+touch dataset VTDexManip explicitly
+    contrasts itself with (texture/stylization vs manipulation-skill learning).</li>
+  <li><a href="kaiwu_multimodal_manipulation_dataset.html">Kaiwu</a> &mdash;
+    another multimodal manipulation dataset; complementary scale/modality
+    comparison.</li>
+  <li><a href="dexterity_from_touch_self_supervised_pretraining.html">Dexterity from Touch (T-DEX)</a>
+    and <a href="see_to_touch_tactile_dexterity_visual_incentives.html">See to Touch</a>
+    &mdash; the dexterous tactile-policy line VTDexManip critiques as per-task /
+    non-transferable.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a>,
+    <a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>,
+    <a href="mvitac_visuotactile_contrastive_pretraining.html">MViTac</a> &mdash;
+    tactile/visuo-tactile representation-pretraining peers; methodological
+    cousins of VT-JointPretrain (masked vs contrastive fusion).</li>
+  <li><a href="tacto_tactile_simulator.html">TACTO</a>,
+    <a href="taxim_gelsight_simulation.html">Taxim</a>,
+    <a href="tacex_gelsight_isaac_sim.html">TacEx</a> &mdash; tactile simulators;
+    relevant to the authors' stated need for high-fidelity contact simulation.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+    &mdash; situates VTDexManip's "touch carries the how" thesis in the broader
+    force/contact foundation-model agenda.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,995 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Targeted Search — Language + Multimodal (Non-Visual) Sensing for Robotic Manipulation</title>
+<meta name="type" content="search">
+<meta name="topic" content="language_multimodal_sensing_manipulation">
+<meta name="ingested" content="2026-06-24">
+<meta name="status" content="fulfilled">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 980px;
+         margin: 2em auto; padding: 0 1em 4em 1em; line-height: 1.5; color: #222; }
+  h1 { font-size: 1.7em; margin-bottom: 0.2em; }
+  h2 { font-size: 1.2em; margin-top: 2em; padding-top: 0.5em;
+       border-top: 2px solid #444; padding-bottom: 0.25em; }
+  h3 { font-size: 1em; margin-top: 1em; color: #444; }
+  .meta { color: #777; font-size: 0.9em; margin-bottom: 1.5em; }
+  ul { padding-left: 0; list-style: none; }
+  li.paper { padding: 0.55em 0.6em; margin: 0.25em 0; border-radius: 4px;
+             border: 1px solid #e5e5e5; display: flex; align-items: flex-start;
+             gap: 0.6em; background: #fafafa; }
+  li.paper:hover { background: #f0f4ff; }
+  li.paper.ingested { background: #f4f4f4; opacity: 0.62; border-style: dashed; }
+  li.paper.own { background: #fff8e1; border-color: #ffc107; border-left: 4px solid #ffc107; }
+  li.paper input[type=checkbox] { margin-top: 0.4em; transform: scale(1.2); cursor: pointer; }
+  li.paper .body { flex: 1; }
+  li.paper .title { font-weight: 600; color: #222; }
+  li.paper .authors { font-size: 0.88em; color: #555; }
+  li.paper .desc { font-size: 0.9em; color: #444; margin-top: 0.25em; }
+  li.paper .tags { font-size: 0.8em; color: #888; margin-top: 0.2em; }
+  li.paper .badges { display: inline-block; }
+  li.paper .badge { display: inline-block; padding: 0.05em 0.45em; margin-left: 0.3em;
+                    border-radius: 3px; font-size: 0.75em; font-weight: 600;
+                    vertical-align: middle; }
+  .badge.classical { background: #ede7f6; color: #5e35b1; }
+  .badge.ingested { background: #cfd8dc; color: #37474f; }
+  .badge.own { background: #ffc107; color: #5d4037; }
+  .badge.foundational { background: #c8e6c9; color: #2e7d32; }
+  .badge.adjacent { background: #ffe0b2; color: #ef6c00; }
+  .badge.frontier { background: #b3e5fc; color: #01579b; }
+  .badge.survey { background: #f8bbd0; color: #ad1457; }
+  .badge.benchmark { background: #d1c4e9; color: #4527a0; }
+  .badge.anchor { background: #455a64; color: #ffffff; }
+  .badge.flag { background: #ffcdd2; color: #b71c1c; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .cluster-controls { font-size: 0.85em; color: #555; margin: 0.4em 0 0.6em 0; }
+  .cluster-controls button { font-size: 0.85em; padding: 0.2em 0.6em; margin-right: 0.4em;
+                              border: 1px solid #ccc; background: white; border-radius: 3px;
+                              cursor: pointer; }
+  .cluster-controls button:hover { background: #f0f4ff; border-color: #2962ff; }
+
+  .export-bar { position: fixed; bottom: 0; left: 0; right: 0; background: #263238;
+                color: #eceff1; padding: 0.6em 1em; box-shadow: 0 -2px 8px rgba(0,0,0,0.18);
+                display: flex; align-items: center; gap: 1em; z-index: 10; }
+  .export-bar .count { font-weight: 600; }
+  .export-bar button { background: #2962ff; color: white; border: none; padding: 0.4em 1em;
+                       border-radius: 3px; cursor: pointer; font-weight: 600; }
+  .export-bar button:hover { background: #1565c0; }
+  .export-bar button.secondary { background: transparent; border: 1px solid #607d8b; }
+  #exportBox { position: fixed; top: 5%; left: 5%; right: 5%; bottom: 5%; background: white;
+               box-shadow: 0 4px 30px rgba(0,0,0,0.3); padding: 1em; border-radius: 6px;
+               z-index: 20; display: none; flex-direction: column; }
+  #exportBox.visible { display: flex; }
+  #exportBox h3 { margin: 0 0 0.5em 0; }
+  #exportBox textarea { flex: 1; font-family: ui-monospace, Menlo, monospace;
+                        font-size: 0.85em; padding: 0.5em; border: 1px solid #ccc;
+                        border-radius: 3px; resize: none; }
+  #exportBox .close { align-self: flex-end; margin-top: 0.5em; padding: 0.4em 1em;
+                      background: #455a64; color: white; border: none; border-radius: 3px;
+                      cursor: pointer; }
+  #backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 15;
+              display: none; }
+  #backdrop.visible { display: block; }
+  .summary-row { background: #fff3e0; border-left: 4px solid #ff9800;
+                 padding: 0.6em 0.8em; margin: 1em 0; font-size: 0.92em; }
+  .gap-box { background: #ffebee; border-left: 4px solid #e53935;
+             padding: 0.8em 1em; margin: 2em 0 1em 0; font-size: 0.9em; }
+  .gap-box h3 { margin-top: 0; color: #b71c1c; }
+</style>
+</head>
+<body>
+
+<h1>Targeted Search — Language + Multimodal (Non-Visual) Sensing for Robotic Manipulation</h1>
+<p class="meta">
+  Generated 2026-06-24 from: survey triangulation + keyword and orthogonal-framing search + venue keyword sweeps across CoRL / RSS / ICRA / IROS / NeurIPS / ICLR / ICML / CVPR / ICASSP (2017&ndash;2026), run as five parallel modality slices (tactile&middot;audio&middot;force/proprioception/thermal&middot;unified-VLA&middot;datasets/sims).
+  Scope per Weiyu's confirmation: <strong>wide net (50&ndash;80)</strong> &mdash; landed at <strong>72 candidates across 10 clusters</strong>; <strong>modern (2022&ndash;2026) + classics</strong>; all four modalities (tactile, audio, force/proprioception, thermal); adjacencies included (tactile/audio reps without language, general audio-visual, datasets &amp; sims).
+  <br><strong>Note:</strong> this is essentially <em>white space</em> in the corpus today &mdash; <strong>zero</strong> of these papers are currently ingested, and the existing "multimodal" tags are all vision-language. None of the candidates are Weiyu-authored (no <span class="badge own">own</span> badges). arXiv IDs from verified search results are linked directly; the handful that an agent could not open or that are very recent (2025&ndash;2026) are marked <span class="badge flag">verify</span> &mdash; Batch Ingest will re-check the PDF first page before summarizing.
+</p>
+
+<div class="summary-row">
+  <strong>Why this matters for Weiyu's line (directly on-theme):</strong> BLADE learns <em>predicate classifiers</em> and <em>contact-primitive controllers</em> from vision + language. Many of the most important manipulation predicates are <em>not visually evaluable</em> &mdash; <code>is_grasped</code>, <code>is_inserted</code>, <code>is_full</code>, <code>surface_is_rough</code>, <code>is_screwed_tight</code> live in touch, force, and sound. The threads closest to BLADE are <strong>Cluster A (touch&ndash;language grounding)</strong> &mdash; learning language-aligned predicates over tactile signals &mdash; and <strong>Cluster C (multisensory VLA policies)</strong> &mdash; contact-primitive controllers that close the loop on force/tactile/audio. Cluster F (force/proprioception policies) is the low-level control substrate; Clusters B/I/J are the representation, data, and classical-control foundations; Clusters E/H are method anchors (binding models) that are off-theme but worth knowing. <strong>Genuine open niche flagged below: language + thermal sensing is essentially empty.</strong>
+</div>
+
+<!-- ============================ CLUSTER A ============================ -->
+<h2>A. Touch&ndash;language grounding &amp; tactile-language models</h2>
+<p class="cluster-controls">
+  <button onclick="cluster('A', true)">Select all</button>
+  <button onclick="cluster('A', false)">Clear all</button>
+  <em>The most BLADE-relevant cluster &mdash; aligning <strong>touch to language</strong> so a model can name, describe, or reason about tactile properties (hardness, roughness, slip). This is predicate-learning over a tactile modality.</em>
+</p>
+<ul>
+  <li class="paper" data-cluster="A" data-slug="touch_vision_language_dataset_multimodal_alignment">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">A Touch, Vision, and Language Dataset for Multimodal Alignment (TVL)</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Fu, Datta, Huang, Owens, et al. · UC Berkeley · ICML 2024</span>
+      <div class="desc"><strong>Canonical touch&ndash;language anchor.</strong> 44K DIGIT vision-touch pairs with text; trains TVL model aligning touch to language, +29% tactile classification over visuo-tactile baselines.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2402.13232">arXiv:2402.13232</a>] [touch-language, dataset, multimodal-alignment]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="A" data-slug="octopi_object_property_reasoning_tactile_language">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Octopi: Object Property Reasoning with Large Tactile-Language Models</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Yu, Lin, Soh · NUS · RSS 2024</span>
+      <div class="desc">GelSight tactile-LLM (PhysiCLeAR dataset) reasons about hardness/roughness for zero-shot robot tasks under visual ambiguity. Touch as input to an LLM for physical reasoning.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2405.02794">arXiv:2405.02794</a>] [tactile-llm, property-reasoning, gelsight]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="A" data-slug="octopi_1_5_visual_tactile_language_model">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Demonstrating the Octopi-1.5 Visual-Tactile-Language Model</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Yu, Lin, Soh · NUS · RSS 2025</span>
+      <div class="desc">Extends Octopi: multi-part tactile signals + retrieval-augmented generation for novel-object tactile reasoning.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2507.09985">arXiv:2507.09985</a>] [visual-tactile-language, rag, property-reasoning]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="A" data-slug="binding_touch_to_everything_unitouch">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Binding Touch to Everything: Learning Unified Multimodal Tactile Representations (UniTouch)</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Yang, Feng, Chen, Owens, Wong, et al. · CVPR 2024</span>
+      <div class="desc">Binds touch to vision/language/audio via aligned embeddings (ImageBind-style) across sensors; enables zero-shot tactile understanding and touch-grounded language.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2401.18084">arXiv:2401.18084</a>] [tactile-binding, multimodal, zero-shot]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="A" data-slug="touch100k_touch_language_vision_dataset">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Touch100k: A Large-Scale Touch-Language-Vision Dataset for Touch-Centric Multimodal Representation</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Cheng, Guo, Li, Gao, Fang, Han, et al. · 2024 · arXiv / Information Fusion</span>
+      <div class="desc">100K paired touch-language-vision entries with multi-granularity text; trains touch-centric multimodal representations (TLV-Link).</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2406.03813">arXiv:2406.03813</a>] [dataset, touch-language-vision, representation]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="A" data-slug="tlv_touch_language_vision_dataset">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Towards Comprehensive Multimodal Perception: Introducing the Touch-Language-Vision Dataset (TLV)</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Cheng, Li, Gao, Fang, Xu, Han · 2024</span>
+      <div class="desc">Touch-language-vision dataset with sentence-level tactile descriptions; precursor framing to Touch100k.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2403.09813">arXiv:2403.09813</a>] [dataset, sentence-level, tactile-description]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="A" data-slug="text2touch_tactile_in_hand_llm_reward">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Text2Touch: Tactile In-Hand Manipulation with LLM-Designed Reward Functions</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Field, Yang, Lin, Psomopoulou, Lepora, et al. · Bristol · CoRL 2025</span>
+      <div class="desc">LLMs design reward functions for tactile in-hand manipulation; language drives sim-to-real tactile RL. Language&rarr;tactile-skill bridge.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2509.07445">arXiv:2509.07445</a>] [llm-reward, tactile, in-hand]</div>
+    </div>
+  </li>
+</ul>
+
+<!-- ============================ CLUSTER B ============================ -->
+<h2>B. Tactile representation &amp; foundation models</h2>
+<p class="cluster-controls">
+  <button onclick="cluster('B', true)">Select all</button>
+  <button onclick="cluster('B', false)">Clear all</button>
+  <em>The encoder substrate: self-supervised / generalist tactile backbones that downstream language-conditioned policies plug into. Most are <strong>language-free</strong> (badged adjacent) but method-relevant to how BLADE would featurize touch.</em>
+</p>
+<ul>
+  <li class="paper" data-cluster="B" data-slug="sparsh_self_supervised_touch_representations">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Sparsh: Self-Supervised Touch Representations for Vision-Based Tactile Sensing</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Higuera, Sharma, Bodduluri, Kalakrishnan, Kaess, Boots, Lambeta, Wu, Mukadam · Meta AI · CoRL 2024</span>
+      <div class="desc">SSL tactile encoders (MAE/DINO/JEPA) pre-trained on 460K+ images; generalist representations across DIGIT/GelSight. The "foundation model for touch."</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2410.24090">arXiv:2410.24090</a>] [ssl, tactile-foundation, cross-sensor]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="B" data-slug="tactile_beyond_pixels_sparsh_x">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Tactile Beyond Pixels: Multisensory Touch Representations for Robot Manipulation (Sparsh-X)</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Higuera, Sharma, Lambeta, Mukadam, et al. · Meta AI · 2025</span>
+      <div class="desc">First SSL backbone fusing four tactile streams (image, audio, motion, pressure) from Digit 360 into unified manipulation representations; +63% policy success.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2506.14754">arXiv:2506.14754</a>] [multisensory-touch, ssl, digit-360]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="B" data-slug="t3_transferable_tactile_transformers">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Transferable Tactile Transformers for Representation Learning Across Diverse Sensors and Tasks (T3)</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Zhao, Ma, Wang, Adelson · MIT · CoRL 2024</span>
+      <div class="desc">Shared tactile transformer transferable across sensors and tasks via sensor/task-specific heads.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2406.13640">arXiv:2406.13640</a>] [tactile-transformer, transfer, cross-sensor]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="B" data-slug="unit_data_efficient_tactile_representation">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">UniT: Data Efficient Tactile Representation with Generalization to Unseen Objects</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Xu, Uppuluri, Zhang, Shou, Wang, She, et al. · 2024</span>
+      <div class="desc">VQGAN-based unified tactile representation; data-efficient, generalizes to unseen objects for downstream policies.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2408.06481">arXiv:2408.06481</a>] [vqgan, data-efficient, tactile]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="B" data-slug="anytouch_unified_static_dynamic_visuotactile">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">AnyTouch: Learning Unified Static-Dynamic Representation across Multiple Visuo-Tactile Sensors</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Feng, Hu, Xia, Fang, Hu, et al. · ICLR 2025</span>
+      <div class="desc">Unified static + dynamic tactile representation across multiple visuo-tactile sensors; cross-sensor transfer.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2502.12191">arXiv:2502.12191</a>] [static-dynamic, cross-sensor, representation]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="B" data-slug="mvitac_visuotactile_contrastive_pretraining">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Multimodal Visual-Tactile Representation Learning through Self-Supervised Contrastive Pre-Training (MViTac)</span>
+      <span class="badges"><span class="badge adjacent">adjacent</span></span><br>
+      <span class="authors">Dave, Lygerakis, Rueckert, et al. · ICRA 2024</span>
+      <div class="desc">Contrastive intra/inter-modal pretraining of vision + touch; improves material classification and grasp. No language.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2401.12024">arXiv:2401.12024</a>] [contrastive, visuo-tactile, no-language]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="B" data-slug="dexterity_from_touch_self_supervised_pretraining">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Dexterity from Touch: Self-Supervised Pre-Training of Tactile Representations with Robotic Play (T-DEX)</span>
+      <span class="badges"><span class="badge adjacent">adjacent</span></span><br>
+      <span class="authors">Guzey, Evans, Chintala, Pinto · NYU · CoRL 2023</span>
+      <div class="desc">Self-supervised tactile pretraining from robotic play; few-shot dexterous policies from tactile encoders. No language.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2303.12076">arXiv:2303.12076</a>] [ssl, robotic-play, dexterous]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="B" data-slug="see_to_touch_tactile_dexterity_visual_incentives">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">See to Touch: Learning Tactile Dexterity through Visual Incentives</span>
+      <span class="badges"><span class="badge adjacent">adjacent</span></span><br>
+      <span class="authors">Guzey, Dai, Evans, Chintala, Pinto · NYU · ICRA 2024</span>
+      <div class="desc">Optimizes tactile-based dexterous RL policies using vision-derived rewards; 73% over 6 contact-rich tasks. No language.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2309.12300">arXiv:2309.12300</a>] [tactile-rl, visual-reward, dexterous]</div>
+    </div>
+  </li>
+</ul>
+
+<!-- ============================ CLUSTER C ============================ -->
+<h2>C. Multisensory &amp; tactile/force/audio VLA policies</h2>
+<p class="cluster-controls">
+  <button onclick="cluster('C', true)">Select all</button>
+  <button onclick="cluster('C', false)">Clear all</button>
+  <em>The frontier &mdash; <strong>language-conditioned policies that ingest non-visual sensing</strong> (touch, force, audio, speech). Closest to BLADE's contact-primitive controllers but built on VLA backbones. This is where the field is moving fastest in 2025&ndash;2026.</em>
+</p>
+<ul>
+  <li class="paper" data-cluster="C" data-slug="beyond_sight_fuse_heterogeneous_sensors_language">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Beyond Sight: Finetuning Generalist Robot Policies with Heterogeneous Sensors via Language Grounding (FuSe)</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Jones, Mees, Sferrazza, Stachowicz, Abbeel, Levine · UC Berkeley · 2025</span>
+      <div class="desc"><strong>Most on-theme.</strong> Uses natural language to fuse touch + audio + vision into generalist VLA policies; enables zero-shot multimodal reasoning. Language as the binding glue across sensors.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2501.04693">arXiv:2501.04693</a>] [language-grounding, heterogeneous-sensors, generalist-policy]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="C" data-slug="tactile_vla_physical_knowledge_generalization">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Tactile-VLA: Unlocking Vision-Language-Action Model's Physical Knowledge for Tactile Generalization</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Huang, Wang, Lin, Wen, Gao, et al. · 2025</span>
+      <div class="desc">Injects tactile into a VLA, eliciting the base model's latent physical knowledge for force-aware, language-conditioned manipulation.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2507.09160">arXiv:2507.09160</a>] [vla, tactile, physical-knowledge]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="C" data-slug="omnivtla_vision_tactile_language_action">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">OmniVTLA: Vision-Tactile-Language-Action Models with Semantic-Aligned Tactile Sensing</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Cheng, Zhang, Tang, Song, et al. · 2025</span>
+      <div class="desc">Unified vision-tactile-language-action model with a semantically-aligned tactile encoder for contact-rich manipulation.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2508.08706">arXiv:2508.08706</a>] [vtla, semantic-tactile, contact-rich]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="C" data-slug="vla_touch_dual_level_tactile_feedback">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">VLA-Touch: Enhancing Vision-Language-Action Models with Dual-Level Tactile Feedback</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Bi, Ma, Hao, Shou, Soh · NUS · 2025</span>
+      <div class="desc">Adds dual-level (semantic + raw) tactile feedback to a <em>frozen</em> VLA without retraining; improves contact-rich tasks. Lightweight tactile augmentation.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2507.17294">arXiv:2507.17294</a>] [vla, dual-level-tactile, frozen-backbone]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="C" data-slug="forcevla_force_aware_moe_contact_rich">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">ForceVLA: Enhancing VLA Models with a Force-Aware MoE for Contact-Rich Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Yu, et al. · 2025 (NeurIPS 2025)</span>
+      <div class="desc">Treats 6-axis force as a first-class VLA modality via a force-aware mixture-of-experts fused with VLM embeddings.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2505.22159">arXiv:2505.22159</a>] [vla, force-aware, mixture-of-experts]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="C" data-slug="vlas_speech_instructions_vla">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">VLAS: Vision-Language-Action Model with Speech Instructions for Customized Robot Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Zhao, et al. · ICLR 2025</span>
+      <div class="desc">First end-to-end VLA integrating <em>raw speech</em>, with voiceprint RAG for personalized manipulation. Audio-as-instruction (vs. audio-as-percept).</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2502.13508">arXiv:2502.13508</a>] [vla, speech-instructions, voiceprint]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="C" data-slug="audio_vla_contact_audio_perception">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Audio-VLA: Adding Contact Audio Perception to Vision-Language-Action Model for Robotic Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">Wei, Zhang, Cao, Xie, Ge, Li, Wang · 2025</span>
+      <div class="desc">Integrates contact audio into a VLA so language instructions leverage acoustic contact cues; introduces a Task Completion Rate metric.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2511.09958">arXiv:2511.09958</a>] [vla, contact-audio, perception]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="C" data-slug="bi_lat_bilateral_control_language_action_chunking">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Bi-LAT: Bilateral Control-Based Imitation Learning via Natural Language and Action Chunking with Transformers</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Kobayashi, et al. · 2025</span>
+      <div class="desc">Language commands ("softly grasp") modulate <em>force</em> via bilateral teleoperation and joint torque. Direct language&harr;force coupling.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2504.01301">arXiv:2504.01301</a>] [language-force, bilateral-control, action-chunking]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="C" data-slug="taf_vla_tactile_force_alignment_vla">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">TaF-VLA: Tactile-Force Alignment in Vision-Language-Action Models for Force-Aware Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">_not reported_ · 2026</span>
+      <div class="desc">Aligns tactile and force signals within a VLA for force-aware instruction following. (Early-2026 — verify ID at ingest.)</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2601.20321">arXiv:2601.20321</a>] [vla, tactile-force-alignment, force-aware]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="C" data-slug="favla_force_adaptive_fast_slow_vla">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">FAVLA: A Force-Adaptive Fast-Slow VLA Model for Contact-Rich Robotic Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">_not reported_ · 2026</span>
+      <div class="desc">Slow vision-language semantics + fast force-proprioception loop for contact regulation. (Early-2026 — verify ID at ingest.)</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2602.23648">arXiv:2602.23648</a>] [vla, fast-slow, force-adaptive]</div>
+    </div>
+  </li>
+</ul>
+
+<!-- ============================ CLUSTER D ============================ -->
+<h2>D. Audio &amp; acoustic sensing for manipulation</h2>
+<p class="cluster-controls">
+  <button onclick="cluster('D', true)">Select all</button>
+  <button onclick="cluster('D', false)">Clear all</button>
+  <em>Sound as a manipulation percept &mdash; contact/impact audio, active acoustic probing, and audio-visual policies. Mostly without language, but the sensing channel BLADE-style predicates (<code>is_full</code>, <code>is_inserted</code>) could read from.</em>
+</p>
+<ul>
+  <li class="paper" data-cluster="D" data-slug="maniwav_in_the_wild_audio_visual">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">ManiWAV: Learning Robot Manipulation from In-the-Wild Audio-Visual Data</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Liu, Chi, Cousineau, Kuppuswamy, Burchfiel, Song · Columbia / TRI · CoRL 2024</span>
+      <div class="desc">Ear-in-hand device collects synchronized audio-visual demos to learn contact-rich manipulation policies. Passive contact-acoustic sensing at scale.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2406.19464">arXiv:2406.19464</a>] [audio-visual, in-the-wild, contact-rich]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="D" data-slug="see_hear_feel_sensory_fusion">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">See, Hear, and Feel: Smart Sensory Fusion for Robotic Manipulation</span>
+      <span class="badges"><span class="badge foundational">foundational</span></span><br>
+      <span class="authors">Li, Zhu, Gandhi, Wu, Gao, Fei-Fei · Stanford · CoRL 2022</span>
+      <div class="desc">Self-attention fusion of vision + contact-mic audio + tactile for packing/pouring; vision for global state, audio for key moments, touch for local geometry. Tri-modal manipulation classic.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2212.03858">arXiv:2212.03858</a>] [vision-audio-touch, sensory-fusion, self-attention]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="D" data-slug="play_it_by_ear_audio_visual_imitation">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Play it by Ear: Learning Skills amidst Occlusion through Audio-Visual Imitation Learning</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Du, Lee, Nair, Finn · Stanford / UC Berkeley · RSS 2022</span>
+      <div class="desc">Gripper microphones supply contact audio for occluded tasks (extracting keys from a bag). Audio resolves what vision can't see.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2205.14850">arXiv:2205.14850</a>] [audio-visual, occlusion, imitation]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="D" data-slug="that_sounds_right_auditory_self_supervision">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">That Sounds Right: Auditory Self-Supervision for Dynamic Robot Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">Thankaraj, Pinto · NYU · CoRL 2023</span>
+      <div class="desc">Self-supervised pretraining on 25k interaction-sound pairs accelerates dynamic manipulation from sound. (Verify arXiv ID at ingest.)</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2210.01116">arXiv:2210.01116</a>] [auditory-ssl, dynamic-manipulation]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="D" data-slug="hearing_touch_audio_visual_pretraining">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Hearing Touch: Audio-Visual Pretraining for Contact-Rich Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Mejia, Dean, Hellebrekers, Gupta · CMU · ICRA 2024</span>
+      <div class="desc">Contact microphones + large-scale internet audio-visual pretraining yield representations that boost contact-rich tasks despite the domain gap.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2405.08576">arXiv:2405.08576</a>] [audio-visual-pretraining, contact-mic, transfer]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="D" data-slug="sonicsense_in_hand_acoustic_vibration">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">SonicSense: Object Perception from In-Hand Acoustic Vibration</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Liu, Chen · Duke · CoRL 2024</span>
+      <div class="desc">In-hand acoustic vibration enables material, shape, and inventory perception over 83 real objects. Passive vibration as a rich percept.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2406.17932">arXiv:2406.17932</a>] [acoustic-vibration, in-hand, object-perception]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="D" data-slug="vibecheck_active_acoustic_tactile_sensing">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">VibeCheck: Using Active Acoustic Tactile Sensing for Contact-Rich Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">Zhang, Kim, Chang, et al. · 2025</span>
+      <div class="desc">Piezoelectric finger pair sends vibrations through objects; learns peg insertion from acoustics alone. (Verify arXiv ID at ingest.)</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2504.15535">arXiv:2504.15535</a>] [active-acoustic, tactile, insertion]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="D" data-slug="active_acoustic_sensing_manipulation">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Active Acoustic Sensing for Robot Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Lu, Culbertson, et al. · IROS 2023</span>
+      <div class="desc">Vibration actuator + contact mic exploits object resonance for grasping and pose estimation. Active acoustic probing.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2308.01600">arXiv:2308.01600</a>] [active-acoustic, resonance, grasping]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="D" data-slug="making_sense_audio_vibration_pouring">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Making Sense of Audio Vibration for Liquid Height Estimation in Robotic Pouring</span>
+      <span class="badges"><span class="badge classical">classical</span></span><br>
+      <span class="authors">Liang, Cheng, Klein, et al. · IROS 2019</span>
+      <div class="desc">Deep nets predict liquid height from air-column vibration audio during robotic pouring. Early "sound&rarr;state" estimation (the <code>is_full</code> predicate via audio).</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/1903.00650">arXiv:1903.00650</a>] [pouring, liquid-height, audio-state]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="D" data-slug="sound_of_simulation_generative_audio_sim2real">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">The Sound of Simulation: Learning Multimodal Sim-to-Real Robot Policies with Generative Audio</span>
+      <span class="badges"><span class="badge frontier">frontier</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">_not reported_ · 2025</span>
+      <div class="desc">Generative audio in simulation enables sim-to-real transfer of multimodal robot policies. (Verify arXiv ID at ingest.)</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2507.02864">arXiv:2507.02864</a>] [generative-audio, sim-to-real, multimodal]</div>
+    </div>
+  </li>
+</ul>
+
+<!-- ============================ CLUSTER E ============================ -->
+<h2>E. Audio-visual &amp; audio-language learning (adjacent, non-robot)</h2>
+<p class="cluster-controls">
+  <button onclick="cluster('E', true)">Select all</button>
+  <button onclick="cluster('E', false)">Clear all</button>
+  <em>Your requested adjacency &mdash; the ML/CV lineage that robot-audio work borrows from: audio-visual self-supervision and audio-language contrastive models. Off-theme for manipulation but the method ancestors.</em>
+</p>
+<ul>
+  <li class="paper" data-cluster="E" data-slug="the_sound_of_pixels">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">The Sound of Pixels</span>
+      <span class="badges"><span class="badge classical">classical</span></span><br>
+      <span class="authors">Zhao, Gan, Rouditchenko, Vondrick, McDermott, Torralba · MIT · ECCV 2018</span>
+      <div class="desc">Self-supervised Mix-and-Separate learns to localize and separate sound per image pixel. Audio-visual correspondence cornerstone.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/1804.03160">arXiv:1804.03160</a>] [audio-visual, sound-separation, self-supervised]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="E" data-slug="objects_that_sound">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Objects that Sound</span>
+      <span class="badges"><span class="badge classical">classical</span></span><br>
+      <span class="authors">Arandjelović, Zisserman · DeepMind / Oxford · ECCV 2018</span>
+      <div class="desc">Audio-visual correspondence self-supervision for cross-modal retrieval and sound-source localization.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/1712.06651">arXiv:1712.06651</a>] [audio-visual-correspondence, localization]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="E" data-slug="visually_indicated_sounds">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Visually Indicated Sounds</span>
+      <span class="badges"><span class="badge classical">classical</span></span><br>
+      <span class="authors">Owens, Isola, McDermott, Torralba, Freeman, Adelson · MIT · CVPR 2016</span>
+      <div class="desc">Predicts the sound of a drumstick striking/scraping materials from silent video &mdash; physical material/contact understanding from sound. The original "contact sound = material" insight.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/1512.08512">arXiv:1512.08512</a>] [contact-sound, material, classic]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="E" data-slug="audioclip_extending_clip">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">AudioCLIP: Extending CLIP to Image, Text and Audio</span>
+      <span class="badges"><span class="badge adjacent">adjacent</span></span><br>
+      <span class="authors">Guzhov, Raue, Hees, Dengel · DFKI · ICASSP 2022</span>
+      <div class="desc">Adds an audio encoder to CLIP for tri-modal image-text-audio zero-shot classification. Audio&harr;language alignment anchor.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2106.13043">arXiv:2106.13043</a>] [audio-language, clip, zero-shot]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="E" data-slug="clap_audio_concepts_language">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">CLAP: Learning Audio Concepts From Natural Language Supervision</span>
+      <span class="badges"><span class="badge adjacent">adjacent</span></span><br>
+      <span class="authors">Elizalde, Deshmukh, Al Ismail, Wang · Microsoft · ICASSP 2023</span>
+      <div class="desc">Dual-encoder contrastive language-audio pretraining for open-vocabulary audio understanding. The "CLIP for audio."</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2206.04769">arXiv:2206.04769</a>] [audio-language, contrastive, open-vocab]</div>
+    </div>
+  </li>
+</ul>
+
+<!-- ============================ CLUSTER F ============================ -->
+<h2>F. Force / proprioception / haptic policies</h2>
+<p class="cluster-controls">
+  <button onclick="cluster('F', true)">Select all</button>
+  <button onclick="cluster('F', false)">Clear all</button>
+  <em>The low-level control substrate &mdash; force/torque- and proprioception-conditioned policies for contact-rich tasks. Mostly language-free, but the actuation layer BLADE's primitives bottom out in. Several couple force to language (Bi-LAT lives in Cluster C).</em>
+</p>
+<ul>
+  <li class="paper" data-cluster="F" data-slug="foar_force_aware_reactive_policy">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">FoAR: Force-Aware Reactive Policy for Contact-Rich Robotic Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Pan, et al. · 2024</span>
+      <div class="desc">Fuses high-freq force/torque with point clouds via a future-contact-predictor-gated diffusion head. Diffusion-policy + force, close to BLADE controllers.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2411.15753">arXiv:2411.15753</a>] [force-aware, reactive, diffusion-policy]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="F" data-slug="factr_force_attending_curriculum_training">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">FACTR: Force-Attending Curriculum Training for Contact-Rich Policy Learning</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Liu, et al. · 2025</span>
+      <div class="desc">Visual-corruption curriculum forces the policy to attend to force input; bilateral teleop relays forces to the operator.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2502.17432">arXiv:2502.17432</a>] [force-attending, curriculum, teleop]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="F" data-slug="factr2_external_force_sensing_commodity_arms">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">FACTR 2: Learning External Force Sensing for Commodity Robot Arms Improves Policy Learning</span>
+      <span class="badges"><span class="badge frontier">frontier</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">Liu, et al. · 2026</span>
+      <div class="desc">Neural external-torque estimation gives force sensing without dedicated sensors. (Mid-2026 — verify ID at ingest.)</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2606.12406">arXiv:2606.12406</a>] [external-force, torque-estimation, commodity-arm]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="F" data-slug="reactive_diffusion_policy_slow_fast_visuotactile">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Reactive Diffusion Policy: Slow-Fast Visual-Tactile Policy Learning for Contact-Rich Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Xue, et al. · RSS 2025</span>
+      <div class="desc">Slow latent diffusion + fast tactile feedback loop; AR teleop collects force/tactile demos. Slow-fast architecture for reactivity.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2503.02881">arXiv:2503.02881</a>] [diffusion-policy, slow-fast, visuo-tactile]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="F" data-slug="tactile_conditioned_diffusion_policy_force_aware">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Tactile-Conditioned Diffusion Policy for Force-Aware Robotic Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">_not reported_ · 2025</span>
+      <div class="desc">Diffusion policy conditioned on tactile-inferred force signals for force-aware action spaces. (Verify arXiv ID at ingest.)</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2510.13324">arXiv:2510.13324</a>] [tactile-conditioned, diffusion, force-aware]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="F" data-slug="making_sense_of_vision_and_touch">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Making Sense of Vision and Touch: Learning Multimodal Representations for Contact-Rich Tasks</span>
+      <span class="badges"><span class="badge classical">classical</span></span><br>
+      <span class="authors">Lee, Zhu, Srinivasan, Shah, Savarese, Fei-Fei, et al. · Stanford · ICRA 2019</span>
+      <div class="desc">Self-supervised vision + force/proprioception representations for peg insertion. Foundational visuo-haptic fusion (best-paper lineage).</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/1907.13098">arXiv:1907.13098</a>] [vision-force, self-supervised, peg-insertion]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="F" data-slug="kinedex_tactile_kinesthetic_teaching">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">KineDex: Learning Tactile-Informed Visuomotor Policies via Kinesthetic Teaching for Dexterous Manipulation</span>
+      <span class="badges"><span class="badge frontier">frontier</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">_not reported_ · 2025</span>
+      <div class="desc">Kinesthetic teaching collects tactile-informed demos for dexterous visuomotor policies. (Verify arXiv ID at ingest.)</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2505.01974">arXiv:2505.01974</a>] [kinesthetic, tactile-informed, dexterous]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="F" data-slug="mimictouch_human_tactile_demos">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">MimicTouch: Leveraging Multi-modal Human Tactile Demonstrations for Contact-Rich Manipulation</span>
+      <span class="badges"><span class="badge adjacent">adjacent</span></span><br>
+      <span class="authors">Yu, Xu, et al. · CoRL 2024</span>
+      <div class="desc">Multimodal human tactile demonstrations for learning contact-rich skills.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2310.16917">arXiv:2310.16917</a>] [human-demos, tactile, contact-rich]</div>
+    </div>
+  </li>
+</ul>
+
+<!-- ============================ CLUSTER G ============================ -->
+<h2>G. Thermal &amp; material sensing</h2>
+<p class="cluster-controls">
+  <button onclick="cluster('G', true)">Select all</button>
+  <button onclick="cluster('G', false)">Clear all</button>
+  <em>The rarest modality you asked for. These exist for <strong>material recognition via heat transfer</strong> &mdash; but note: <strong>none combine thermal sensing with language</strong>. That gap is itself a finding (flagged below).</em>
+</p>
+<ul>
+  <li class="paper" data-cluster="G" data-slug="material_recognition_thermal_tactile_database">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Analyzing Material Recognition Performance of Thermal Tactile Sensing using a Large Materials Database and a Real Robot</span>
+      <span class="badges"><span class="badge classical">classical</span></span><br>
+      <span class="authors">Bhattacharjee, Kapusta, Kemp, et al. · Georgia Tech · ICRA 2018</span>
+      <div class="desc">Thermal tactile sensing for material recognition over a large real-robot materials database. The seminal thermal-material line (Kemp lab).</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/1711.01490">arXiv:1711.01490</a>] [thermal-tactile, material-recognition, database]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="G" data-slug="material_recognition_heat_transfer_ambiguous">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Material Recognition via Heat Transfer Given Ambiguous Initial Conditions</span>
+      <span class="badges"><span class="badge adjacent">adjacent</span></span><br>
+      <span class="authors">_not reported_ · 2020</span>
+      <div class="desc">Two temperature sensors resolve thermal ambiguity, reaching 100% on ambiguous material pairs.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2012.02176">arXiv:2012.02176</a>] [heat-transfer, material-recognition, thermal]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="G" data-slug="material_classification_active_temperature_gripper">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Material Classification Using Active Temperature Controllable Robotic Gripper</span>
+      <span class="badges"><span class="badge adjacent">adjacent</span></span><br>
+      <span class="authors">Yang, et al. · 2021</span>
+      <div class="desc">Actively regulates gripper temperature to induce heat flow for ambient-independent material ID. Active thermal sensing.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2111.15344">arXiv:2111.15344</a>] [active-thermal, material-classification, gripper]</div>
+    </div>
+  </li>
+</ul>
+
+<!-- ============================ CLUSTER H ============================ -->
+<h2>H. Multimodal binding &amp; embodied multimodal LMs (method anchors)</h2>
+<p class="cluster-controls">
+  <button onclick="cluster('H', true)">Select all</button>
+  <button onclick="cluster('H', false)">Clear all</button>
+  <em>The architectural templates everyone cites for "bind N modalities to one space." Off-theme for manipulation specifically, but these are how you'd <em>structurally</em> add touch/audio/force to a language model. Ingest selectively as references.</em>
+</p>
+<ul>
+  <li class="paper" data-cluster="H" data-slug="palm_e_embodied_multimodal_lm">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">PaLM-E: An Embodied Multimodal Language Model</span>
+      <span class="badges"><span class="badge foundational">foundational</span></span><br>
+      <span class="authors">Driess, Xia, Sajjadi, et al. · Google · ICML 2023</span>
+      <div class="desc">Injects continuous sensor states into an LLM for grounded planning/VQA; 562B generalist. The template for "sensor tokens into a language model."</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2303.03378">arXiv:2303.03378</a>] [embodied-lm, sensor-tokens, planning]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="H" data-slug="imagebind_one_embedding_space">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">ImageBind: One Embedding Space To Bind Them All</span>
+      <span class="badges"><span class="badge foundational">foundational</span></span><br>
+      <span class="authors">Girdhar, El-Nouby, Liu, Singh, et al. · Meta · CVPR 2023</span>
+      <div class="desc">Single joint embedding across image, text, audio, depth, <strong>thermal</strong>, IMU via image-anchored alignment. The canonical "bind any modality" paper UniTouch/FuSe build on.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2305.05665">arXiv:2305.05665</a>] [binding, joint-embedding, multimodal]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="H" data-slug="languagebind_language_anchored">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">LanguageBind: Extending Video-Language Pretraining to N-modality by Language-based Semantic Alignment</span>
+      <span class="badges"><span class="badge adjacent">adjacent</span></span><br>
+      <span class="authors">Zhu, Lin, et al. · ICLR 2024</span>
+      <div class="desc">Language-anchored (not image-anchored) multimodal binding aligning video/audio/depth/thermal to text. Relevant if language is the binding hub.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2310.01852">arXiv:2310.01852</a>] [language-anchored, n-modality, binding]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="H" data-slug="meta_transformer_unified_modalities">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Meta-Transformer: A Unified Framework for Multimodal Learning</span>
+      <span class="badges"><span class="badge adjacent">adjacent</span></span><br>
+      <span class="authors">Zhang, Gong, Wang, et al. · 2023</span>
+      <div class="desc">Frozen shared encoder processing 12 modalities with modality-specific tokenizers.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2307.10802">arXiv:2307.10802</a>] [unified-encoder, 12-modalities, frozen]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="H" data-slug="any2policy_any_modality_visuomotor">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Any2Policy: Learning Visuomotor Policy with Any-Modality</span>
+      <span class="badges"><span class="badge frontier">frontier</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">Zhu, Wang, et al. · NeurIPS 2024</span>
+      <div class="desc">End-to-end agent handling text/image/audio/point-cloud combos via an ImageBind-style unified encoder for manipulation. <strong>No arXiv ID found</strong> — ingest from NeurIPS 2024 / OpenReview (id=8lcW9ltJx9).</div>
+      <div class="tags">[no arXiv — NeurIPS 2024 OpenReview] [any-modality, visuomotor, unified-encoder]</div>
+    </div>
+  </li>
+</ul>
+
+<!-- ============================ CLUSTER I ============================ -->
+<h2>I. Datasets, benchmarks &amp; simulators</h2>
+<p class="cluster-controls">
+  <button onclick="cluster('I', true)">Select all</button>
+  <button onclick="cluster('I', false)">Clear all</button>
+  <em>The data &amp; sim infrastructure for non-visual sensing &mdash; multisensory object datasets, touch datasets, tactile/audio simulators, and language-annotated multimodal benchmarks. The substrate any of the above methods trains on.</em>
+</p>
+<ul>
+  <li class="paper" data-cluster="I" data-slug="objectfolder_dataset_implicit_representations">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">ObjectFolder: A Dataset of Objects with Implicit Visual, Auditory, and Tactile Representations</span>
+      <span class="badges"><span class="badge classical">classical</span></span><br>
+      <span class="authors">Gao, Chang, Tong, Liu, Manuelli, Funkhouser, Wu · Stanford · CoRL 2021</span>
+      <div class="desc">100 neural objects with implicit vision, audio, tactile representations. The ObjectFolder line's origin.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2109.07991">arXiv:2109.07991</a>] [multisensory-dataset, implicit-neural, objects]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="I" data-slug="objectfolder_2_multisensory_sim2real">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">ObjectFolder 2.0: A Multisensory Object Dataset for Sim2Real Transfer</span>
+      <span class="badges"><span class="badge classical">classical</span></span><br>
+      <span class="authors">Gao, Si, Chang, Gao, Funkhouser, Wu · Stanford · CVPR 2022</span>
+      <div class="desc">1,000 implicit-neural objects, 10&times; larger, faster rendering, sim2real transfer of vision/audio/touch.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2204.02389">arXiv:2204.02389</a>] [multisensory-dataset, sim2real, scaling]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="I" data-slug="objectfolder_benchmark_neural_real">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">The ObjectFolder Benchmark: Multisensory Learning with Neural and Real Objects</span>
+      <span class="badges"><span class="badge benchmark">benchmark</span></span><br>
+      <span class="authors">Gao, Dou, Li, Agarwal, Funkhouser, Wu, et al. · Stanford · CVPR 2023</span>
+      <div class="desc">10-task benchmark over neural + 100 real objects across sight, sound, touch. The standard multisensory eval.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2306.00956">arXiv:2306.00956</a>] [benchmark, multisensory, neural-real]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="I" data-slug="touch_and_go_human_collected_vision_touch">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Touch and Go: Learning from Human-Collected Vision and Touch</span>
+      <span class="badges"><span class="badge classical">classical</span></span><br>
+      <span class="authors">Yang, Zhang, Chen, Wang, Owens · Michigan · NeurIPS D&amp;B 2022</span>
+      <div class="desc">In-the-wild human-collected GelSight visuo-tactile data (13.9k touches, 20 materials); supports cross-modal prediction.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2211.12498">arXiv:2211.12498</a>] [dataset, vision-touch, in-the-wild]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="I" data-slug="tacto_tactile_simulator">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">TACTO: A Fast, Flexible, Open-Source Simulator for High-Resolution Vision-Based Tactile Sensors</span>
+      <span class="badges"><span class="badge classical">classical</span></span><br>
+      <span class="authors">Wang, Wang, Romero, Veiga, Su, Calandra · Meta · RA-L 2022</span>
+      <div class="desc">Fast open-source simulator rendering GelSight/DIGIT/OmniTact touch images. The standard tactile sim.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2012.08456">arXiv:2012.08456</a>] [simulator, vision-tactile, open-source]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="I" data-slug="taxim_gelsight_simulation">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Taxim: An Example-Based Simulation Model for GelSight Tactile Sensors</span>
+      <span class="badges"><span class="badge classical">classical</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">Si, Yuan · CMU · RA-L 2022</span>
+      <div class="desc">Example-based optical + marker simulation of GelSight output. (Verify arXiv ID at ingest.)</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2109.04027">arXiv:2109.04027</a>] [simulator, example-based, gelsight]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="I" data-slug="tacex_gelsight_isaac_sim">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">TacEx: GelSight Tactile Simulation in Isaac Sim — Combining Soft-Body and Visuotactile Simulators</span>
+      <span class="badges"><span class="badge frontier">frontier</span></span><br>
+      <span class="authors">Nguyen, Schneider, et al. · 2024</span>
+      <div class="desc">Modular GelSight sim in Isaac Sim fusing GIPC soft-body with Taxim/FOTS. Modern tactile sim in the RL ecosystem.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2411.04776">arXiv:2411.04776</a>] [simulator, isaac-sim, soft-body]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="I" data-slug="soundspaces_2_visual_acoustic">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">SoundSpaces 2.0: A Simulation Platform for Visual-Acoustic Learning</span>
+      <span class="badges"><span class="badge adjacent">adjacent</span></span><br>
+      <span class="authors">Chen, Schissler, Garg, Clegg, Calamia, et al. · Meta · NeurIPS D&amp;B 2022</span>
+      <div class="desc">Geometry-based audio rendering for 3D scenes; visual-acoustic embodied learning. Audio rendering for sim (navigation-leaning).</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2206.08312">arXiv:2206.08312</a>] [simulator, acoustic-rendering, embodied]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="I" data-slug="vtdexmanip_visual_tactile_dexterous_benchmark">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">VTDexManip: A Dataset and Benchmark for Visual-Tactile Pretraining and Dexterous Manipulation with RL</span>
+      <span class="badges"><span class="badge benchmark">benchmark</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">Qian, Li, et al. · ICLR 2025</span>
+      <div class="desc">565k-frame visual-tactile dataset + 6-task dexterous RL benchmark. <strong>No confirmed arXiv ID</strong> — ingest from ICLR 2025 / OpenReview.</div>
+      <div class="tags">[no arXiv — ICLR 2025] [benchmark, visual-tactile, dexterous]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="I" data-slug="kaiwu_multimodal_manipulation_dataset">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Kaiwu: A Multimodal Manipulation Dataset and Framework for Robot Learning and Human-Robot Interaction</span>
+      <span class="badges"><span class="badge frontier">frontier</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">Jiang, Li, Ren, Zhou, Wang, He · 2025</span>
+      <div class="desc">Synced hand motion, pressure, sound, video, mocap, gaze, EMG for assembly. Unusually rich multisensory + language. (Verify arXiv ID at ingest.)</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2503.05231">arXiv:2503.05231</a>] [multimodal-dataset, assembly, hri]</div>
+    </div>
+  </li>
+</ul>
+
+<!-- ============================ CLUSTER J ============================ -->
+<h2>J. Surveys &amp; classical sensing / control foundations</h2>
+<p class="cluster-controls">
+  <button onclick="cluster('J', true)">Select all</button>
+  <button onclick="cluster('J', false)">Clear all</button>
+  <em>Entry points and lineage &mdash; the surveys that map this whole space, plus the sensor-hardware and force-control classics that predate the learning era. Good first reads to orient the corpus.</em>
+</p>
+<ul>
+  <li class="paper" data-cluster="J" data-slug="bridging_language_and_action_survey">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Bridging Language and Action: A Survey of Language-Conditioned Robot Manipulation</span>
+      <span class="badges"><span class="badge survey">survey</span></span><br>
+      <span class="authors">Zhang, et al. · 2024</span>
+      <div class="desc">Taxonomizes how language enters manipulation: state-eval, policy conditioning, planning, unified VLA. The orienting survey for this whole search.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2312.10807">arXiv:2312.10807</a>] [survey, language-conditioned, manipulation]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="J" data-slug="forceful_robotic_foundation_models_survey">
+    <input type="checkbox" checked>
+    <div class="body">
+      <span class="title">Towards Forceful Robotic Foundation Models: A Literature Survey</span>
+      <span class="badges"><span class="badge survey">survey</span></span><br>
+      <span class="authors">_not reported_ · 2025</span>
+      <div class="desc">Surveys integrating force/contact into robotic foundation and VLA models. Directly frames Clusters C and F.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2504.11827">arXiv:2504.11827</a>] [survey, force, foundation-models]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="J" data-slug="what_foundation_models_robot_manipulation_survey">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">What Foundation Models can Bring for Robot Learning in Manipulation: A Survey</span>
+      <span class="badges"><span class="badge survey">survey</span></span><br>
+      <span class="authors">Li, Jin, Sun, et al. · IJRR 2024</span>
+      <div class="desc">Surveys LLM/VLM/VLA foundation models for manipulation; identifies gaps in multi-step and multimodal tasks.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2404.18201">arXiv:2404.18201</a>] [survey, foundation-models, manipulation]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="J" data-slug="variable_impedance_control_learning_review">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Variable Impedance Control and Learning — A Review</span>
+      <span class="badges"><span class="badge survey">survey</span></span><br>
+      <span class="authors">Abu-Dakka, Saveriano · Frontiers in Robotics and AI · 2020</span>
+      <div class="desc">Survey of learning approaches to variable impedance / compliant control for contact tasks. The control-theory bridge to force policies.</div>
+      <div class="tags">[<a href="https://arxiv.org/abs/2010.06246">arXiv:2010.06246</a>] [survey, impedance-control, compliance]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="J" data-slug="gelsight_high_resolution_tactile_sensors">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">GelSight: High-Resolution Robot Tactile Sensors for Estimating Geometry and Force</span>
+      <span class="badges"><span class="badge classical">classical</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">Yuan, Dong, Adelson · MIT · Sensors 2017</span>
+      <div class="desc">Foundational GelSight optical tactile sensor: micron-scale geometry + force from a camera-under-elastomer. <strong>No arXiv</strong> — journal PDF.</div>
+      <div class="tags">[no arXiv — Sensors 2017] [tactile-sensor, gelsight, hardware]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="J" data-slug="digit_low_cost_compact_tactile_sensor">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">DIGIT: A Novel Design for a Low-Cost Compact High-Resolution Tactile Sensor with Application to In-Hand Manipulation</span>
+      <span class="badges"><span class="badge classical">classical</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">Lambeta, Chou, Tian, Jayaraman, Calandra, et al. · Meta · RA-L 2020</span>
+      <div class="desc">Low-cost compact high-res optical tactile sensor; enabled scalable vision-based touch. <strong>No arXiv</strong> — RA-L PDF.</div>
+      <div class="tags">[no arXiv — RA-L 2020] [tactile-sensor, digit, hardware]</div>
+    </div>
+  </li>
+  <li class="paper" data-cluster="J" data-slug="hybrid_position_force_control_manipulators">
+    <input type="checkbox">
+    <div class="body">
+      <span class="title">Hybrid Position/Force Control of Manipulators</span>
+      <span class="badges"><span class="badge classical">classical</span> <span class="badge flag">verify</span></span><br>
+      <span class="authors">Raibert, Craig · ASME J. Dyn. Sys. Meas. Control · 1981</span>
+      <div class="desc">Foundational partition of task space into force- and position-controlled directions via a selection matrix. The root of force control. <strong>No arXiv</strong>.</div>
+      <div class="tags">[no arXiv — ASME 1981] [force-control, classical, foundations]</div>
+    </div>
+  </li>
+</ul>
+
+<div class="gap-box">
+  <h3>Coverage gaps I'm aware of (challenge me on any)</h3>
+  <ul style="list-style: disc; padding-left: 1.4em;">
+    <li><strong>A wave of very-recent (late-2025 / 2026) tactile-and-force VLAs was deliberately EXCLUDED as unverifiable.</strong> Multiple independent slices surfaced titles like <em>TacVLA</em> (2603.12665), <em>VTAM</em> (2603.23481), <em>HapticVLA</em> (2603.15257), <em>ForceVLA2</em> (2603.15169), <em>HEAR / Vision-Sound-Language-Action</em> (2603.16086), <em>TA-VLA</em> (2509.07962), <em>DreamTacVLA</em> (2512.23864), <em>OmniVTA</em> (2603.19201), <em>Visuo-Tactile World Models</em> (2602.06001), <em>TacCoRL</em> (2606.11743) and others with future-dated arXiv IDs I could not open. Several are probably real given today is 2026-06-24 — <strong>say the word and I'll run a dedicated verification pass</strong> on the ones you care about before ingesting.</li>
+    <li><strong>The papers badged <span class="badge flag">verify</span></strong> have plausible-but-unconfirmed arXiv IDs (an agent didn't open the abstract) or no arXiv at all (Any2Policy, VTDexManip, GelSight, DIGIT, Raibert&amp;Craig). Batch Ingest's first-page check will catch any mismatch, but flag if you'd rather I confirm them up front.</li>
+    <li><strong>Language + thermal is essentially empty.</strong> Thermal/temperature material recognition exists (Cluster G) but I found <em>zero</em> papers fusing thermal sensing with language. This is a genuine open niche for Weiyu, not just a search miss.</li>
+    <li><strong>Tactile/touch datasets &amp; benchmarks I saw but didn't add as rows</strong> — FoTa / FoTa-3M, TacQuad, Tactile-MNIST, TacBench, MultiPLY, HapticLLaMA, Touch-LLM. Strong follow-up candidates if you want to deepen Cluster I.</li>
+    <li><strong>Sensor-hardware classics intentionally trimmed</strong> — TacTip (Lepora), ReSkin / AnySkin / eFlesh (Bhirangi), Soft-bubble, FingerVision, GelSlim, Mason's compliance theory (1981). No language angle; I can add a "sensor hardware" cluster if you want the full lineage.</li>
+    <li><strong>Robot audition pre-arXiv classics not swept</strong> — binaural robot audition / sound-source localization (Nakadai &amp; Okuno / HARK lineage), Hershey &amp; Movellan audio-visual scene analysis. These need IEEE/Scholar, not arXiv.</li>
+    <li><strong>Venues searched by keyword, not by full accepted-paper enumeration</strong> — I did not page through complete proceedings of CoRL 2025, RSS 2025/2026, ICRA/IROS 2024–2026, NeurIPS/ICLR 2025, ICASSP, or workshop tracks (ICRA ViTac, RSS Tactile, NeurIPS Touch Processing). Recent workshop papers are likely under-represented.</li>
+    <li><strong>Labs not exhaustively followed</strong> — Adelson/GelSight (MIT), Calandra (TU Dresden), Ruohan Gao &amp; Jiajun Wu (multisensory objects), Lepora (Bristol tactile), Kemp (thermal), Yunzhu Li, Pinto (NYU audio/tactile). Each has 2025–2026 output beyond what surfaced.</li>
+    <li><strong>Signal terms not tried</strong> — "tactile question answering," "haptic instruction following," "audio-tactile," "electrotactile language," "olfaction robot," "event-camera manipulation," "language-conditioned impedance."</li>
+  </ul>
+  <strong>Send me what's missing and I'll expand.</strong>
+</div>
+
+<div class="export-bar">
+  <span>Selected: <span class="count" id="selectedCount">0</span></span>
+  <button onclick="showExport()">Export selection</button>
+  <button class="secondary" onclick="selectAll(true)">Select all</button>
+  <button class="secondary" onclick="selectAll(false)">Clear all</button>
+</div>
+
+<div id="backdrop" onclick="hideExport()"></div>
+<div id="exportBox">
+  <h3>Selected papers — copy and paste into chat</h3>
+  <textarea id="exportText" readonly></textarea>
+  <button class="close" onclick="hideExport()">Close</button>
+</div>
+
+<script>
+function cluster(id, on) {
+  document.querySelectorAll('li.paper[data-cluster="' + id + '"] input[type=checkbox]:not(:disabled)')
+    .forEach(cb => { cb.checked = on; });
+  updateCount();
+}
+function selectAll(on) {
+  document.querySelectorAll('li.paper input[type=checkbox]:not(:disabled)')
+    .forEach(cb => { cb.checked = on; });
+  updateCount();
+}
+function updateCount() {
+  const n = document.querySelectorAll('li.paper input[type=checkbox]:checked').length;
+  document.getElementById('selectedCount').textContent = n;
+}
+function showExport() {
+  const lines = [];
+  document.querySelectorAll('li.paper input[type=checkbox]:checked').forEach(cb => {
+    const li = cb.closest('li.paper');
+    const slug = li.dataset.slug;
+    const title = li.querySelector('.title').textContent;
+    lines.push('- [' + (li.dataset.cluster || '?') + '] ' + slug + ' — ' + title);
+  });
+  document.getElementById('exportText').value = lines.length
+    ? lines.join('\n')
+    : '(nothing selected)';
+  document.getElementById('exportBox').classList.add('visible');
+  document.getElementById('backdrop').classList.add('visible');
+}
+function hideExport() {
+  document.getElementById('exportBox').classList.remove('visible');
+  document.getElementById('backdrop').classList.remove('visible');
+}
+document.querySelectorAll('li.paper input[type=checkbox]').forEach(cb => {
+  cb.addEventListener('change', updateCount);
+});
+updateCount();
+</script>
+
+</body>
+</html>

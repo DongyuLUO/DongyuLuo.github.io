@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>OmniVTLA: Vision-Tactile-Language-Action Model with Semantic-Aligned Tactile Sensing</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Cheng, Zhang, Tang, Wang, Zhang, Li, Zhang, Song">
+<meta name="year" content="2026">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2508.08706">
+<meta name="url" content="https://arxiv.org/abs/2508.08706">
+<meta name="pdf" content="../../raw/papers/omnivtla_vision_tactile_language_action.pdf">
+<meta name="tags" content="vision-language-action, vla, tactile-sensing, contact-rich, multisensory, foundation-models, tactile-representation, vision-based-tactile, sensory-fusion, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>OmniVTLA: Vision-Tactile-Language-Action Models with Semantic-Aligned Tactile Sensing</h1>
+<p class="meta">
+  Zhengxue Cheng&dagger;, Yiqian Zhang, Anni Tang, Keyu Wang, Wenkang Zhang, Haoyu Li, Hengdi Zhang, Li Song
+  &middot; Shanghai Jiao Tong University / Paxini Tech
+  &middot; 2026 (arXiv v3, June 2026)
+  &middot; <a href="https://arxiv.org/abs/2508.08706">arXiv:2508.08706</a>
+  &middot; <a href="../../raw/papers/omnivtla_vision_tactile_language_action.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> OmniVTLA bolts a <em>semantically-aligned</em>
+tactile encoder onto a &pi;0-style VLA: instead of treating touch as a raw
+low-level signal, it pretrains a tactile ViT via cross-modal contrastive
+learning (on a new 135K-sample tri-modal dataset, ObjTac) so that tactile
+tokens land in the same latent space as vision and language &mdash; and that
+grounding, not just more parameters, is what lifts contact-rich pick-place and
+peg-insertion success.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>VLA models inherit CLIP/SigLIP vision backbones that are already
+contrastively aligned to language, but they rely on vision and language alone
+and stumble on contact-rich tasks where the decisive feedback lives in touch
+(material, roughness, hardness, contact state). Prior attempts to bolt touch
+onto VLAs (<a href="../../raw/papers/tactile_vla_physical_knowledge_generalization.pdf">Tactile-VLA</a>,
+VTLA) treat tactile data as a low-level signal and do <em>not</em> align it
+semantically with vision and language. The paper's wager (Fig 1): the tactile
+encoder's <em>architecture and alignment objective</em> matter more than raw
+parameter count, and a vision-language-<em>tactile</em> semantic alignment can
+be engineered the way CLIP aligned vision and language.</p>
+
+<h2>Method</h2>
+<p>OmniVTLA is built on &pi;0 (Black et al. 2024) with a Gemma-2.6B backbone,
+a PaliGemma text tokenizer, a SigLIP-400M image encoder, and a flow-matching
+action expert. The action model targets <code>p(A_t | o_t)</code> over an
+action chunk of length <code>H=50</code>; the VTLA variant extends the &pi;0
+observation with tactile tokens: <code>A_t ~ M(f&phi;(I_t), f&theta;(T_t),
+l_t)</code> where <code>T_t</code> is tactile data remapped to a ViT-like
+3-channel image (via max-min force normalization and tensor reshaping) and
+stitched/multi-sensor inputs are resized to 224&times;224 yielding 256 tokens.</p>
+
+<p><strong>Dual-encoder tactile path (Fig 2).</strong> The core design is a
+<em>dual-ViT</em> tactile encoder: one path is the SigLIP image encoder reused
+on the tactile-as-image input (knowledge transfer from large-scale vision
+pretraining), the other is a <strong>Semantic-Aligned tactile ViT
+(SA-ViT)</strong> trained explicitly via cross-modal contrastive learning to
+push tactile embeddings toward the matching vision and text concepts. This
+dual path addresses the heterogeneity <em>between</em> vision and touch and
+<em>across</em> different tactile sensors (Touch-and-Go, SSVTP, ObjectFolder,
+ObjTac all look different).</p>
+
+<p><strong>SA-ViT training.</strong> Built on the second-stage alignment
+pipeline of <a href="../../raw/papers/anytouch_unified_static_dynamic_visuotactile.pdf">AnyTouch</a>.
+Because ObjTac is tri-modal, the paper uses a symmetric all-pairs alignment
+loss (Eq. 3): <code>L_align = &alpha;_VL(L_{V&rarr;L}+L_{L&rarr;V})/2 +
+&alpha;_VT(L_{V&rarr;T}+L_{T&rarr;V})/2 + &alpha;_TL(L_{T&rarr;L}+L_{L&rarr;T})/2</code>,
+plus a cross-sensor matching loss (binary cross-entropy) so embeddings align
+across sensors. The SA-ViT has an encoder/decoder structure; alignment grounds
+tactile signals (material, roughness, hardness) in visual and linguistic
+context.</p>
+
+<p><strong>ObjTac dataset.</strong> 56 objects across 10 material categories
+(plastic, glass, wood, brick, metal, fabric, leather, ceramic, paper, others),
+labeled by surface roughness (rough/smooth) and hardness (rigid/soft). Sensor
+is a Paxini Gen2 magnetic Hall-effect tactile sensor that recovers 6D pose of
+embedded magnets and inverts to a multi-dimensional force distribution. Per
+object: 2&ndash;5 interaction trials, 10&ndash;60 s each at 60 Hz, plus 720p
+first-person video at 30 FPS, temporally synchronized by timestamp. Totals:
+135K tri-modal samples, 270K force recordings, 252 video sequences. Tri-modal
+text annotations give object name, material, roughness, hardness, and
+descriptions.</p>
+
+<p><strong>Action representation.</strong> For two-finger grippers: 10 tokens
+(3 relative positions, 6 relative angles, 1 gripper state). For the
+four-finger hand: 25 tokens (3 relative positions, 6 relative angles, 16
+absolute joint positions).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> ObjTac (their tri-modal tactile
+    dataset, 135K samples, 56 objects); tactile-perception evaluation also on
+    Touch-and-Go. Real-world manipulation: pick-and-place (gripper + dexterous
+    hand) and peg-insertion (square / round / triangular, clearances
+    0.9 / 1.2 / 1.8 mm). Soft-object generalization on Sponge and Towel.</li>
+  <li><strong>Hardware / simulator:</strong> UR5 arm; a two-finger jaw gripper
+    with two Paxini tactile sensors + wrist camera; an 11-tactile-sensor
+    four-finger dexterous hand + wrist camera; a base camera (Fig 4).
+    All real-robot, no simulator.</li>
+  <li><strong>Baselines:</strong> &pi;0 (the vanilla VLA, no tactile), Diffusion
+    Policy (DP) as a from-scratch VA baseline, and internal tactile-encoder
+    ablations: VTLA-FS (tactile from scratch), VTLA-Pre (tactile = pretrained
+    vision encoder), VTLA-SA (semantic-aligned, single path), VTLA-Pre-Pre
+    (dual SigLIP+CLIP, parameter-matched anchor), VTLA-Pre-Tac (dual
+    SigLIP+Tac-ViT w/o align), and OmniVTLA (dual SigLIP+SA-ViT). Tactile
+    perception baselines: CLIP, SigLIP, Tac-ViT (w/o align), AnyTouch.</li>
+  <li><strong>Compute:</strong> NVIDIA A100 80GB; VTLA/&pi;0 fine-tuned 30K
+    steps, batch 32, 2.5e-5 peak LR (1K warmup, cosine decay to 2.5e-6);
+    DP/VTA trained from scratch 200K steps, LR 1e-4 (Table 10).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline real-world numbers: on pick-and-place with the gripper, OmniVTLA
+reaches <strong>96.9% average SR vs 75.0% for &pi;0</strong> (+21.9%); with the
+dexterous hand <strong>100% vs 93.8%</strong> (+6.2%); on peg-insertion
+<strong>83.3% vs 50.0%</strong> (+33.3%). It also cuts completion time (657&rarr;498
+steps gripper pick-place) and smooths trajectories.</p>
+
+<p><strong>Pick-and-place, two-finger gripper (Table 3):</strong></p>
+<table>
+  <tr><th>Model</th><th>Tactile enc.</th><th>SR % (avg)</th><th>CT steps (avg)</th></tr>
+  <tr><td>VLA (&pi;0)</td><td>none</td><td>75.0</td><td>657</td></tr>
+  <tr><td>VTLA-FS</td><td>from scratch</td><td>81.2</td><td>537</td></tr>
+  <tr><td>VTLA-Pre</td><td>pretrained vision</td><td>84.4</td><td>586</td></tr>
+  <tr><td>VTLA-SA</td><td>semantic-aligned</td><td>87.5</td><td><strong>484</strong></td></tr>
+  <tr><td>VTLA-Pre-Pre</td><td>SigLIP+CLIP</td><td>81.3</td><td>501</td></tr>
+  <tr><td>VTLA-Pre-Tac</td><td>SigLIP+Tac-ViT</td><td>84.4</td><td>550</td></tr>
+  <tr><td><strong>OmniVTLA</strong></td><td>SigLIP+SA-ViT</td><td><strong>96.9</strong></td><td>498</td></tr>
+</table>
+
+<p>Other findings:</p>
+<ul>
+  <li><strong>Tactile perception (Table 2):</strong> SA-ViT beats CLIP/SigLIP
+    on material/roughness/hardness on ObjTac (e.g. material 70.44 vs CLIP 54.64,
+    SigLIP 49.15) while staying near baseline on Touch-and-Go. It does
+    <em>not</em> uniformly beat AnyTouch on Touch-and-Go (AnyTouch leads on
+    material 79.39 and hardness 95.16 there), but wins on the in-domain ObjTac
+    set.</li>
+  <li><strong>Architecture &gt; parameters:</strong> VTLA-Pre-Pre and
+    VTLA-Pre-Tac are parameter-matched to OmniVTLA but underperform it on SR,
+    CT, and smoothness &mdash; the gain is attributed to the SA-ViT encoder,
+    not parameter count.</li>
+  <li><strong>DP baseline (Table 5):</strong> adding tactile to DP lifts avg SR
+    18.7% (59.4&rarr;78.1) and cuts CT 19.9% &mdash; "tactile universally helps."</li>
+  <li><strong>Peg-insertion (Table 6):</strong> OmniVTLA 83.3% avg SR
+    (including 90% on the unseen <em>round</em> shape) vs &pi;0 50.0%.</li>
+  <li><strong>Where it loses:</strong> offline-validation MSE (Fig 5) is led by
+    <em>VTLA-Pre-Tac</em>, with OmniVTLA only second-best. On soft-object SR
+    (Table 8), VTLA-FS/VTLA-Pre hit 93.8% vs OmniVTLA 81.3% &mdash; but the paper
+    argues VTLA-FS's high SR comes from crushing tight gripper closure, while
+    VTLA-SA/OmniVTLA win on minimal max gripper width (less deformation). On
+    smoothness (Table 7) VTLA-SA, not OmniVTLA, is best.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Training data used repeated-attempt demos; they found single-attempt data
+    sufficed for pick-place and only contact-rich tasks needed multiple
+    attempts &mdash; suggests the tactile benefit is task-specific.</li>
+  <li>No improvement in messy clutter, where success depends on visual
+    navigation rather than tactile feedback.</li>
+  <li>Future work: leverage tactile without introducing visual ambiguity, more
+    efficient tactile representations, and temporally-dynamic fusion
+    architectures.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Small-N real-robot statistics.</strong> Gripper pick-place is 32
+    rollouts and the dexterous hand only 16; peg-insertion is 10 trials/shape.
+    SR deltas of a few percent ride on a handful of trials, and no variance /
+    seeds are reported for the real-world tables.</li>
+  <li><strong>The best model isn't best on the diagnostics.</strong> OmniVTLA is
+    second on offline MSE (behind VTLA-Pre-Tac) and second on smoothness
+    (behind VTLA-SA). So the dual-encoder + alignment story is supported on
+    end-task SR but not cleanly on the intermediate metrics &mdash; the single-path
+    VTLA-SA is a surprisingly strong, simpler competitor.</li>
+  <li><strong>Tactile-as-image is an assumption.</strong> Force fields are
+    reshaped into a 3-channel ViT image; whether magnetic-Hall force
+    distributions truly behave like the optical GelSight-style images SigLIP
+    saw during pretraining is asserted, not measured.</li>
+  <li><strong>Alignment vs domain.</strong> SA-ViT wins on ObjTac (in-domain)
+    but not on Touch-and-Go; the contrastive alignment may be partly fitting
+    the Paxini sensor distribution rather than a sensor-agnostic semantic
+    space, despite the cross-sensor loss.</li>
+  <li><strong>Sponge/Towel inversion.</strong> Reporting SR <em>and</em>
+    max-gripper-width and then arguing the high-SR baseline "cheats" by crushing
+    is a fair point, but it means SR alone is the wrong metric for soft objects
+    &mdash; an honest wrinkle the headline numbers don't carry.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>OmniVTLA is a clean data point for the thesis that <strong>many manipulation
+predicates are not visually evaluable</strong> &mdash; <code>is_grasped</code>,
+<code>is_inserted</code>, <code>surface_is_rough</code>, <code>is_soft</code>
+live in force/contact, exactly the signals OmniVTLA shows decide pick-place and
+peg-insertion. Relative to
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+BLADE's contact predicates (<code>turned-on(faucet)</code>,
+<code>is-grasped</code>) are learned as <em>visual</em> classifiers, and BLADE
+itself flags that gripper-state segmentation can't handle caging grasps or
+contact-rich tasks, and that continuous force sits opaquely inside the
+diffusion policy. OmniVTLA is on the opposite end of the structure-vs-scale
+axis &mdash; a monolithic flow-matching VLA with no symbolic abstraction layer
+&mdash; but its tactile encoder is precisely the kind of grounded
+<em>perceptual front-end</em> a force-aware predicate would need. The
+provocative connection: could SA-ViT-style semantically-aligned tactile
+embeddings serve as the classifier input for tactile predicates
+(<code>is_inserted</code>, <code>is_screwed_tight</code>) in a BLADE-style
+bilevel planner, giving the abstraction layer access to non-visual state? The
+"architecture &gt; parameters" result also rhymes with BLADE's "structure as
+prior" stance against pure end-to-end scaling.</p>
+<p>Caveat on relevance: OmniVTLA contributes no planning, no compositionality,
+and no predicate learning &mdash; it is a perception/representation +
+end-to-end-policy paper. Its value to my line is as a <em>tactile grounding
+module</em>, not as a planning method.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Existing attempts to incorporate touch into VLA frameworks often treat
+  tactile data as low-level signals, failing to align them semantically with
+  visual and linguistic contexts.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  This indicates the performance gains are attributed to the choice of tactile
+  encoder architecture rather than the parameter count.
+  <span class="quote-cite">&mdash; &sect;4.2 Real-World Pick and Place Results / p.8</span>
+</blockquote>
+<blockquote>
+  &hellip; smoother trajectories that adhere to the intuitive principle of
+  &ldquo;move quickly when clear, only slow down during contact approach.&rdquo;
+  <span class="quote-cite">&mdash; &sect;1 / p.2</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>Black et al. 2024 &mdash; &pi;0</strong> (<a href="https://arxiv.org/abs/2410.24164">arXiv:2410.24164</a>)
+    &mdash; the flow-matching VLA backbone OmniVTLA is built on and the primary
+    baseline. Foundational dependency; not in the batch cross-ref list.</li>
+  <li><strong>Zhang et al. 2025b &mdash; VTLA</strong> (insertion VLA, arXiv:2505.09577)
+    and <strong>Hao et al. 2025 &mdash; TLA</strong> (Tactile-Language-Action,
+    arXiv:2503.08548) &mdash; the direct VTLA/TLA predecessors in Table 1.</li>
+  <li><strong>Yu et al. 2024 &mdash; Octopi</strong> &mdash; cited as the pioneer
+    tactile-language object-property work; in this batch as
+    <a href="../../raw/papers/octopi_object_property_reasoning_tactile_language.pdf">octopi_object_property_reasoning_tactile_language</a>.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="../paper/anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>
+    &mdash; OmniVTLA's SA-ViT directly reuses AnyTouch's second-stage alignment
+    pipeline and is benchmarked against it; the closest methodological parent.</li>
+  <li><a href="../paper/tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>
+    and <a href="../paper/forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>
+    &mdash; sibling Cluster-C tactile/force VLA policies; OmniVTLA frames itself
+    against exactly these "tactile-as-low-level-signal" approaches.</li>
+  <li><a href="../paper/taf_vla_tactile_force_alignment_vla.html">TaF-VLA</a>
+    and <a href="../paper/vla_touch_dual_level_tactile_feedback.html">VLA-Touch</a>
+    &mdash; other tactile-aligned / tactile-feedback VLAs in the same cluster;
+    direct comparison candidates on contact-rich SR.</li>
+  <li><a href="../paper/octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+    and <a href="../paper/binding_touch_to_everything_unitouch.html">UniTouch</a>
+    &mdash; touch-language grounding / tactile-to-multimodal-binding precursors
+    that motivate SA-ViT's contrastive alignment.</li>
+  <li><a href="../paper/objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a>
+    and <a href="../paper/touch_and_go_human_collected_vision_touch.html">Touch and Go</a>
+    &mdash; the heterogeneous tactile datasets shown in Fig 2/Table 2 that ObjTac
+    is positioned alongside; Touch-and-Go is a direct eval set here.</li>
+</ul>
+
+</body>
+</html>

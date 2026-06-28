@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Reactive Diffusion Policy: Slow-Fast Visual-Tactile Policy Learning for Contact-Rich Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Xue, Ren, Chen, Zhang, Fang, Gu, Xu, Lu">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint (RSS 2025)">
+<meta name="arxiv_id" content="2503.02881">
+<meta name="url" content="https://arxiv.org/abs/2503.02881">
+<meta name="pdf" content="../../raw/papers/reactive_diffusion_policy_slow_fast_visuotactile.pdf">
+<meta name="project_page" content="https://reactive-diffusion-policy.github.io">
+<meta name="tags" content="diffusion-policy, visuo-tactile, contact-rich, force-control, fast-slow, imitation-learning, tactile-sensing, gelsight, force-torque, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Reactive Diffusion Policy: Slow-Fast Visual-Tactile Policy Learning for Contact-Rich Manipulation</h1>
+<p class="meta">
+  Han Xue*, Jieji Ren*, Wendi Chen*, Gu Zhang, Yuan Fang, Guoying Gu, Huazhe Xu&Dagger;, Cewu Lu&Dagger;
+  &middot; Shanghai Jiao Tong University / Tsinghua IIIS / Shanghai AI Lab / Shanghai Qi Zhi
+  &middot; 2025 (arXiv:2503.02881v3; RSS 2025)
+  &middot; <a href="https://arxiv.org/abs/2503.02881">arXiv:2503.02881</a>
+  &middot; <a href="../../raw/papers/reactive_diffusion_policy_slow_fast_visuotactile.pdf">PDF</a>
+  &middot; <a href="https://reactive-diffusion-policy.github.io">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> RDP splits a visuo-tactile imitation policy into a
+slow latent diffusion planner (1&ndash;2 Hz, models complex non-Markovian
+behavior) and a fast asymmetric-tokenizer decoder (&gt;20 Hz, closes the loop on
+high-frequency tactile/force feedback), so a robot can both <em>plan</em> a
+chunked contact-rich trajectory and <em>react</em> instantly to contact changes
+&mdash; the thing vanilla action-chunking diffusion policies structurally cannot do.
+
+<h2>Problem &amp; motivation</h2>
+<p>Visual imitation-learning policies (Diffusion Policy, ACT, &pi;<sub>0</sub>)
+rely on <strong>action chunking</strong> to model temporally consistent,
+non-Markovian behaviors (pauses, oscillatory motion). But a chunk is executed
+<em>open-loop</em>: during chunk execution the policy can't respond to real-time
+tactile/force signals, so these methods are confined to low-precision tasks
+(pick-and-place, push-pull) that need neither force control nor fast response.
+Prior visuo-tactile IL work adds touch mostly at the <em>observation</em> level
+(tactile as extra channels) while still chunking actions open-loop &mdash; so it
+inherits the same reactivity ceiling. The paper's claim: humans do contact-rich
+tasks via two coupled processes &mdash; (1) feedforward/predictive action and
+(2) closed-loop fine-tuning on tactile feedback &mdash; and a policy needs both.
+A second obstacle is <em>data</em>: most teleoperation rigs give the operator no
+fine-grained tactile feedback, so they can't collect high-quality contact-rich
+demos in the first place.</p>
+
+<h2>Method</h2>
+<p>Two contributions: a teleoperation system (<strong>TactAR</strong>) and a
+policy architecture (<strong>RDP</strong>).</p>
+
+<p><strong>TactAR (data collection, Fig 2).</strong> A low-cost ($500, Meta
+Quest 3) AR teleoperation system that renders real-time tactile/force feedback as
+a <strong>3D deformation field</strong> &mdash; a sensor-agnostic representation
+&mdash; "attached" to the robot end-effector in AR space so the operator
+perceives contact in 3D. For optical tactile sensors, normalized marker positions
+<code>D<sub>t</sub></code> are tracked and a score-based optical flow
+<code>F<sub>t</sub> = [d<sub>x</sub>, d<sub>y</sub>] = Flow(D<sub>0</sub>,
+D<sub>t</sub>)</code> (Eq. 1) yields the field <code>V<sub>t</sub></code>, with a
+z-offset added and rendered as 3D arrows. EE pose comes from hand-pose tracking;
+supports single-arm and bimanual, multiple sensors simultaneously.</p>
+
+<p><strong>RDP slow-fast policy (Fig 6).</strong> A two-level hierarchy mirroring
+human predictive-action + closed-loop-finetuning:</p>
+<p><strong>Slow policy = Latent Diffusion Policy (LDP).</strong> Runs at 1&ndash;2
+Hz on low-frequency observations (RGB + tactile + proprioception). Instead of
+denoising raw actions, it denoises a <em>latent</em> action chunk
+<code>Z = E(A) &isin; R<sup>t&times;d</sup></code> (a CNN-encoded downsampling of
+the action chunk <code>A &isin; R<sup>T&times;D</sup></code>). Trained as a
+standard FiLM-conditioned 1D U-Net DDPM (Eq. 3), it preserves diffusion's
+multi-modal, non-Markovian modeling power but over the compact latent.</p>
+<p><strong>Fast policy = Asymmetric Tokenizer (AT).</strong> A 1D-CNN encoder
+<code>E</code> + GRU decoder <code>D</code>. The decoder reconstructs the real
+action <code>&Acirc; = D(concat([Z, F<sup>reduced</sup>]))</code>, where
+<code>F<sup>reduced</sup></code> is the high-frequency tactile/force
+representation. The asymmetry is the key trick: tactile is fed <em>only to the
+decoder, never to the latent encoder</em>, so the latent chunk
+<code>Z</code> retains only high-level strategy while precise reactive correction
+lives in the fast decoder. Trained with L1 reconstruction + small KL penalty
+(Eq. 2). At inference it autoregressively decodes actions at 24 Hz, fine-tuning
+the slow policy's latent chunk against the latest tactile/force (Fig 6b) &mdash;
+it acts like a learnable impedance controller. Inference: &lt;1 ms (AT) vs 100 ms
+(LDP) vs 120 ms (vanilla DP) on RTX 4090 (Table I).</p>
+
+<p><strong>Tactile/force representation.</strong> For optical sensors, PCA
+(<code>d=15</code> components) over the marker deformation field &mdash; robust to
+texture/lighting/gel-replacement, and the top components turn out to be
+explicable (tangential force, torsional torque, normal force; Fig 18). For
+force/torque sensors, just concatenate the 6-D wrench. <strong>Implementing
+suggestions:</strong> relative-EE-pose trajectories (per UMI) and
+<strong>latency matching</strong> (discard the first few predicted steps to align
+sent actions with execution latency) are both reported essential.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected real-world demos via
+    TactAR &mdash; 60 demos (Peeling), 80 (Wiping), 50 (Bimanual Lifting), with
+    proactively-recorded reactive behaviors. Three contact-rich tasks: Peeling
+    (peel a hand-held cucumber), Wiping (wipe handwriting off a hand-held vase
+    with rotation), Bimanual Lifting (two arms clamp + lift a paper cup along a
+    curve without crushing it). Evaluation under No / Before-contact / After-contact
+    perturbations. No public benchmark.</li>
+  <li><strong>Hardware / simulator:</strong> Two Flexiv Rizon 4 arms w/ joint
+    torque sensors + Flexiv Grav grippers; RealSense D435/D415 cameras. Three
+    sensor types swapped across experiments: GelSight Mini (8MP, 25 FPS), improved
+    MCTac (2MP, 30 FPS, $50 lab-built), and built-in joint torque sensors (wrench
+    via Flexiv RDK, 120 Hz &rarr; 24 FPS). Workstation: i9-14900K + RTX 4090.
+    No simulator (real-world only).</li>
+  <li><strong>Baselines:</strong> Diffusion Policy (visual only); DP (tactile
+    image); DP (tactile embedding, PCA); vs. RDP (tactile embedding) and RDP
+    (force). Plus internal comparators: temporal-ensemble DP (varying &tau;),
+    small-chunk DP, absolute-action and no-latency-matching ablations.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (training compute/time not
+    given; inference latencies in Table I).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: RDP improves overall task score by <strong>&gt;35%</strong> over the
+best DP baselines across all three tasks. Peeling (Table II, score is normalized
+peel length):</p>
+
+<table>
+  <tr><th>Method (Peeling)</th><th>No Perturb.</th><th>Perturb. before</th><th>Perturb. after</th><th>All</th></tr>
+  <tr><td>DP (visual)</td><td>0.56</td><td>0.58</td><td>0.19</td><td>0.44</td></tr>
+  <tr><td>DP (tactile img.)</td><td>0.60</td><td>0.49</td><td>0.16</td><td>0.41</td></tr>
+  <tr><td>DP (tactile emb.)</td><td>0.48</td><td>0.55</td><td>0.15</td><td>0.39</td></tr>
+  <tr><td><strong>RDP (GelSight)</strong></td><td>0.98</td><td>0.93</td><td>0.80</td><td>0.90</td></tr>
+  <tr><td><strong>RDP (MCTac)</strong></td><td>1.00</td><td>0.84</td><td>0.79</td><td>0.88</td></tr>
+  <tr><td><strong>RDP (Force)</strong></td><td>0.99</td><td>0.98</td><td>0.88</td><td><strong>0.95</strong></td></tr>
+</table>
+
+<p>Wiping (Table III): RDP (Force) 0.87 vs best DP 0.57. Bimanual Lifting (Table
+IV): RDP (GelSight+MCTac) 0.80 / RDP (Force) 0.70 vs DP &le;0.10. Key findings:</p>
+<ul>
+  <li><strong>Q1 &mdash; naively adding tactile to observation doesn't help.</strong>
+    DP-tactile-embedding (0.39&ndash;0.50) is no better, sometimes worse, than
+    visual DP &mdash; because open-loop chunking can't exploit the signal. The win
+    comes from the reactive fast policy, not from tactile-as-input.</li>
+  <li><strong>Q4 &mdash; reactivity.</strong> The gap is largest under
+    <em>perturbation-after-contact</em> (Peeling: RDP 0.80 vs DP 0.15). When the
+    robot loses contact, DP plays out the stale chunk open-loop; RDP re-corrects.</li>
+  <li><strong>Q3 &mdash; sensor-agnostic.</strong> Works with GelSight, MCTac, and
+    force/torque, and even mixes two different optical sensors (different LEDs,
+    gels, marker arrays, resolutions, FPS) on the two grippers in Bimanual Lifting.
+    Force often does best (lower latency, lower dimensionality).</li>
+  <li><strong>Q5 ablations (Table V).</strong> Shrinking chunk size 8&rarr;2 drops
+    grasp success 100%&rarr;20% (small chunks can't model non-Markovian pauses).
+    Temporal ensemble is hyper-sensitive to &tau; (best Wiping score only 0.15 vs
+    RDP 0.50). Latency matching contributes ~50.6% and relative-trajectory ~59.5%
+    of Peeling score (Fig 10).</li>
+  <li><strong>Ablations (Table VI).</strong> Normal-force-only drops 0.95&rarr;0.48;
+    a symmetric tokenizer (tactile into encoder too) drops 0.95&rarr;0.58 &mdash;
+    validating both shear/torsion and the asymmetric design.</li>
+  <li><strong>Data quality (Q6/Q7).</strong> TactAR feedback raises stable-contact-force
+    ratio 0.58&rarr;0.87; &ge;70% of 10 users found AR feedback "very helpful."
+    RDP trained on no-feedback VR data scores &gt;30% lower (Fig 14).</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>TactAR's AR feedback is less intuitive/efficient than direct human-hand
+    contact; teleoperation efficiency limited by sensor + system latency.</li>
+  <li>System is built for two-finger grippers; extending to dexterous hands with
+    per-finger tactile is future work.</li>
+  <li>The fast policy reacts to high-frequency tactile/force but <em>not</em>
+    high-frequency images (vision stays slow) &mdash; limits tasks needing fast
+    visual reaction.</li>
+  <li>RDP is currently single-task; they propose folding the AT idea into a VLA by
+    replacing the VLA action tokenizer with an asymmetric one.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Statistics are thin.</strong> Bimanual Lifting is 10 trials/variation
+    and Peeling/Wiping scores are means with no variance/seeds reported in the main
+    tables &mdash; a much smaller statistical claim than the score gaps suggest.
+    All eval is real-world single-blind, hard to reproduce.</li>
+  <li><strong>No public benchmark.</strong> Three bespoke tasks, self-collected
+    data, custom sensor (improved MCTac). Cross-paper comparison is impossible;
+    the only baselines are the authors' own DP variants.</li>
+  <li><strong>Where does the reactivity actually come from?</strong> The fast
+    policy is trained to reconstruct demo actions from latent+tactile; its
+    "reactive" corrections are only as good as the reactive behaviors operators
+    happened to record. The paper proactively recorded such behaviors &mdash;
+    so part of the win may be data curation, not architecture alone.</li>
+  <li>The latent action chunk is purely strategic and the abstraction is
+    continuous; there's no symbolic notion of <em>contact state</em>. The policy
+    knows "push harder" but never names <code>is_in_contact</code> or
+    <code>is_peeled</code> &mdash; relevant to the predicate angle below.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely on-theme for the thesis behind the 2026-06-24 batch: many
+manipulation predicates &mdash; <code>is_in_contact</code>,
+<code>force_is_stable</code>, <code>is_peeled</code>,
+<code>is_clamped_without_crushing</code> &mdash; are <em>not visually
+evaluable</em>; they live in touch and force. RDP is a clean demonstration that
+the <em>control</em> side of that thesis is real: open-loop visual chunking
+collapses on exactly the contact transitions a vision-only predicate would miss
+(perturb-after-contact 0.15&rarr;0.80), and the fix is high-frequency force in the
+loop.</p>
+<p>Relative to <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+RDP is the controller-layer complement to BLADE's planner layer. BLADE composes
+<a href="ambient_diffusion_policy_imitation_learning_from_suboptimal_data.html">diffusion-policy</a>
+controllers via symbolic preconditions/effects but flags (in its own "Why I
+care") that <em>continuous parameters like force sit entirely inside the diffusion
+policy</em> and that its segmentation depends on gripper state, breaking on
+contact-rich tasks. RDP is precisely a better such low-level controller: a
+force-reactive diffusion policy that BLADE-style bi-level planning could call as a
+behavior body. The open question RDP sharpens for my own line: <strong>can the
+slow latent chunk be made symbolic / predicate-grounded</strong> so that a
+force-aware contact predicate (learned, like BLADE's visual classifiers, but over
+the tactile/force stream) gates when the fast reactive policy switches modes? That
+would marry BLADE's abstraction layer to RDP's reactivity &mdash; a concrete
+project seed.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Action chunking ... limits the ability to respond instantly to real-time tactile
+  feedback during the chunk execution. Furthermore, the absence of tactile input
+  significantly limits the capabilities of these methods.
+  <span class="quote-cite">&mdash; &sect;I Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  Simply adding tactile signals into observation may NOT improve performance for
+  complex contact-rich tasks.
+  <span class="quote-cite">&mdash; &sect;V-B Results (Q1) / p.9</span>
+</blockquote>
+<blockquote>
+  This deliberate asymmetry in structure is designed to ensure that the latent
+  action chunk retains only high-level feedback strategies, while the precise
+  locations are predicted by the decoder with the tactile information.
+  <span class="quote-cite">&mdash; &sect;IV-B Slow-Fast Policy Learning / p.6</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[10] Chi et al. &mdash; Diffusion Policy</strong> (IJRR 2023) &mdash;
+    the slow-policy backbone and primary baseline.
+    (<a href="../../raw/papers/ambient_diffusion_policy_imitation_learning_from_suboptimal_data.pdf">cf. Ambient DP, already ingested</a>.)</li>
+  <li><strong>[11] Chi et al. &mdash; UMI</strong> &mdash; source of the
+    relative-EE-trajectory + latency-matching tricks RDP reports essential.</li>
+  <li><strong>[24] He et al. &mdash; FoAR: Force-aware Reactive Policy</strong>
+    &mdash; closest force-reactive-policy peer.
+    <a href="../../raw/papers/foar_force_aware_reactive_policy.pdf">FoAR (batch cluster F)</a>.</li>
+  <li><strong>[20] Yuan et al. &mdash; GelSight</strong> &mdash; the optical
+    tactile sensor used. <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">GelSight (batch cluster J)</a>.</li>
+  <li><strong>[64] Yu et al. &mdash; MimicTouch</strong> &mdash; tactile human-demo
+    IL, discussed as related visuo-tactile manipulation.
+    <a href="../../raw/papers/mimictouch_human_tactile_demos.pdf">MimicTouch (batch cluster F)</a>.</li>
+  <li><strong>[27] Yuan et al. &mdash; 3D-ViTac</strong> &mdash; visuo-tactile
+    fine-grained manipulation; the normal-force-only ablation references it.</li>
+  <li><strong>[45] Pattabiraman et al. (VISK)</strong> &mdash; temporal-ensemble
+    visuo-tactile IL, the closed-loop comparator RDP argues against.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="foar_force_aware_reactive_policy.html">FoAR</a> &mdash; force-aware
+    reactive policy from the same problem space; direct peer on closing the loop
+    on force for contact-rich tasks.</li>
+  <li><a href="favla_force_adaptive_fast_slow_vla.html">FAVLA</a> &mdash; the
+    fast-slow idea ported into a VLA; exactly the future direction RDP's conclusion
+    proposes (asymmetric tokenizer inside a VLA).</li>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a> and
+    <a href="taf_vla_tactile_force_alignment_vla.html">TaF-VLA</a> &mdash;
+    force-aware VLA policies for contact-rich tasks; same "force in the loop" thesis
+    at VLA scale.</li>
+  <li><a href="tactile_conditioned_diffusion_policy_force_aware.html">Tactile-Conditioned Diffusion Policy</a>
+    &mdash; closest architectural sibling: a force-aware diffusion policy; useful
+    contrast to RDP's slow-fast latent split.</li>
+  <li><a href="factr_force_attending_curriculum_training.html">FACTR</a> /
+    <a href="factr2_external_force_sensing_commodity_arms.html">FACTR 2</a> and
+    <a href="making_sense_of_vision_and_touch.html">Making Sense of Vision and Touch</a>
+    &mdash; force/proprioception and visuo-tactile fusion peers in cluster F.</li>
+  <li><a href="kinedex_tactile_kinesthetic_teaching.html">KineDex</a> and
+    <a href="mimictouch_human_tactile_demos.html">MimicTouch</a> &mdash;
+    tactile-demonstration collection systems; TactAR is the AR-feedback alternative.</li>
+</ul>
+
+</body>
+</html>

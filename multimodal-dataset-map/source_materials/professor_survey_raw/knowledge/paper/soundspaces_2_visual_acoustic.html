@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SoundSpaces 2.0: A Simulation Platform for Visual-Acoustic Learning</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Chen, Schissler, Garg, Kobernik, Clegg, Calamia, Batra, Robinson, Grauman">
+<meta name="year" content="2022">
+<meta name="venue" content="NeurIPS 2022 Datasets and Benchmarks Track">
+<meta name="arxiv_id" content="2206.08312">
+<meta name="url" content="https://arxiv.org/abs/2206.08312">
+<meta name="pdf" content="../../raw/papers/soundspaces_2_visual_acoustic.pdf">
+<meta name="tags" content="simulator, acoustic-sensing, audio-visual, embodied-agents, sim-to-real, multimodal-dataset, multisensory, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- Off-genre paper: a simulation platform + dataset, no robot manipulation. Body structure kept; "Why I care" explicitly marks this as an adjacent infrastructure/method anchor, not a manipulation paper. -->
+
+<h1>SoundSpaces 2.0: A Simulation Platform for Visual-Acoustic Learning</h1>
+<p class="meta">
+  Changan Chen*, Carl Schissler*, Sanchit Garg*, Philip Kobernik, Alexander Clegg,
+  Paul Calamia, Dhruv Batra, Philip Robinson, Kristen Grauman
+  &middot; UT Austin / Reality Labs at Meta / Georgia Tech / FAIR
+  &middot; NeurIPS 2022 (Datasets and Benchmarks Track)
+  &middot; <a href="https://arxiv.org/abs/2206.08312">arXiv:2206.08312</a>
+  &middot; <a href="../../raw/papers/soundspaces_2_visual_acoustic.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> SoundSpaces 2.0 is an on-the-fly, geometry-based
+acoustic renderer that, given any 3D mesh, produces physically-grounded room
+impulse responses (reflection, reverb, transmission, diffraction, air
+absorption, binaural spatialization) for arbitrary source/receiver placements
+&mdash; turning a static visual simulator into a joint audio-visual one fast
+enough for embodied RL training and faithful enough to transfer to the real
+world.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>What we see and hear are tightly coupled: room geometry and surface
+materials transform every sound that reaches our ears (a marble museum vs. a
+carpeted bookshop). Embodied-AI and AR/VR systems &mdash; a rescue robot
+localizing a person calling for help, a service robot listening for whether
+the espresso machine is running &mdash; need that visual&harr;acoustic
+correspondence in simulation. Prior audio simulators were too rigid. The
+original <a href="../../raw/papers/soundspaces_audio_visual_navigation.pdf">SoundSpaces
+[14]</a> precomputes room impulse responses (RIRs) on a fixed <em>0.5 m
+discrete grid</em> for a fixed list of 100 environments, weighing on the order
+of terabytes; agents can only hop between grid points, configurations
+(microphones, materials) can't be changed, and it doesn't generalize to new
+scenes. ThreeDWorld [21] renders continuously but only for oversimplified
+"shoebox" (rectangular) rooms, so it can't use real-scan meshes. The gap: no
+geometry-based acoustic simulator was simultaneously high-fidelity,
+configurable, generalizable to arbitrary meshes, <em>and</em> fast enough for
+embodied learning.</p>
+
+<h2>Method</h2>
+<p>The core is the <strong>RLR-Audio-Propagation</strong> engine, integrated
+into the Habitat-Sim [63] visual simulator (Fig 1). Given a scene mesh plus
+user-specified source/receiver locations, it computes an RIR via a
+<strong>bidirectional path-tracing algorithm</strong> [10] over <code>M</code>
+logarithmically-spaced frequency bands. It models reflection, transmission,
+and diffraction, plus binaural spatialization. Rays from each source carry
+per-band energy and bounce through the scene (reflection via a Phong BRDF,
+diffraction probabilistically at specially-constructed edge geometry,
+transmission with probability set by material coefficients); rays are then
+emitted from the listener and connected to source paths via multiple
+importance sampling. Energy is accumulated into an energy-time histogram whose
+<strong>spherical-harmonic coefficients</strong> per bin encode the
+directional distribution of arriving sound, which is then spatialized to an
+ambisonic or binaural pressure IR [69] and convolved with the source audio.</p>
+
+<p><strong>Improvements over original SoundSpaces.</strong> (i) Added acoustic
+<em>diffraction</em> via the fast diffraction approach [68], fixing abrupt
+occlusion artifacts. (ii) Fixed a direct-to-reverberant ratio (DRR) bias
+of <code>&radic;(4&pi;)</code> present in the indirect sound pressure of the
+original.</p>
+
+<p><strong>Continuity.</strong> Spatial continuity: render
+<code>R(s, r, &theta;)</code> at arbitrary (non-grid) source <code>s</code>,
+receiver <code>r</code>, heading <code>&theta;</code>; received sound is
+<code>A&#8319; = A&#8347; &lowast; R(s, r, &theta;)</code>. Acoustic
+continuity: instead of convolving a fresh IR per discrete step (which made the
+source effectively stop/restart each second), they index the source audio at
+the right delayed sample (<code>t&#8345; = t&#7522; &minus; R(s, x&#7522;,
+&theta;) + 1</code>) and apply linear crossfading between successive listener
+positions over a window <code>T</code> to smooth transitions.</p>
+
+<p><strong>Configurability.</strong> Exposed parameters: sampling rate, number
+of frequency bands, ray counts, whether reflection/transmission/diffraction
+are enabled. Microphone types: mono, binaural, ambisonics, or a user-specified
+array. Custom HRTFs can be loaded. <strong>Material modeling</strong>: 29
+built-in acoustic materials, each with frequency-dependent absorption,
+scattering, and transmission coefficients of the form <code>[f&#8321;,
+c&#8321;, ..., f&#8345;, c&#8345;]</code>, plus distance-dependent air
+absorption [8]. This fixes the original's rigid object-category&rarr;material
+map (e.g., all floors forced to "carpet").</p>
+
+<p><strong>Two rendering modes</strong> (Sec 3.5): <em>high-quality</em> (all
+parameters maxed, temporal coherence off, gold standard) and
+<em>high-speed</em> (fewer rays, reuses previously-computed IRs under a
+locally-continuous-motion assumption [66]) for RL training that needs
+millions of steps.</p>
+
+<p><strong>SoundSpaces-PanoIR dataset.</strong> To serve users who want
+visual-acoustic data without running the simulator, they render an offline
+dataset of <strong>10M panoramic image + IR pairs</strong> across 750
+environments from Matterport3D, Gibson, and HM3D, each with the source's polar
+coordinate relative to the panorama center (Fig 2).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Mesh assets from Replica [71],
+    Matterport3D [11], Gibson [81], HM3D [59] (arbitrary-mesh compatible).
+    Real-world validation: 7 source/receiver IR measurements collected in the
+    FRL apartment of the Replica scene. Released SoundSpaces-PanoIR (10M
+    image-IR pairs, 750 envs). Downstream: continuous AudioGoal navigation
+    dataset [14]; far-field ASR on LibriSpeech [57] train-clean-100, tested on
+    a real RIR dataset [72] + RWCP/REVERB/AIR databases.</li>
+  <li><strong>Hardware / simulator:</strong> SoundSpaces 2.0 / RLR-Audio-Propagation
+    engine integrated with Habitat-Sim [63]. Speed profiled on a Xeon Gold 6230
+    CPU @ 2.10 GHz. Real IR capture used a B&amp;K Type 4295 omnidirectional
+    speaker (100 Hz&ndash;8 kHz) and an Earthworks M30 mic via exponential
+    sine sweep. <em>No robot hardware</em> &mdash; this is a simulator paper.</li>
+  <li><strong>Baselines:</strong> Simulators &mdash; SoundSpaces 1.0 [14], GWA
+    [74], ThreeDWorld [21], Pyroomacoustics [64] (Table 1, on Audio-Visual /
+    Geometric / Configurable / Arbitrary-Env axes). Navigation: DAV-Nav agent
+    [80, 14] trained on SoundSpaces 1.0 (discrete) vs. SoundSpaces 2.0
+    (continuous). ASR: SpeechBrain [61] transformer finetuned on real IRs [39],
+    Pyroomacoustics, SoundSpaces 1.0, vs. SoundSpaces 2.0.</li>
+  <li><strong>Compute:</strong> Rendering speed reported (Table 2): high-quality
+    0.9 FPS (1 thread) / 4.0 FPS (5 threads); high-speed 7.7 / 33.5 FPS;
+    SoundSpaces runs at 500+ FPS bottlenecked on I/O. Training compute for the
+    nav/ASR benchmarks <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Simulator capability (Table 1):</strong> SoundSpaces 2.0 is the only
+platform checking all four boxes &mdash; Audio-Visual, Geometric, Configurable,
+<em>and</em> Arbitrary-Env. SoundSpaces 1.0 lacks Configurable and Arbitrary-Env;
+ThreeDWorld and Pyroomacoustics lack Geometric/Arbitrary-Env; GWA lacks
+Audio-Visual.</p>
+
+<p><strong>Accuracy vs. real measurements (Sec 5.2).</strong> Against the 7
+FRL-apartment measurements, SoundSpaces 2.0 reduces average DRR error from
+11.0 dB (original SoundSpaces) to <strong>0.98 dB</strong> while preserving a
+12.4% relative RT60 error; its energy-decay curves track the real measurements
+much more closely (Fig 3b,c).</p>
+
+<p><strong>Speed/quality tradeoff (Table 2):</strong> high-speed mode is
+8&times; faster (1 thread) / 33&times; (5 threads) than high-quality while
+losing only 9.5% relative RT60 accuracy; a nav model trained in high-speed and
+evaluated in high-quality differs by &lt;1%.</p>
+
+<p><strong>Benchmark 1 &mdash; Continuous Audio-Visual Navigation (Table 3):</strong></p>
+<table>
+  <tr><th>Train</th><th>Test</th><th>Success %</th><th>SPL %</th><th>DTG (m)</th></tr>
+  <tr><td>SoundSpaces [14]</td><td>Continuous space</td><td>64.2 &plusmn; 0.8</td><td>27.5 &plusmn; 0.4</td><td>5.6 &plusmn; 0.2</td></tr>
+  <tr><td>SoundSpaces [14]</td><td>Continuous space &amp; sound</td><td>0.9 &plusmn; 0.2</td><td>0.3 &plusmn; 0.1</td><td>12.9 &plusmn; 0.1</td></tr>
+  <tr><td><strong>SoundSpaces 2.0</strong></td><td>Continuous space &amp; sound</td><td><strong>64.7 &plusmn; 3.9</strong></td><td><strong>49.3 &plusmn; 3.0</strong></td><td><strong>5.9 &plusmn; 0.5</strong></td></tr>
+</table>
+<p>An agent trained on discrete-sound SoundSpaces collapses (0.9% success) when
+tested under acoustically-continuous audio, because it leans on an always-present
+(but unrealistic) direct-sound cue; SoundSpaces 2.0 training restores 64.7%.
+Note the discrete agent retains decent success but much worse SPL (27.5 vs.
+49.3) even on continuous <em>space</em> alone &mdash; spatial discretization
+mainly hurts path efficiency.</p>
+
+<p><strong>Benchmark 2 &mdash; Far-field ASR (Table 4, Word Error Rate):</strong></p>
+<table>
+  <tr><th>Finetuning IRs</th><th>WER %</th></tr>
+  <tr><td>Pretrained (none)</td><td>29.10</td></tr>
+  <tr><td>Real IRs [39]</td><td>13.32</td></tr>
+  <tr><td>Pyroomacoustics [64]</td><td>16.24</td></tr>
+  <tr><td>SoundSpaces 1.0 [14]</td><td>18.48</td></tr>
+  <tr><td><strong>SoundSpaces 2.0</strong></td><td><strong>12.48</strong></td></tr>
+</table>
+<p>Finetuning ASR on SoundSpaces 2.0 synthetic IRs beats finetuning on
+<em>real</em> IRs (12.48 vs. 13.32 WER) &mdash; the headline sim2real result.
+Adding their <strong>acoustic randomization</strong> (random per-category
+material + Gaussian coefficient noise) pushes WER further to 12.04%, whereas
+naive uniform coefficient sampling hurts (12.58%), showing structured
+randomization matters.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors (Sec 6):</em></p>
+<ul>
+  <li>Path tracing needs high-quality watertight meshes; large holes cause ray
+    leakage and inaccurate RT60 (Matterport3D's broken meshes show this). They
+    expose a ray-leak API but mesh repair is on the user.</li>
+  <li>Acoustic material properties can't be estimated from geometry/visuals
+    alone; they fall back on coarse category&rarr;material assignment, so
+    fidelity is capped without real acoustic measurements per scene.</li>
+  <li>Inherits geometrical-acoustics shortcomings (room modes), though
+    diffraction is now handled.</li>
+  <li>Real-IR validation is only on one apartment (Replica FRL); broader
+    geometry/material validation is future work.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The marquee "beats real IRs for ASR" claim rests on a single
+    finetuning/test split (Table 4) with no variance reported on WER &mdash; a
+    1.7-point WER gap over real IRs could be within run-to-run noise. The
+    headline would be stronger with seeds/CIs on the ASR numbers (they do
+    report std for nav and speed, but not ASR).</li>
+  <li>Real-world acoustic validation is <em>n = 7</em> source/receiver pairs in
+    <em>one</em> apartment. The DRR/RT60 fidelity claims (0.98 dB) are
+    persuasive but thin geographically; generalization of <em>acoustic</em>
+    accuracy across diverse real rooms is asserted, not measured.</li>
+  <li>The whole edifice assumes object-category material maps are an acceptable
+    prior. For any contact-rich / fine-grained acoustic task (distinguishing
+    wood vs. metal from impact sound), this category-level material prior is
+    exactly the wrong granularity &mdash; the simulator can't render an object's
+    <em>instance-specific</em> acoustic signature it was never told about.</li>
+  <li>Speed numbers (0.9&ndash;33.5 FPS) are CPU-only on one machine; for RL at
+    "millions to billions" of steps these are still slow relative to pure
+    visual sim, and no GPU/throughput-at-scale figure is given.</li>
+  <li>It renders <em>propagation</em> of arbitrary input sounds but does not
+    synthesize the <em>source</em> sounds themselves (impact/contact audio) the
+    way ObjectFolder-style object-centric simulators do &mdash; an important
+    scoping boundary for manipulation use.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p><strong>Off-theme flag: this is an infrastructure/dataset paper for
+audio-visual <em>navigation</em> and far-field ASR, not robot manipulation,
+and there is no robot, gripper, or contact-rich task in it.</strong> I should
+not overstate its relevance to <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+long-horizon manipulation / planning-abstraction agenda. That said, it is the
+canonical <em>acoustic-rendering substrate</em> for the broader thesis I keep
+circling: <strong>many manipulation predicates &mdash;
+<code>is_full</code> (pouring), <code>is_screwed_tight</code>,
+<code>is_inserted</code>, <code>surface_is_rough</code> &mdash; are not visually
+evaluable and live in sound/vibration.</strong> If a future BLADE-style system
+wants to learn a <code>poured-enough(cup)</code> or <code>contact-made</code>
+predicate classifier from audio, it needs (a) realistic acoustic data at scale
+and (b) sim2real acoustic transfer. SoundSpaces 2.0 is the cleanest existence
+proof that <em>geometry-based acoustic sim can out-transfer real recordings</em>
+(the ASR result), which de-risks the "can we even train acoustic predicate
+classifiers in sim?" question.</p>
+<p>Concrete tangential relevance to my themes:</p>
+<ul>
+  <li><strong>Sim2real for non-visual sensing.</strong> The acoustic-randomization
+    finding (structured material randomization &gt; uniform) is a direct analogue
+    to domain randomization for tactile/force sim &mdash; a recipe worth borrowing
+    if acoustic predicates ever enter the abstraction layer.</li>
+  <li><strong>Adjacent, not core.</strong> Unlike <a href="../../raw/papers/sonicsense_in_hand_acoustic_vibration.pdf">SonicSense</a>
+    or <a href="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">ManiWAV</a>,
+    this renders <em>environmental</em> acoustics (room reverb / propagation),
+    not <em>contact</em> audio at the gripper. The manipulation-relevant signal
+    (impact/vibration from grasping, screwing, pouring) is a different physics
+    regime this paper doesn't target &mdash; the source-sound synthesis is
+    out of scope here.</li>
+  <li><strong>Simulator-cluster placement.</strong> Sits with
+    <a href="../../raw/papers/objectfolder_2_multisensory_sim2real.pdf">ObjectFolder 2.0</a>,
+    <a href="../../raw/papers/tacto_tactile_simulator.pdf">TACTO</a>, and
+    <a href="../../raw/papers/taxim_gelsight_simulation.pdf">Taxim</a> as
+    multisensory-simulation infrastructure &mdash; but ObjectFolder is the
+    object-centric / contact-audio counterpart, whereas SoundSpaces is the
+    scene-centric / propagation counterpart.</li>
+</ul>
+
+<h2>Quotable</h2>
+<blockquote>
+  To our knowledge, this is the first geometry-based acoustic simulation that
+  offers high fidelity and realism while also being fast enough to use for
+  embodied learning.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  Finetuning on real IRs also reduces the error substantially, but still not as
+  much as our simulated data, which can be generated at scale across a wide
+  variety of environments. Our simulation generates realistic IRs that help
+  machine learning models generalize better to reality.
+  <span class="quote-cite">&mdash; &sect;5.4 / p.9</span>
+</blockquote>
+<blockquote>
+  At the object level, we can anticipate the sounds an object makes based on how
+  it looks, and vice versa (a dog barks, a door slams, a baby cries). At the
+  environment level, materials and geometry of the surrounding 3D space ...
+  transform the sounds that reach our ears.
+  <span class="quote-cite">&mdash; &sect;1 / p.1</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[14] Chen et al. 2020 &mdash; SoundSpaces: Audio-Visual Navigation
+    in 3D Environments</strong> (ECCV) &mdash; the direct predecessor this paper
+    overhauls; defines AudioGoal navigation and the precomputed-grid RIR
+    approach. <a href="../../raw/papers/soundspaces_audio_visual_navigation.pdf">(would-be PDF)</a></li>
+  <li><strong>[24] Gao et al. 2022 &mdash; ObjectFolder 2.0</strong> (CVPR)
+    &mdash; the object-centric multisensory sim2real counterpart; already in
+    this batch (see below).</li>
+  <li><strong>[63] Savva et al. 2019 &mdash; Habitat</strong> (ICCV) &mdash; the
+    visual-simulation platform SoundSpaces 2.0 integrates into.</li>
+  <li><strong>[80] Wijmans et al. 2020 &mdash; DD-PPO</strong> (ICLR) &mdash; the
+    distributed RL engine powering the DAV-Nav agent.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a>
+    and <a href="objectfolder_dataset_implicit_representations.html">ObjectFolder</a>
+    &mdash; the object-centric multisensory (visual/acoustic/tactile) simulation
+    line; SoundSpaces is the scene-/propagation-centric complement to
+    ObjectFolder's contact-/impact-sound focus.</li>
+  <li><a href="objectfolder_benchmark_neural_real.html">ObjectFolder Benchmark</a>
+    &mdash; neural-vs-real multisensory benchmark; same sim2real-for-audio
+    evaluation spirit as SoundSpaces 2.0's real-IR validation.</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>,
+    <a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a>, and
+    <a href="making_sense_audio_vibration_pouring.html">Making Sense of Audio Vibration (pouring)</a>
+    &mdash; manipulation papers that use <em>contact</em> audio at the gripper;
+    SoundSpaces renders <em>environmental</em> acoustics, the orthogonal physics
+    regime &mdash; useful contrast for any acoustic-sensing-for-manipulation
+    survey.</li>
+  <li><a href="sound_of_simulation_generative_audio_sim2real.html">The Sound of Simulation</a>
+    &mdash; generative audio sim2real; closest sibling on the "simulate audio to
+    transfer to real" thesis.</li>
+  <li><a href="tacto_tactile_simulator.html">TACTO</a>,
+    <a href="taxim_gelsight_simulation.html">Taxim</a>,
+    <a href="tacex_gelsight_isaac_sim.html">TacEx</a> &mdash; the tactile-sim
+    counterparts in this batch's simulator cluster; SoundSpaces is the acoustic
+    member of the same "non-visual sensing simulators" family.</li>
+</ul>
+
+</body>
+</html>

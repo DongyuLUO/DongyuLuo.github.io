@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Active Acoustic Sensing for Robot Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Lu, Culbertson">
+<meta name="year" content="2023">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2308.01600">
+<meta name="url" content="https://arxiv.org/abs/2308.01600">
+<meta name="pdf" content="../../raw/papers/active_acoustic_sensing_manipulation.pdf">
+<meta name="tags" content="acoustic-sensing, active-sensing, contact-audio, grasping, multisensory, material-recognition, tactile-sensing, robot-learning, tactile-simulation, contact-rich">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Active Acoustic Sensing for Robot Manipulation</h1>
+<p class="meta">
+  Shihan Lu, Heather Culbertson &middot; University of Southern California
+  &middot; 2023 &middot; arXiv preprint
+  &middot; <a href="https://arxiv.org/abs/2308.01600">arXiv:2308.01600</a>
+  &middot; <a href="../../raw/papers/active_acoustic_sensing_manipulation.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A $15 gripper sensor that injects a known vibration
+waveform into a grasped object through one fingertip and records how the object
+distorts it at the other fingertip &mdash; turning the object's acoustic
+<em>resonance</em> into a readout of material, shape, grasp position, internal
+state, and external contact, exactly the global, internally-hidden properties
+that vision and surface tactile sensors can't see.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Vision gives global-but-occludable information; optical tactile sensors
+(GelSight, etc.) give local surface geometry. Neither can perceive an object's
+<em>internal</em> state &mdash; how much water is in a closed cup, where a toy
+is inside a package, whether two metal bars differ in shape despite identical
+appearance. The combination of vision + haptics is also bulky, biased to surface
+features, and usually needs object-specific exploratory motions (shaking,
+tilting) <em>before</em> the actual task. The paper's framing question: "can we
+perceive an object's global states from a localized contact?" Humans do this by
+tapping a cup and listening to the resonance. The authors propose <strong>active
+acoustic sensing</strong> &mdash; emit a waveform through the grasp, capture the
+waveform after it travels through the object &mdash; as a compact tool that
+integrates into the normal grasping routine without interrupting it, and senses
+the <em>object's</em> state change (exteroceptive) rather than the sensor's own
+state.</p>
+
+<h2>Method</h2>
+<p>The contribution is split across a sensing concept, a hardware design, a
+modal-based simulator, and proof-of-concept tasks.</p>
+
+<p><strong>Sensing principle.</strong> The spectral characteristics of a
+waveform after it travels through an object depend on the object's resonant
+properties, which are set by material, shape, grasping point, internal-state
+distribution, and external contact formations (which add damping). By emitting
+a controlled <em>excitation</em> signal and recording the <em>received</em>
+signal (Fig 1), one can infer those latent states from spectral differences.</p>
+
+<p><strong>Excitation signals.</strong> Three controllable inputs:
+<code>impulse</code> (Dirac-like, 0.01 s, for impulse response),
+<code>linear sweep</code>, and <code>exponential sweep</code> (both 20 Hz&ndash;10
+kHz over 0.5 s). Exponential sweeps emphasize low frequencies to better
+differentiate contacts; sweeps give wide spectral coverage for resonance. All
+signals loop every 0.5 s. Received windows are FFT'd; because actuator-to-mic
+vibration leaks through the gripper body and motors, only the <strong>3&ndash;10
+kHz</strong> band at 50 Hz steps is kept &mdash; a <strong>140-dim feature
+vector</strong> fed to downstream classification/regression.</p>
+
+<p><strong>Hardware (Fig 3).</strong> On one Franka Hand fingertip, a
+<em>bone-conduction actuator</em> (Dayton Audio BCE-1, response to ~19 kHz,
+22&times;14&times;8 mm) injects vibration directly into the contact object
+rather than into air. On the other fingertip, a <em>piezo-electric contact
+microphone</em> (Adafruit, r=7 mm, 20 Hz&ndash;20 kHz) records structure-borne
+vibration; being a contact mic, it is insensitive to ambient air sound. Both run
+through an external sound card (Sound Blaster Play! 3) at 44.1 kHz, driven by a
+2 W Class-D amplifier, controlled via PyAudio. 3D-printed housings with
+Sorbothane vibration-isolation pads damp actuator/motor leakage. Total prototype
+cost ~US$15, far cheaper than force/tactile sensors.</p>
+
+<p><strong>Modal-based simulator.</strong> To scale data collection, a two-pass
+simulator synthesizes the received signal as the displacement of the object
+vertex at the contact point. <em>Pass 1:</em> precompute the object's modal model
+from a tetrahedral mesh via linear modal analysis &mdash; solve the generalized
+eigenproblem for stiffness/mass pair <code>(K,M)</code> (Eq 2) under Rayleigh
+damping <code>C = &alpha;M + &beta;K</code>, diagonalizing the dynamics into
+independent modes solvable analytically (Eq 3). <em>Contact-dependent damping</em>
+is added via Zheng et al.'s viscous contact model (Eq 4&ndash;5): damping scales
+with contact-force magnitude and direction at each contact point, with a
+material-dependent <code>&gamma;</code>. <em>Pass 2:</em> a PyBullet robot
+simulation extracts time-series contact forces/positions for object-gripper and
+object-environment pairs (modeling object + two fingertips + environment as
+mass-spring-damper systems, Fig 4b), excites the modal model with those
+collision impulses, and reads the displacement at the vertex nearest the mic.
+Real idle-state "leaked vibration" is pre-recorded and superimposed onto the
+simulated output to match the physical signal.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected. Seven objects =
+    two shapes (bar, tube) &times; five materials (aluminium, steel, wood, ABS
+    plastic, 3D-printed plastic); bar/tube of the same material are visually
+    identical in-hand (Fig 5). Object recognition: each object grasped 20&times;
+    (single-object scene) and 10&times; (multi-object scene with external
+    contacts) per excitation signal. Grasping-position estimation: 13 grasp
+    positions 5 mm apart, recorded 5&times; each. Only the first 1 s of each 5 s
+    recording used.</li>
+  <li><strong>Hardware / simulator:</strong> Franka Emika arm + Franka Hand with
+    the paired active acoustic sensor; 40 N constant grasp force; Intel RealSense
+    D435 depth camera for object pose/position; antipodal grasp sampler
+    (Dex-Net 2.0 [30]). Modal simulator built on PyBullet [28] + linear modal
+    analysis/synthesis. Material params (density, Young's modulus, Poisson,
+    damping &alpha;/&beta;/&gamma;) in Table I for ABS, aluminium, steel, wood.</li>
+  <li><strong>Baselines:</strong> <em>not reported</em> as competing methods.
+    Comparison is across three excitation signals (impulse / linear /
+    exponential) and three off-the-shelf classifiers (KNN, SVM, MLP via
+    scikit-learn). No comparison to vision-only or optical-tactile sensing
+    baselines.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Two proof-of-concept tasks on rigid objects.</p>
+
+<p><strong>Object recognition (Table II).</strong> Best single&rarr;single
+accuracy: <strong>82.9%</strong> (exponential sweep, MLP); linear sweep was the
+most robust across all three classifiers (up to 80.0% MLP). For the harder
+single&rarr;multiple transfer (train on single-object scene, test on
+multi-object scene with external contacts), the exponential sweep dominated at
+<strong>84.3%</strong> (MLP), while the impulse signal collapsed to ~50% &mdash;
+impulses lack the spectral richness to transfer to complex contact scenes.
+Confusion matrices (Fig 8) show aluminium tube misclassified as steel bar (similar
+metal properties, different shape) and the two 3D-printed-plastic shapes
+confused.</p>
+
+<table>
+  <tr><th>Train&rarr;Test</th><th>Signal</th><th>KNN%</th><th>SVM%</th><th>MLP%</th></tr>
+  <tr><td>Single&rarr;Single</td><td>Impulse</td><td>75.7</td><td>69.3</td><td><strong>81.4</strong></td></tr>
+  <tr><td>Single&rarr;Single</td><td>Linear</td><td>78.6</td><td>77.1</td><td>80.0</td></tr>
+  <tr><td>Single&rarr;Single</td><td>Exponential</td><td>67.1</td><td>66.4</td><td><strong>82.9</strong></td></tr>
+  <tr><td>Single&rarr;Multiple</td><td>Impulse</td><td>47.1</td><td>55.7</td><td>51.4</td></tr>
+  <tr><td>Single&rarr;Multiple</td><td>Linear</td><td>67.1</td><td>60.0</td><td>72.9</td></tr>
+  <tr><td>Single&rarr;Multiple</td><td>Exponential</td><td>70.0</td><td>70.0</td><td><strong>84.3</strong></td></tr>
+</table>
+
+<p><strong>Grasping-position estimation (Fig 9).</strong> KNN regression
+(3 neighbors, 3-fold CV) predicts distance-from-center. Best RMSE per object:
+wood bar <strong>0.9 mm</strong> (linear), aluminium bar 1.1 mm (linear),
+aluminium tube 2.1 mm (linear), ABS plastic bar 3.5 mm (impulse). Linear sweep
+won on 3/4 objects; on ABS plastic, the sweeps lost to the impulse, attributed
+to object slip under the intense sweep vibration on a slippery plastic surface.</p>
+
+<p><strong>Sim-vs-real validation (Fig 6).</strong> Qualitative only. Simulated
+spectra match real ones for most material/shape/grasp/contact conditions, but
+the simulator failed for the aluminium <em>tube</em> (its shape pushed
+eigenvalues toward singularity) and for aluminium-bar-on-steel contact (hard to
+get accurate contact-dynamics values). No quantitative sim2real number is
+reported.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Modal simulation is inefficient for high-frequency sweep signals (many
+    collisions to synthesize).</li>
+  <li>Linear modal analysis assumes small-deformation rigid bodies &mdash;
+    doesn't apply to thin-shelled or soft objects, and assumes isotropic,
+    homogeneous material, which most everyday objects violate.</li>
+  <li>Rigid-fluid (water in a bottle) and rigid-deformable (plush toy in a
+    package) interactions &mdash; precisely the high-value "internal state"
+    cases &mdash; cannot yet be modeled; needs more advanced physics.</li>
+  <li>Sim material params must be manually tuned (&alpha;, &beta;, &gamma;); 3D-printed
+    objects weren't simulated at all (unknown material properties).</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The evaluation is a closed-set classification of <strong>7 lab objects</strong>
+    and single-axis grasp regression on <strong>4 objects</strong> &mdash; a
+    genuine proof-of-concept, not a generalization study. The headline capabilities
+    advertised in the abstract (internal state, mass/volume, flow distribution)
+    are <em>illustrated qualitatively</em> (Fig 2 cup-with-liquid) but never
+    quantitatively evaluated; the experiments stay on rigid objects.</li>
+  <li>The whole approach "relies on pre-recorded data or simulated data from the
+    object for the state inference" (authors' own words) &mdash; i.e. it's
+    object-instance-conditioned, not a zero-shot sensor. Generalization to unseen
+    objects is asserted ("inference model easily generalized") but not tested.</li>
+  <li>No vision-only or optical-tactile baseline, so the central claim that this
+    sees what those <em>can't</em> is argued, not measured. The bar-vs-tube
+    "visually identical" point is the strongest evidence, and it's anecdotal.</li>
+  <li>Grasp force is fixed at 40 N throughout; since damping is force-dependent
+    (Eq 4), robustness to grasp-force variation &mdash; a real concern for any
+    deployed gripper &mdash; is untested.</li>
+  <li>Only the first 1 s of 5 s recordings is used, with no ablation on window
+    length; the time budget the sensor actually needs is unclear.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This paper is a clean instance of the batch thesis that <strong>many
+manipulation predicates are not visually evaluable</strong> &mdash;
+<code>is_full(cup)</code>, <code>contains(package, toy)</code>,
+<code>material_is(x, steel)</code>, <code>grasp_position(x)</code> live in sound
+and vibration, not pixels. Active acoustic sensing is a particularly nice fit for
+the <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+predicate-grounding story: BLADE currently learns predicate classifiers
+<em>f<sub>&theta;</sub>(p): O &rarr; {T, F}</em> over visual observations and
+flags that internal/contact states are a gap. A sensor like this is exactly the
+kind of non-visual observation channel a <code>turned-on(faucet)</code>-style
+classifier could read &mdash; e.g. a learned <code>is_full(cup)</code> or
+<code>in_contact_with(x, table)</code> predicate grounded in the 140-dim spectral
+feature rather than in cropped pixels. It also has a BLADE-adjacent
+<em>active</em> flavor: the robot controls the excitation signal, so the sensory
+output is action-conditioned &mdash; resonant with the "controllable data
+collection / tight action-to-sensation coupling" the authors emphasize, and with
+the abstraction-layer view that the agent should choose informative probing
+actions.</p>
+<p>Two caveats on relevance. First, it's a 2023 hardware/sensing paper with
+<em>no learning of abstractions, language, or planning</em> &mdash; the ML is
+off-the-shelf KNN/SVM/MLP. So it's a <strong>sensor-modality anchor</strong>
+for the "predicates in touch/sound" thesis, not a method to build on directly.
+Second, its instance-conditioned pre-recording requirement is the opposite of
+the open-vocabulary, generalize-to-novel-objects regime BLADE targets &mdash;
+which is itself a useful tension to flag.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Active acoustic sensing utilizes the state change of the objects, rather than
+  the state change of the sensor itself, which is called exteroceptive sensing.
+  <span class="quote-cite">&mdash; &sect;III / p.2</span>
+</blockquote>
+<blockquote>
+  In daily activities, a person can gauge the water volume in a cup by listening
+  to the resonance due to tapping.
+  <span class="quote-cite">&mdash; &sect;I / p.1</span>
+</blockquote>
+<blockquote>
+  The total cost of a prototype is about 15 US dollars, which is notably more
+  affordable compared to common force or tactile sensors.
+  <span class="quote-cite">&mdash; &sect;IV.B / p.4</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[16] Clarke et al. 2018 &mdash; Learning audio feedback for
+    estimating amount and flow of granular material</strong> (CoRL) &mdash;
+    audio-for-pouring/flow estimation; closest prior on inferring internal
+    container state from sound. See batch slug
+    <a href="../../raw/papers/making_sense_audio_vibration_pouring.pdf">making_sense_audio_vibration_pouring</a>.</li>
+  <li><strong>[17] Clarke et al. 2022 &mdash; DiffImpact: Differentiable
+    rendering and identification of impact sounds</strong> (CoRL) &mdash;
+    analysis-by-synthesis for impact-sound object properties; the differentiable
+    counterpart to this paper's modal simulator.</li>
+  <li><strong>[18] Du et al. 2022 &mdash; Play it by Ear</strong> (RSS) &mdash;
+    audio-visual imitation under occlusion. See batch slug
+    <a href="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">play_it_by_ear_audio_visual_imitation</a>.</li>
+  <li><strong>[20] Donlon et al. 2018 &mdash; GelSlim</strong> (IROS) &mdash; the
+    optical-tactile sensor this paper positions itself as complementing.</li>
+  <li><strong>[27] Zheng &amp; James 2011 &mdash; Toward high-quality modal
+    contact sound</strong> (SIGGRAPH Asia) &mdash; the viscous contact-damping
+    model adopted for the simulator (Eq 4&ndash;5).</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="vibecheck_active_acoustic_tactile_sensing.html">VibeCheck</a>
+    &mdash; the closest sibling: also <em>active</em> acoustic/vibroacoustic
+    tactile sensing; direct comparison point for the actuator-plus-receiver
+    probing paradigm.</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>
+    &mdash; in-hand acoustic-vibration sensing for object properties; the
+    passive/contact-vibration counterpart to this active method.</li>
+  <li><a href="making_sense_audio_vibration_pouring.html">Making Sense of Audio Vibration (pouring)</a>
+    &mdash; inferring liquid state from vibration during pouring; the internal-state
+    use case this paper illustrates but doesn't quantify.</li>
+  <li><a href="hearing_touch_audio_visual_pretraining.html">Hearing Touch</a>
+    and <a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a>
+    &mdash; audio-as-a-sensing-channel-for-manipulation papers; situate active
+    acoustics within the broader audio-for-manipulation cluster.</li>
+  <li><a href="sound_of_simulation_generative_audio_sim2real.html">The Sound of Simulation</a>
+    &mdash; generative audio sim2real; the modern counterpart to this paper's
+    modal-synthesis simulator-for-data-scaling goal.</li>
+  <li><a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a>
+    &mdash; multisensory (incl. acoustic) object dataset with sim2real; the
+    dataset/simulator infrastructure this paper's "scale up via simulation"
+    ambition points toward.</li>
+</ul>
+
+</body>
+</html>

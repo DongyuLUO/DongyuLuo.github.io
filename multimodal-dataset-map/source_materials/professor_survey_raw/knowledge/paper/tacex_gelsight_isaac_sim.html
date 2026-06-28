@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TacEx: GelSight Tactile Simulation in Isaac Sim -- Combining Soft-Body and Visuotactile Simulators</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Nguyen, Schneider, Duret, Kshirsagar, Belousov, Peters">
+<meta name="year" content="2024">
+<meta name="venue" content="CoRL 2024">
+<meta name="arxiv_id" content="2411.04776">
+<meta name="url" content="https://arxiv.org/abs/2411.04776">
+<meta name="pdf" content="../../raw/papers/tacex_gelsight_isaac_sim.pdf">
+<meta name="tags" content="tactile-simulation, gelsight, isaac-sim, sim-to-real, soft-body, vision-based-tactile, tactile-sensing, reinforcement-learning, contact-rich">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- Format adaptation: this is a sensor-hardware/simulator framework paper, not a
+     learning-method paper. Per the brief's "foundational/sensor-hardware" variant,
+     Method is framed as the framework/design; Setup is brief; Results is a set of
+     qualitative demonstrations + simulation-speed benchmarks (no policy-success table). -->
+
+<h1>TacEx: GelSight Tactile Simulation in Isaac Sim &mdash; Combining Soft-Body and Visuotactile Simulators</h1>
+<p class="meta">
+  Duc Huy Nguyen, Tim Schneider, Guillaume Duret, Alap Kshirsagar, Boris Belousov, Jan Peters
+  &middot; TU Darmstadt / &Eacute;cole centrale de Lyon / DFKI / Hessian.AI
+  &middot; CoRL 2024
+  &middot; <a href="https://arxiv.org/abs/2411.04776">arXiv:2411.04776</a>
+  &middot; <a href="../../raw/papers/tacex_gelsight_isaac_sim.pdf">PDF</a>
+  &middot; <a href="https://sites.google.com/view/tacex">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> TacEx is a modular framework that embeds a state-of-the-art
+GPU-accelerated soft-body contact simulator (GIPC) plus two GelSight image/marker
+simulators (Taxim + FOTS) inside NVIDIA Isaac Sim / Isaac Lab, so you can get
+GelSight Mini RGB images and marker-displacement fields as observations inside a
+GPU-parallelized RL stack &mdash; closing the gap where contact-rich tactile RL had no
+precise, easy-to-use simulator that lived in a modern robot-learning framework.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>RL for contact-rich manipulation is bottlenecked by the lack of stable, reliable
+contact simulation that couples soft-body deformation with tactile sensing. Existing
+tactile simulators each use a <em>different</em> physics engine, sensor model, robot,
+and host simulator, which makes comparison and interoperability hard, and none plug
+into a feature-rich modern stack (photorealistic rendering, ROS, GPU-parallel physics,
+teleoperation, standard RL libraries). TacEx's bet is to stop building yet another
+standalone simulator and instead integrate the best existing components into Isaac
+Sim / Isaac Lab, gaining all of Isaac's infrastructure for free while keeping the
+tactile pipeline modular so the user can pick which simulations to enable per task.</p>
+
+<h2>Formalism / framework / design</h2>
+<p>A GelSight simulation needs three components (App. A): <strong>physics</strong>
+(contact properties), <strong>optical</strong> (perceived RGB image), and
+<strong>marker</strong> (marker motion field reflecting gel deformation). TacEx
+mixes-and-matches an implementation for each, orchestrated by Isaac Sim's loop
+(Fig 1, Fig 3).</p>
+
+<p><strong>Physics simulation &mdash; three gelpad options.</strong> The gelpad can be
+simulated as (i) a PhysX <em>rigid body with compliant contact</em> (fastest, for
+prototyping); (ii) a PhysX <em>FEM-based soft body</em>; or (iii) a <em>GIPC</em>
+soft body. For (iii) the authors ported the GIPC solver &mdash; a fully GPU-based,
+inversion-free Gauss&ndash;Newton optimization of an IPC barrier energy &mdash; and
+wrote Python bindings. GIPC is chosen because IPC guarantees intersection- and
+inversion-free simulation regardless of material parameters or deformation severity,
+simulates static <em>and</em> dynamic friction, and reduces the need to fine-tune
+sim parameters (helpful for domain-randomization-based Sim2Real). GIPC additionally
+permits soft-to-soft contact.</p>
+
+<p><strong>GIPC&ndash;Isaac integration (App. C).</strong> Isaac Sim handles scene
+setup, robot simulation, rendering; the gelpad is attached to the sensor case and
+moves kinematically with the robot (PhysX). The non-attached gelpad vertices are
+handled by GIPC. Per step: do a PhysX step (robot moves), recompute the
+<em>attachment points</em>, then call the GIPC solver to compute new positions for the
+remaining gelpad vertices and other GIPC objects, then update the Isaac USD meshes
+(via the USDRT/Fabric API for fast vertex updates) and render. To build GIPC objects,
+an asset's USD triangle mesh is extracted and a tetrahedral mesh is generated with
+Wildmeshing. Attachment points are found by sphere-ray-casting each tet point against
+the sensor-case collider via the PhysX scene-query interface; their constant offsets
+to the sensor-case pose are precomputed and saved as USD properties.</p>
+
+<p><strong>Optical simulation &mdash; Taxim.</strong> Generate height maps with Isaac
+Sim cameras, smooth with pyramid Gaussian kernels, then use a polynomial look-up table
+to map surface normals to RGB; add shadows for realism (a GPU-accelerated Taxim
+implementation is used).</p>
+
+<p><strong>Marker simulation &mdash; FOTS.</strong> From the same height maps, FOTS
+models marker displacements with exponential functions for normal/shear/twist loads;
+contact centers are computed from the height maps and the <code>z</code>-rotation of
+objects relative to the gelpads is extracted from Isaac Sim. The full sensor-output
+pipeline (object height map &rarr; indentation depth &rarr; gelpad deformation &rarr;
+RGB + marker flow) is in Fig 4.</p>
+
+<p><strong>Positioning vs. concurrent work.</strong> The authors state TacEx is closest
+to the concurrent <a href="../../raw/papers/tacsl_visuotactile_sensor_simulation_learning.pdf">TacSL</a>,
+which also brings visuotactile simulation into Isaac Sim, but TacEx differs by using
+GIPC for FEM-based soft-body simulation (instead of a simplified soft contact model)
+and by being explicitly modular.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> No external dataset. Evaluation is via
+    custom demonstration scenes (ball rolling, object lifting, beam twisting) and three
+    Isaac Lab RL environments (object pushing, object lifting, pole balancing), plus
+    internal simulation-speed benchmarks (Tables 1&ndash;3). Sensor simulated:
+    GelSight Mini; tactile RGB at 480&times;640, 10&times;10 markers per env.</li>
+  <li><strong>Hardware / simulator:</strong> NVIDIA Isaac Sim + Isaac Lab as host;
+    PhysX and the ported GIPC as physics back-ends; Taxim (optical) + FOTS (marker).
+    Robot is a Franka-style arm with GelSight Mini gelpads. Experiments run on Ubuntu,
+    AMD Ryzen 9 5950X 16-core, 32&nbsp;GB RAM, NVIDIA RTX 3080Ti (12&nbsp;GB VRAM)
+    (App. D).</li>
+  <li><strong>Baselines:</strong> <em>not reported</em> as policy baselines &mdash; this
+    is a framework paper. The closest comparison is the qualitative contrast of the
+    three gelpad physics options (rigid PhysX / soft PhysX / GIPC) against each other,
+    and positioning against TacSL, TACTO, Taxim, DiffTactile, etc. in Related Work.</li>
+  <li><strong>Compute:</strong> single workstation as above; RL trained with PPO (as
+    implemented in [29]). No GPU-hour or wall-clock training budget reported.</li>
+</ul>
+
+<h2>Results</h2>
+<p>This is a feasibility-and-speed paper, not an accuracy or success-rate paper.
+Headline qualitative findings:</p>
+<ul>
+  <li><strong>GIPC soft-body works and stays stable under extreme deformation.</strong>
+    The beam-twisting demo (a soft beam grasped, twisted, and stretched until it snaps
+    back) stays stable and shows friction is reasonably simulated.</li>
+  <li><strong>PhysX soft body is unreliable for grasping/lifting.</strong> In the
+    object-lifting demo, objects "always slip away even with several variations of the
+    soft body parameters"; the authors attribute this to PhysX's soft-body simulation
+    currently not supporting static friction.</li>
+  <li><strong>VRAM, not compute, is the binding constraint.</strong> Camera-based
+    tactile simulation is memory-hungry: with the rigid-body config they fit ~18 robots
+    before hitting OOM / GPU limits; with soft-body GIPC, only a <em>single</em> robot
+    fits.</li>
+  <li><strong>RL pipeline validated, policies not yet successful.</strong> Three Isaac
+    Lab RL environments using marker displacements as observation train end-to-end with
+    PPO; the authors validate the training pipeline works but explicitly say they are
+    "currently working towards obtaining successful policies that leverage tactile
+    feedback."</li>
+</ul>
+
+<p>Simulation-speed benchmarks (ms per frame, ball-rolling experiment):</p>
+
+<table>
+  <tr><th>Tactile sim (Table 1)</th><th>1 env</th><th>8 envs</th><th>16 envs</th><th>18 envs</th></tr>
+  <tr><td>height-map gen (USD cameras)</td><td>1.37</td><td>0.43</td><td>2.88</td><td>3.51</td></tr>
+  <tr><td>optical (GPU Taxim + shadows)</td><td>5.90</td><td>2.58</td><td>5.73</td><td>5.93</td></tr>
+  <tr><td>marker (FOTS, CPU, no parallel.)</td><td>4.49</td><td>1.76</td><td>5.05</td><td>5.23</td></tr>
+</table>
+
+<table>
+  <tr><th>PhysX physics (Table 2)</th><th>1</th><th>16</th><th>64</th><th>128</th><th>256</th><th>1024</th></tr>
+  <tr><td>rigid gelpad</td><td>3.69</td><td>0.24</td><td>0.067</td><td>0.036</td><td>0.021</td><td>0.0093</td></tr>
+  <tr><td>soft gelpad</td><td>4.71</td><td>0.45</td><td>0.18</td><td>0.13</td><td>OOM</td><td>OOM</td></tr>
+</table>
+
+<p>GIPC soft-body physics (Table 3) costs 24.95&nbsp;ms at 1029 verts / 3717 tetra,
+rising to 221.61&nbsp;ms at 12509 verts / 66563 tetra &mdash; i.e., accuracy via GIPC
+is roughly an order of magnitude slower per frame than PhysX rigid contact and does
+not parallelize across many envs within the 12&nbsp;GB VRAM budget.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The work contains <strong>only qualitative experiments and demonstrations</strong>;
+    no quantitative comparison of the simulation approaches and, critically, <strong>no
+    Sim2Real validation</strong> &mdash; "lacks experiments that investigate whether they
+    can be used for Sim2Real or not."</li>
+  <li>PhysX soft-body lacks static friction, making it unusable for grasping/lifting.</li>
+  <li>VRAM limits parallelism severely (1 robot for soft-body GIPC; ~18 for rigid).</li>
+  <li>RL policies that actually exploit tactile feedback are future work; only pipeline
+    validity is shown.</li>
+  <li>Future plans: more RL environments, more tactile-sim approaches, and turning TacEx
+    into a benchmarking platform for tactile simulators.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>The central claim ("precise, reliable") is unmeasured.</strong> The
+    abstract motivates the work by the absence of a <em>precise</em> tactile simulator,
+    yet no quantitative accuracy metric (vs. real GelSight images, vs. FEM ground truth)
+    is reported. "Stable" is demonstrated; "precise" is asserted.</li>
+  <li><strong>Speed numbers are non-monotonic and lightly explained.</strong> In Table 1
+    per-frame cost <em>drops</em> from 1 to 8 envs then rises again; the authors hand-wave
+    that the 16-env slowdown is "related to our GPU near its limit." That makes the
+    table hard to extrapolate &mdash; throughput scaling is not characterized.</li>
+  <li><strong>No head-to-head with TacSL.</strong> The paper names TacSL as the nearest
+    concurrent system and argues GIPC is more accurate than TacSL's simplified contact,
+    but runs zero comparison &mdash; so the accuracy advantage is a design argument, not
+    a result.</li>
+  <li><strong>Marker sim is CPU-bound and unparallelized</strong> (their own note), which
+    will likely dominate cost in any real multi-env tactile RL run and undercuts the
+    "GPU-parallelized training" selling point for the marker-observation path.</li>
+  <li>Tetra meshing (Wildmeshing) and attachment recomputation happen in the host loop;
+    the per-step cost of re-solving attachments at scale isn't isolated in any table.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is <strong>off the core BLADE method axis</strong> &mdash; it is a sensor/simulator
+infrastructure paper with no language, no planning abstractions, and no predicate
+learning &mdash; so I won't manufacture a tight connection. Its relevance is
+<em>infrastructural</em> and <em>thesis-supporting</em>:</p>
+<ul>
+  <li><strong>It operationalizes the "predicates that live in touch, not pixels" thesis.</strong>
+    My batch motivation is that many manipulation predicates &mdash; <code>is_grasped</code>,
+    <code>is_inserted</code>, <code>is_screwed_tight</code>, <code>surface_is_rough</code>
+    &mdash; are not visually evaluable. TacEx is the <em>plumbing</em> that would let a
+    BLADE-style system learn classifiers for such tactile predicates in simulation:
+    GelSight RGB + marker fields as the observation channel a tactile predicate
+    classifier would read. BLADE today crops faucet pixels into a vision classifier;
+    a tactile-predicate extension would crop gelpad images/marker fields into a tactile
+    classifier, and would need exactly this kind of GPU-parallel tactile sim to train.</li>
+  <li><strong>It sits in the Isaac Sim / Isaac Lab ecosystem</strong> that BLADE's
+    diffusion-policy controllers and RL counterparts already assume &mdash; so it is the
+    realistic place to generate the contact-rich data the BLADE pipeline currently can't
+    label tactilely.</li>
+  <li><strong>Caveat for any such plan:</strong> the paper's own honesty about no-Sim2Real
+    and VRAM-limited parallelism means it is a promising substrate, not a ready tool, for
+    learning robust tactile predicates today.</li>
+</ul>
+<p>Tangentially it also informs the "structure-vs-scale" framing: TacEx is squarely on
+the side of <em>accurate physics simulation as a data source</em>, complementary to the
+learned-world-model alternatives.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  A crucial bottleneck for applying RL to tactile-rich manipulation tasks is the lack
+  of stable and reliable contact simulation that includes soft-body interaction and
+  tactile sensing.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.1</span>
+</blockquote>
+
+<blockquote>
+  Our approach is closest to the concurrent work TacSL [26] which also incorporates
+  visuotactile simulation into Isaac Sim, however in contrast to TacSL, we leverage
+  GIPC [18] for FEM-based soft-body simulation (instead of a simplified soft contact
+  model).
+  <span class="quote-cite">&mdash; &sect;1, Related Work / p.2</span>
+</blockquote>
+
+<blockquote>
+  A limitation of our current work is that it only contains qualitative experiments
+  and demonstrations in simulation. Our tactile simulation [...] lacks experiments
+  that investigate whether they can be used for Sim2Real or not.
+  <span class="quote-cite">&mdash; &sect;4 Conclusion and Future Work / p.4</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[26] Akinola et al. &mdash; TacSL</strong> &mdash; the named concurrent
+    Isaac-Sim visuotactile simulation+learning library; the direct (un-run) comparison.
+    Forward ref: <a href="../../raw/papers/tacsl_visuotactile_sensor_simulation_learning.pdf">TacSL PDF</a>.</li>
+  <li><strong>[11] Si &amp; Yuan &mdash; Taxim</strong> &mdash; the optical-simulation
+    component TacEx uses; already in this batch
+    (<a href="taxim_gelsight_simulation.html">Taxim</a>).</li>
+  <li><strong>[20] Wang et al. &mdash; TACTO</strong> &mdash; PyBullet rigid-body tactile
+    simulator; already in this batch
+    (<a href="tacto_tactile_simulator.html">TACTO</a>).</li>
+  <li><strong>[19] Zhao et al. &mdash; FOTS</strong> &mdash; the marker-motion simulator
+    TacEx uses; not in the batch cross-ref list, candidate for ingest.</li>
+  <li><strong>[13] Si et al. &mdash; DiffTactile</strong> and
+    <strong>[14] Xu et al. &mdash; Efficient tactile simulation with differentiability</strong>
+    (CoRL) &mdash; FEM-based differentiable tactile simulators positioned against; ingest
+    candidates for the simulator cluster.</li>
+  <li><strong>[18] Huang et al. &mdash; GIPC</strong> (ACM ToG) &mdash; the core soft-body
+    solver TacEx ports; foundational dependency.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="taxim_gelsight_simulation.html">Taxim</a> &mdash; the exact optical/RGB
+    simulation module TacEx embeds; reading both back-to-back shows how TacEx wraps a
+    pre-existing example-based GelSight image model in a GPU/Isaac loop.</li>
+  <li><a href="tacto_tactile_simulator.html">TACTO</a> &mdash; the prior PyBullet-based
+    GelSight/DIGIT simulator; the rigid-body baseline TacEx improves on with GIPC
+    soft-body physics.</li>
+  <li><a href="gelsight_high_resolution_tactile_sensors.html">GelSight</a> and
+    <a href="digit_low_cost_compact_tactile_sensor.html">DIGIT</a> &mdash; the physical
+    vision-based tactile sensors whose images TacEx synthesizes (GelSight Mini here).</li>
+  <li><a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a> and
+    <a href="soundspaces_2_visual_acoustic.html">SoundSpaces 2.0</a> &mdash; sibling
+    "multisensory simulator / Sim2Real" entries in the datasets-benchmarks-simulators
+    cluster; same role (synthesize a non-visual modality for learning) for touch/audio
+    respectively.</li>
+  <li><a href="vtdexmanip_visual_tactile_dexterous_benchmark.html">VTDexManip</a> and
+    <a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a> &mdash;
+    visuo-tactile benchmark/dataset counterparts; TacEx is the simulation route to the
+    same data these collect on real hardware.</li>
+</ul>
+
+</body>
+</html>

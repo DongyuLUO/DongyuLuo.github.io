@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>What Foundation Models can Bring for Robot Learning in Manipulation: A Survey</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Li, Jin, Sun, A, Yu, Shi, Hao, Hao, Liu, Li, Li, Sun, Zhang, Fang">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint (SAGE journal format)">
+<meta name="arxiv_id" content="2404.18201">
+<meta name="url" content="https://arxiv.org/abs/2404.18201">
+<meta name="pdf" content="../../raw/papers/what_foundation_models_robot_manipulation_survey.pdf">
+<meta name="tags" content="survey, foundation-models, vlm, vision-language-action, vla, robot-learning, long-horizon-manipulation, multimodal, dexterous-manipulation, force-control">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- SURVEY format variant: Method renamed to "Survey scope / taxonomy",
+     Setup renamed to "Coverage", Results renamed to "Key insights /
+     classifications", per batch brief. -->
+
+<h1>What Foundation Models can Bring for Robot Learning in Manipulation: A Survey</h1>
+<p class="meta">
+  Dingzhe Li, Yixiang Jin, YuHao Sun, Yong A, Hongze Yu, Jun Shi, Xiaoshuai Hao,
+  Peng Hao, Huaping Liu, Xiang Li, Xinde Li, Fuchun Sun, Jianwei Zhang, Bin Fang
+  &middot; 2025
+  &middot; arXiv preprint (SAGE journal format)
+  &middot; <a href="https://arxiv.org/abs/2404.18201">arXiv:2404.18201</a>
+  &middot; <a href="../../raw/papers/what_foundation_models_robot_manipulation_survey.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A 47-page survey that argues a single end-to-end
+robotic foundation model won't get you to general manipulation; instead it
+proposes an "autonomous-driving-style" modular framework &mdash; eight functional
+modules (Interaction, Pre-/Post-conditions, Hierarchy of Skills, State, Policy,
+Transition, Data Generation) &mdash; and catalogues, module by module, which
+class of foundation model (LLM / VFM / VLM / LMM / VGM / RFM) plugs in where and
+what challenges remain.
+
+<h2>Problem &amp; motivation</h2>
+<p>The stated goal is the "universal robot" that manipulates arbitrary objects in
+unstructured open-world scenes. The authors fix a concrete bar: human manipulation
+success rates are ~99%, and a robot that can't clear 99% can't replace humans
+(<em>Kumar 2023</em>). They observe that current Robotic Foundation Models (RFMs,
+e.g. RT-X) are single-model end-to-end approaches that struggle to hit that bar and
+demand enormous task-level data. Their thesis: general manipulation needs an
+<em>overarching framework</em> akin to autonomous driving, where heterogeneous
+foundation models assume distinct roles across functional modules, rather than one
+monolithic policy. The survey is positioned against Di Palo et al. (2023), Firoozi
+et al. (2023), and Xiao et al. (2023) &mdash; prior FM-for-robotics surveys that
+the authors say lack a unifying framework tying modules together.</p>
+
+<h2>Survey scope / taxonomy</h2>
+<p>Two orthogonal taxonomies organize the paper.</p>
+
+<p><strong>(A) Six foundation-model types</strong> (their input/role categorization,
+after Firoozi et al.):</p>
+<ul>
+  <li><strong>LLMs</strong> (BERT, GPT-3) &mdash; chain-of-thought reasoning;
+    generate policy code / action sequences, drive interaction.</li>
+  <li><strong>VFMs</strong> (Visual Foundation Models; SAM) &mdash; open-world
+    perception / segmentation.</li>
+  <li><strong>VLMs</strong> (GPT-4V, CLIP) &mdash; the "cornerstone" of
+    vision&ndash;language alignment; treated as a separate category from LMMs.</li>
+  <li><strong>LMMs</strong> (Large Multimodal Models; ULIP) &mdash; expand beyond
+    vision+language to 3D point cloud and <em>haptic</em> data.</li>
+  <li><strong>VGMs</strong> (Visual Generative Models; DALL-E, Sora) &mdash;
+    generate 2D images / 3D meshes for scene generation.</li>
+  <li><strong>RFMs</strong> (Robotic-specific FMs; RT-X) &mdash; end-to-end
+    observation&rarr;action policies.</li>
+</ul>
+
+<p><strong>(B) The eight-module general-manipulation framework</strong> (Fig 2,
+the paper's central contribution). The flow: a human/agent issues an instruction
+&rarr; <code>Interaction (I)</code> disambiguates it &rarr;
+<code>Pre-conditions Detection (P)</code> perceives objects + affordances &rarr;
+<code>Hierarchy of Skills (H)</code> decomposes into subgoals &rarr; the Skill
+Execution loop runs <code>State (S)</code> &rarr; <code>Policy (&Pi;)</code> &rarr;
+<code>Transition (T)</code> &rarr; <code>Post-conditions Detection (P)</code>;
+on failure a <code>Post-hoc Correction</code> module self-corrects, and a
+<code>Manipulation Data Generation</code> module supplies training data
+throughout. Each section (3&ndash;8) maps one module to its FM contributions.</p>
+
+<p><strong>The "Level 0 (L0)" framing.</strong> A recurring conceptual move: they
+designate the achievable near-term target as <em>L0</em> &mdash; improving existing
+skills and manipulating <em>rigid</em> objects in <em>static</em> scenes for
+<em>short-horizon</em> goals with <em>low</em> precision on contact points and
+forces/torques. Current research "has a high probability of achieving L0," but
+safety and accuracy remain open. Everything beyond L0 (deformables, dynamic scenes,
+long-horizon, force-precise contact-rich tasks) is future work.</p>
+
+<p><strong>Policy sub-taxonomy</strong> (Sec 7, the part most relevant to VLA work):
+following RT-2's "Vision-Language-Action" naming, they split policies into
+<code>VLAC</code> (Vision-Language-Action-<strong>Code</strong>; LLM emits
+executable robot code, e.g. Code-as-Policy, VoxPoser), <code>VLAKP</code>
+(Vision-Language-Action-<strong>Key-Pose</strong>; outputs discrete key poses for
+motion planning, e.g. Instruct2Act, ReKep, PerAct, 3D Diffuser Actor), and
+<code>VLADP</code> (Vision-Language-Action-<strong>Dense-Pose</strong>; outputs
+continuous dense trajectories end-to-end, e.g. RT-1, Gato, RT-2, OpenVLA). Table 1
+contrasts their strengths/limitations.</p>
+
+<h2>Coverage</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Surveys RFM benchmarks (Table 3):
+    RLBench, Behavior-1K, VirtualHome, RoboCasa, LIBERO, Robosuite, Sapien,
+    Maniskill2, CALVIN &mdash; flagged as <em>non-standardized</em> (different
+    simulators, robots, sensors). Datasets for video learning: Ego-4D, Ego-Exo-4D,
+    RoboVQA, Epic-Kitchens-100, HowTo100M, InternVid. Open X-Embodiment (22 robots,
+    160k+ tasks), DROID (76k trajectories) for RFM training.</li>
+  <li><strong>Hardware / simulator:</strong> Simulator survey &mdash; PyBullet,
+    MuJoCo, CoppeliaSim, NVIDIA Omniverse (best rendering), Unity, plus
+    learning-based simulators (Sora, UniSim). Low-cost teleop hardware survey
+    (Table 2): ALOHA, GELLO, HumanPlus, Open-TeleVision, AirExo, UMI, DexCap.</li>
+  <li><strong>Baselines:</strong> <em>not applicable</em> (survey). Comparative
+    tables instead: Table 4 (representative policy works with success rates),
+    Table 5 (2D vs 3D methods, Appendix B), Table 6 (hierarchy-of-skills methods,
+    Appendix C).</li>
+  <li><strong>Compute:</strong> <em>not reported</em> as a survey-level number;
+    notes RFMs "necessitate extensive data" and "significant computational
+    resources" as a barrier to democratization.</li>
+</ul>
+
+<h2>Key insights / classifications</h2>
+<p><strong>Headline thesis.</strong> No single foundation model achieves general
+manipulation; a modular framework with role-specialized FMs is the proposed path.
+Per-module FM contributions (Figs 3&ndash;8 each give a per-module taxonomy):</p>
+
+<table>
+  <tr><th>Module (Sec)</th><th>FM types that help</th><th>What they bring</th></tr>
+  <tr><td>Interaction (3)</td><td>LLM, VLM, LMM</td><td>Natural-language disambiguation, corrective-instruction comprehension; CoT beats fixed question templates (SeeAsk, KNOWNO, Matcha)</td></tr>
+  <tr><td>Pre/Post-conditions (4)</td><td>LLM, VFM, VLM, LMM</td><td>Open-set affordance + object recognition; task-oriented grasp (GraspGPT, 3DAP); failure analysis (AHA, RobotGPT)</td></tr>
+  <tr><td>Hierarchy of skills (5)</td><td>LLM, VFM, VLM</td><td>LLM-to-PDDL subgoal decomposition, skill-library scoring (SayCan, Text2Motion, LLM+P, GD); video-instruction understanding</td></tr>
+  <tr><td>State (6)</td><td>VLM, VFM, LMM</td><td>3D reconstruction (NeRF/3DGS + CLIP relevancy maps), open-set 6D pose (FoundationPose, FreeZe)</td></tr>
+  <tr><td>Policy (7)</td><td>LLM, VLM, VFM, RFM</td><td>VLAC / VLAKP / VLADP families; RFMs (RT-2, OpenVLA, RDT-1B, &pi;0); FM-assisted RL reward design (Eureka)</td></tr>
+  <tr><td>Data Generation (8)</td><td>VLM, VGM, LLM</td><td>Real-to-Sim + automated scene gen (RoboGen, GenSim, PHYSCENE), sim-to-real, data augmentation (GenAug, ROSIE)</td></tr>
+</table>
+
+<p><strong>The nine open questions (Sec 9)</strong> the authors flag as their own
+concerns: (1) what <em>is</em> the framework for general manipulation; (2) what
+learning capability is needed (interactive / few-shot / continual / online);
+(3) what FMs bring per module; (4) how to use internet-scale video for RFMs (they
+enumerate six information types extractable from video: pose, affordance, motion,
+environment-transition dynamics, semantic, spatial/texture); (5) post-conditions
+detection &amp; post-hoc correction; (6) end-effector design (incl. LLM-designed
+end-effectors, Stella et al.); (7) <strong>dexterous manipulation</strong>;
+(8) <strong>whole-body control</strong> (force-position hybrid control flagged as
+"often overlooked"); (9) how to establish a standardized benchmark.</p>
+
+<p><strong>Surprises worth noting.</strong> (i) They explicitly invoke
+<em>force/torque precision</em> as the axis separating L0 from general manipulation
+&mdash; "tasks may necessitate different degrees of precision with respect to
+contact points and applied forces/torques" &mdash; yet the force/tactile content is
+thin relative to perception/policy. (ii) Appendix D gives a genuinely detailed
+<em>model-based</em> (non-FM) treatment of contact-rich dexterous manipulation
+(contact modes, non-smooth dynamics, Anitescu relaxation, contact-explicit vs
+contact-implicit), conceding that learning-based FMs don't yet handle this.
+(iii) They argue model-based methods still beat learning-based ones on success
+rate / precision / safety for specific tasks (Pang et al. 2023) and call
+integrating the two an important research direction.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors (Sec 9.1.3, Sec 10):</em></p>
+<ul>
+  <li>The proposed framework is <strong>sequential</strong>, contrasting with the
+    parallel execution of human manipulation.</li>
+  <li>Both the framework and the surveyed literature are <strong>learning-based</strong>;
+    model-based methods generalize less but outperform on success/precision/safety
+    for specific tasks &mdash; integration is unaddressed.</li>
+  <li>The framework is grounded in a learning-based + general-manipulation
+    definition; brain-like cognitive frameworks "should also be explored."</li>
+  <li>Per-module residual challenges (Sec 10): interaction needs multimodal
+    (gesture/action) input; hierarchy-of-skills has many unconsidered factors;
+    pre/post-condition detection happens only <em>after</em> execution (unacceptable
+    delay); state needs touch+hearing integration; policy RFMs can't self-explore
+    and lack a unified benchmark; data generation accuracy from LLMs/VGMs is
+    "insufficient."</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Survey is a snapshot, not a synthesis.</strong> The dominant mode is
+    "method X does A, method Y does B" enumeration. Cross-method <em>contradictions</em>
+    are rarely surfaced; e.g. the 2D-vs-3D-observation debate (Appendix B) is left as
+    "still unclear whether 2D or 3D is more suitable for the scaling law" rather than
+    adjudicated.</li>
+  <li><strong>The L0 claim is unfalsifiable as stated.</strong> "Current research has
+    a high probability of achieving L0" is asserted without a measured aggregate &mdash;
+    no meta-analysis of success rates across the surveyed RFMs backs the
+    99%-vs-current-gap framing quantitatively.</li>
+  <li><strong>Force/tactile/audio are under-weighted relative to the thesis.</strong>
+    The framework foregrounds contact points and forces/torques as the L0&rarr;general
+    axis, but the State module (Sec 6) is almost entirely 3D-reconstruction + pose;
+    tactile sensing gets passing mention (MOSAIC haptic encoder, optical tactile in
+    sim) and there is no dedicated tactile/force-representation section. For Weiyu's
+    thesis this is the most important gap (see "Why I care").</li>
+  <li><strong>Author list / affiliations.</strong> Heavily Chinese-institution
+    (Samsung R&amp;D China, BUPT, Tsinghua, Southeast Univ., Univ. Hamburg);
+    citation coverage skews toward 2023&ndash;2024 arXiv. The v7 stamp is Nov 2025,
+    so the snapshot is reasonably current through ~mid-2025 (cites OpenVLA-OFT,
+    Groot N1, Helix, FAST, RDT-1B, &pi;0).</li>
+  <li>No <em>quantitative</em> headline (it's a survey), but Tables 4&ndash;6
+    report per-method success rates with mixed Seen/Unseen splits and inconsistent
+    benchmarks &mdash; the authors themselves flag this as "solely estimating the
+    success rate is meaningless."</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is one of the four Cluster-J survey anchors for the 2026-06-24 batch, and
+it's the <em>broadest</em> map of the "foundation models for manipulation" terrain
+&mdash; useful as a related-work scaffold and a citation quarry, less so as a deep
+read. Relevance to my work is real but <strong>partial</strong>, so let me be precise
+rather than manufacture it.</p>
+<ul>
+  <li><strong>Where it lands squarely on my thesis.</strong> The paper's central
+    L0&rarr;general axis is <em>force/torque and contact-point precision</em> &mdash;
+    exactly the "many manipulation predicates are not visually evaluable
+    (<code>is_inserted</code>, <code>is_screwed_tight</code>, <code>surface_is_rough</code>)"
+    argument I care about. They name it ("different degrees of precision with respect
+    to contact points and applied forces/torques") and flag whole-body force-position
+    hybrid control as "often overlooked." So the survey <em>endorses</em> the gap my
+    batch is built around &mdash; but does not fill it. It surveys the perception/policy
+    side richly and leaves tactile/force representation thin, which is precisely the
+    opening the touch-language and force-VLA papers in this batch exploit.</li>
+  <li><strong>Where it complements <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>.</strong>
+    Their Hierarchy-of-Skills module (Sec 5) is the LLM-to-PDDL subgoal-decomposition
+    layer BLADE lives in; they survey SayCan, Text2Motion, LLM+P as the same
+    landscape BLADE's baselines occupy. BLADE is a concrete instance of their
+    "LLM-assisted classical TAMP" branch &mdash; but BLADE's distinctive move
+    (auto-<em>recovering</em> preconditions/effects from demos, not assuming them
+    given) is exactly the kind of thing this survey's taxonomy doesn't have a box for.
+    Their framing treats pre/post-conditions as a <em>perception</em> module
+    (detect object affordances), whereas BLADE treats predicates as
+    <em>learned, planner-facing abstractions</em>. Good foil for situating predicate
+    learning against the mainstream "FM-as-perception" view.</li>
+  <li><strong>Useful structure to borrow.</strong> The VLAC/VLAKP/VLADP policy
+    taxonomy is a clean way to organize the VLA papers in this batch (FuSe,
+    Tactile-VLA, OmniVTLA, ForceVLA, etc. are mostly VLADP-style end-to-end dense-pose
+    with extra sensor streams). Worth reusing in a topic page.</li>
+  <li><strong>Off-theme parts to skip.</strong> Sec 6 (3D reconstruction/NeRF/pose),
+    Sec 8 (scene generation / sim-to-real), Appendix D (model-based contact dynamics)
+    are tangential to my long-horizon/predicate-learning line, though Appendix D is a
+    surprisingly good primer if I ever need the model-based contact-rich baseline.</li>
+</ul>
+
+<h2>Quotable</h2>
+<blockquote>
+  We believe achieving general manipulation capability requires an overarching
+  framework akin to auto driving. This framework should encompass multiple
+  functional modules, with different foundation models assuming distinct roles in
+  facilitating general manipulation capability.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  Tasks may necessitate different degrees of precision with respect to contact
+  points and applied forces/torques... We designate the restriction of the robot's
+  learning capability to improving old skills and to manipulating rigid objects in
+  static scenes... with low precision requirements for contact points and
+  forces/torques as Level 0 (L0).
+  <span class="quote-cite">&mdash; &sect;2, p.2</span>
+</blockquote>
+<blockquote>
+  Although RFMs currently represent a single-model end-to-end training approach,
+  ensuring safety and stability, particularly in achieving an over 99% success rate
+  in manipulation tasks, remains a challenge.
+  <span class="quote-cite">&mdash; &sect;1, p.2</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited in this survey that are strong ingest candidates next (forward-referenced):</p>
+<ul>
+  <li><strong>RT-2 (Brohan et al. 2023)</strong> &mdash; the VLA naming the survey's
+    policy taxonomy is built on; canonical VLADP exemplar.</li>
+  <li><strong>OpenVLA (Kim et al. 2024)</strong> &amp; <strong>OpenVLA-OFT (Kim et al. 2025)</strong>
+    &mdash; the open RFM the survey treats as the democratized RT-2 alternative.</li>
+  <li><strong>RDT-1B (Liu et al. 2024)</strong> &amp; <strong>&pi;0 (Black et al. 2024)</strong>
+    &mdash; diffusion/DiT-head RFMs the survey contrasts against next-token policies.</li>
+  <li><strong>VoxPoser / ReKep (Huang et al. 2023/2024)</strong> &mdash; VLAKP
+    value-map and keypoint-constraint policies; relevant to my planning-abstractions line.</li>
+  <li><strong>Open X-Embodiment (Padalkar et al. 2023)</strong> &mdash; the 22-robot
+    dataset underpinning RFM training; benchmark reference.</li>
+  <li><strong>Eureka (Ma et al. 2023)</strong> &mdash; LLM reward design; the
+    FM-assisted-RL branch.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant (this survey is the
+map; these are points on it):</p>
+<ul>
+  <li><a href="bridging_language_and_action_survey.html">Bridging Language and Action (survey)</a>
+    &mdash; sibling Cluster-J survey; the language&rarr;action half of this paper's
+    Interaction + Hierarchy modules, in more depth.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+    &mdash; the <em>force/contact</em> survey that fills exactly the gap this paper
+    leaves thin; read together as the perception-heavy vs force-heavy pair.</li>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">Beyond Sight (FuSe)</a>,
+    <a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>,
+    <a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a>,
+    <a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>
+    &mdash; concrete instances of this survey's VLADP policy family extended with
+    tactile/force/audio streams; the empirical answers to its "State module needs
+    touch and hearing" open question.</li>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL</a> and
+    <a href="binding_touch_to_everything_unitouch.html">UniTouch</a>
+    &mdash; the LMM/multimodal-binding direction (touch added to the
+    vision&ndash;language space) the survey gestures at via ULIP but doesn't survey.</li>
+  <li><a href="palm_e_embodied_multimodal_lm.html">PaLM-E</a> and
+    <a href="imagebind_one_embedding_space.html">ImageBind</a>
+    &mdash; the embodied-multimodal-LM and binding anchors underlying the survey's
+    LMM category.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Galaxea Open-World Dataset</title>
+<meta name="type" content="paper">
+<meta name="authors" content="">
+<meta name="year" content="2025">
+<meta name="venue" content="datasets.bot public catalog">
+<meta name="arxiv_id" content="2509.00576">
+<meta name="url" content="https://arxiv.org/abs/2509.00576">
+<meta name="pdf" content="https://arxiv.org/abs/2509.00576">
+<meta name="tags" content="datasets-bot,open-data,mobile-manipulator,physical,ee-pose,language,proprioception,rgb,lerobot">
+<meta name="status" content="datasets-bot-crosscheck">
+<meta name="ingested" content="2026-06-28">
+<meta name="source_prompt" content="datasets.bot public catalog cross-check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .meta { color: #777; font-size: 0.9em; }
+  a { color: #2962ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>Galaxea Open-World Dataset</h1>
+<p class="meta">Galaxea AI &middot; 2025 &middot; datasets.bot &middot; <a href="https://datasets.bot/datasets/galaxea-open-world">datasets.bot page</a></p>
+<p><strong>One-liner.</strong> 500+ hours of real-world mobile bimanual manipulation on the Galaxea R1 Lite robot with subtask language annotations.</p>
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> The Galaxea Open-World Dataset is a large-scale real-world mobile manipulation collection gathered with a single embodiment, the Galaxea R1 Lite dual-arm mobile manipulator, across home, kitchen, retail, and office environments. It contains roughly 100K demonstration trajectories totaling 500+ hours, paired with fine-grained subtask-level language annotations. Data is released in LeRobot v2.1 format with four RGB camera streams plus proprioceptive state, and underpins the G0 dual-system VLA model. License: custom. Download: https://huggingface.co/datasets/OpenGalaxea/Galaxea-Open-World-Dataset.</li>
+  <li><strong>Hardware / simulator:</strong> Embodiment: multi. Environment: home, office, retail, kitchen. Realness: physical.</li>
+</ul>
+<h2>Schema</h2>
+<p>LeRobot v2.1 Parquet archives: 4 RGB camera videos (head, head-right, left/right wrist; 720x1280 AV1@15fps), proprioceptive state (joint pos/vel, gripper, EE poses, IMU), and subtask-level language annotations.</p>
+<h2>Links</h2>
+<ul>
+  <li><a href="https://datasets.bot/datasets/galaxea-open-world">datasets.bot page</a></li>
+  <li><a href="https://opengalaxea.github.io/GalaxeaVLA/">Homepage</a></li>
+  <li><a href="https://arxiv.org/abs/2509.00576">Paper</a></li>
+  <li><a href="https://huggingface.co/datasets/OpenGalaxea/Galaxea-Open-World-Dataset">Download</a></li>
+</ul>
+</body>
+</html>

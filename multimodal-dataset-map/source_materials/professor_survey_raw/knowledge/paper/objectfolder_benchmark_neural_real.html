@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The ObjectFolder Benchmark: Multisensory Learning with Neural and Real Objects</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Gao, Dou, Li, Agarwal, Bohg, Li, Fei-Fei, Wu">
+<meta name="year" content="2023">
+<meta name="venue" content="CVPR 2023">
+<meta name="arxiv_id" content="2306.00956">
+<meta name="url" content="https://arxiv.org/abs/2306.00956">
+<meta name="pdf" content="../../raw/papers/objectfolder_benchmark_neural_real.pdf">
+<meta name="tags" content="multimodal-dataset, multisensory, benchmark, audio-visual, tactile-sensing, visuo-tactile, acoustic-sensing, gelsight, material-recognition, sim-to-real">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>The ObjectFolder Benchmark: Multisensory Learning with Neural and Real Objects</h1>
+<p class="meta">
+  Ruohan Gao*, Yiming Dou*&dagger;, Hao Li*, Tanmay Agarwal, Jeannette Bohg, Yunzhu Li, Li Fei-Fei, Jiajun Wu
+  &middot; Stanford University
+  &middot; CVPR 2023
+  &middot; <a href="https://arxiv.org/abs/2306.00956">arXiv:2306.00956</a>
+  &middot; <a href="../../raw/papers/objectfolder_benchmark_neural_real.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A 10-task benchmark suite for multisensory
+object-centric learning across <em>sight, sound, and touch</em>, paired with
+ObjectFolder Real &mdash; the first real-world dataset to capture all three
+modalities (3D meshes, impact sounds, GelSight tactile readings) for 100
+household objects &mdash; so that the field can finally measure which modality
+carries which information, and how badly sim2real bites for non-visual sensing.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Vision dominates object-centric learning, but real interaction is
+multisensory: objects make sounds when struck and deform tactile sensors when
+touched. The predecessor <a href="objectfolder_dataset_implicit_representations.html">ObjectFolder</a>
+and <a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a>
+provided 1,000 <em>neural</em> objects (implicit visual/acoustic/tactile
+"Object Files") but had two gaps the authors call out: (1) <strong>no real
+objects</strong> &mdash; all data is simulated with no sim2real calibration,
+so we don't know whether models trained on neural objects transfer; and (2)
+only a couple of tasks were demonstrated. The paper closes both gaps by
+(a) building <strong>ObjectFolder Real</strong>, real multisensory captures of
+100 objects, and (b) standardizing <strong>10 benchmark tasks</strong> with
+defined metrics and baselines, spanning recognition, reconstruction, and
+manipulation. The motivating thesis is degeneracy from cognitive science:
+fused multisensory perception is robust to the loss of any one modality
+(&sect;1), and different modalities carry structurally different information
+(vision = global geometry/pose; audio = scale/material; touch = precise local
+contact geometry).</p>
+
+<h2>Method</h2>
+<p>This is a dataset + benchmark paper. The "method" is the real-data capture
+pipeline (Fig 2) plus the 10 standardized tasks and their baselines.</p>
+
+<p><strong>ObjectFolder Real capture pipeline</strong> (100 household objects,
+each with vision + audio + touch):</p>
+<ul>
+  <li><strong>Vision (&sect;3.1):</strong> EinScan Pro HD 2020 handheld scanner
+    for a high-quality 3D mesh + color texture (min point distance 0.2&nbsp;mm).
+    Three mesh resolutions provided: 16K / 64K / Full triangles. HD video of each
+    object rotating in a lightbox captures appearance.</li>
+  <li><strong>Audio (&sect;3.2):</strong> professional anechoic studio. 30&ndash;50
+    surface points per object (scaled to size), prioritizing points with specific
+    geometry/texture (rim, handle). Each point struck along its normal with a PCB
+    086C01 impact hammer (force-transducer tip giving ground-truth contact force),
+    audio recorded by a PCB 376A32 phantom-powered field microphone; 5-second
+    clips, plus a RealSense RGBD video per strike.</li>
+  <li><strong>Touch (&sect;3.3):</strong> Franka Emika Panda arm + R1.5 GelSight
+    tactile finger (32&times;24&nbsp;mm sensing area). RealSense RGBD at each frame
+    corner; point cloud of target object from scanned mesh registered to the
+    RealSense point cloud via four-point manual init + ICP (with manual fallback).
+    Tactile readings collected at <em>the same surface points</em> where impact
+    sounds were collected, position-controlled to reach each point along its
+    normal; video of the gel deformation captured.</li>
+</ul>
+
+<p><strong>The 10 tasks</strong> (Fig 1), grouped in three families:</p>
+<p><strong>Recognition (3):</strong> <em>Cross-Sensory Retrieval</em> (any
+modality &rarr; any modality, 9 sub-tasks, mAP metric, baselines CCA / PLSCA /
+DSCMR / DAR); <em>Contact Localization</em> (predict the mesh vertex where contact
+happens from vision/audio/touch; Normalized-Distance metric; baselines Point
+Filtering + a new differentiable Multisensory Contact Regression, MCR);
+<em>Material Classification</em> (7 material classes; top-1 accuracy; baselines
+ResNet, FENet).</p>
+<p><strong>Reconstruction (3):</strong> <em>3D Shape Reconstruction</em>
+(Chamfer Distance; baselines MDN, PCN, and a new Multisensory Reconstruction
+Transformer, MRT); <em>Sound Generation of Dynamic Objects</em> (video&rarr;sound
+of a falling object; STFT/Envelope/CDPAM metrics; baselines RegNet, SpecVQGAN);
+<em>Visuo-Tactile Cross-Generation</em> (Vision&harr;Touch image translation;
+PSNR/SSIM; baselines Pix2Pix, VisGel).</p>
+<p><strong>Manipulation (4):</strong> <em>Grasp-Stability Prediction</em>
+(will the grasp hold? accuracy); <em>Contact Refinement</em>, <em>Surface
+Traversal</em>, and <em>Dynamic Pushing</em> &mdash; the latter three use a
+shared <strong>Multisensory-MPC</strong> baseline (SVG future-frame prediction
++ MPPI / CEM control). Table 1 shows which tasks are feasible in sim, real, or
+both: recognition + 3D reconstruction have real results; sound generation,
+visuo-tactile cross-gen, and the four manipulation tasks are sim-only (sim2real
+for manipulation needs per-task robot calibration; see Appendix L).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> ObjectFolder Real (100 real
+    household objects: meshes at 16K/64K/Full triangles, lightbox HD video,
+    30&ndash;50 impact-sound points/object, GelSight readings at matching points)
+    + the 1,000 neural objects from <a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a>.
+    Per-task object/instance splits vary (e.g., retrieval splits neural objects
+    800/100/100 and OF-Real 8/1/1 per object; contact localization 800/190/10
+    neural, 53 real objects 8:1:1).</li>
+  <li><strong>Hardware / simulator:</strong> EinScan Pro HD 2020 3D scanner;
+    anechoic studio with PCB 086C01 impact hammer + PCB 376A32 microphone;
+    Franka Emika Panda + R1.5 GelSight finger; RealSense RGBD cameras; PyBullet
+    used to simulate falling objects for the sound-generation task; Blender to
+    render videos.</li>
+  <li><strong>Baselines:</strong> per task &mdash; CCA, PLSCA, DSCMR, DAR
+    (retrieval); Point Filtering + MCR (contact localization); ResNet, FENet
+    (material); MDN, PCN, MRT (3D shape); RegNet, SpecVQGAN (sound gen);
+    Pix2Pix, VisGel (visuo-tactile); TACTO/ResNet-18 (grasp stability);
+    Multisensory-MPC = SVG + MPPI/CEM (the three remaining manipulation tasks).</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline cross-cutting finding (&sect;1, conclusion): <strong>vision and audio
+are reliable for recognition; touch is too local to recognize an object alone;
+fusing modalities is consistently best; and you can sometimes hallucinate one
+modality from another.</strong> For reconstruction, vision gives coarse global
+shape, audio gives scale, touch gives precise local geometry &mdash; fusion wins.</p>
+
+<p><strong>Cross-sensory retrieval (neural objects, Table 2, mAP):</strong>
+global-information modalities (vision, audio) retrieve far better than the
+local one (touch). Best single cell: vision&rarr;vision 89.28 (DAR);
+audio&rarr;audio 80.77 (PLSCA); touch&rarr;touch only 54.80 (DAR). Cross-modal
+into touch is weak (vision&rarr;touch 7.03, audio&rarr;touch 6.96), confirming
+touch's locality.</p>
+
+<p><strong>Contact localization (Table 4, neural, Normalized Distance %, lower
+better):</strong></p>
+<table>
+  <tr><th>Method</th><th>Vision</th><th>Touch</th><th>Audio</th><th>V+T+A</th></tr>
+  <tr><td>RANDOM</td><td>47.32</td><td>47.32</td><td>47.32</td><td>47.32</td></tr>
+  <tr><td>Point Filtering</td><td>&ndash;</td><td>4.21</td><td><strong>1.45</strong></td><td>3.73 (T+A)</td></tr>
+  <tr><td>MCR (ours)</td><td>5.03</td><td>23.59</td><td>4.85</td><td>1.84</td></tr>
+</table>
+<p>Vision/audio localize contact far better than touch (touch is locally
+ambiguous &mdash; different vertices share tactile patterns). Point Filtering is
+strongest but relies on knowing relative pose between consecutive contacts;
+the new end-to-end MCR is close with a simpler architecture and no pose
+assumption. On OF-Real (Table 5), fusion (ND 12.00) again beats any single
+modality.</p>
+
+<p><strong>Material classification (Table 6, neural, top-1 acc):</strong> FENet
+96.60 &gt; ResNet 96.28 with full fusion; touch alone is much weaker (75&ndash;76%)
+vs vision (~92%) / audio (~95%); fusion best. Sim2real transfer (Table 7):
+pre-training on neural objects gives ResNet +6% accuracy on real objects (51.02
+vs 45.25 w/o pretrain).</p>
+
+<p><strong>3D shape reconstruction (Table 8, neural, Chamfer Distance cm, lower
+better):</strong> vision alone is the strongest single modality (PCN 2.36);
+full V+T+A fusion best (PCN 2.25, MDN 2.91). On OF-Real (Table 9), MRT achieves
+CD 0.95 with all three modalities vs 1.17 vision-only.</p>
+
+<p><strong>Manipulation (sim).</strong> Vision and touch are complementary and
+fusion wins across all four tasks:</p>
+<ul>
+  <li>Grasp stability (Fig 8, wine glass): V 87.4%, T 93.4%, V+T <strong>99.4%</strong>.</li>
+  <li>Contact refinement (Fig 9, wooden cup): SR V 0.86 / T 0.83 / V+T 0.88;
+    angle error 0.38&deg; / 0.56&deg; / 0.34&deg;.</li>
+  <li>Surface traversal (Fig 10, iron pan): SR V 0.26 / T 0.54 / V+T <strong>0.80</strong>
+    &mdash; the largest fusion gain, and a case where touch alone beats vision alone.</li>
+  <li>Dynamic pushing (Fig 11, rinsing cup): position error V 23.81 / T 21.76 /
+    V+T <strong>17.63</strong> cm.</li>
+</ul>
+<p><strong>Where modalities lose:</strong> touch alone is a poor recognizer
+(retrieval, localization, material) and a poor global-shape reconstructor;
+vision alone fails when contact is occluded or when fine local geometry matters
+(surface traversal). Notably for grasp stability, <em>pre-training on
+ObjectFolder Real</em> beats ImageNet, OF 2.0, and Touch-and-Go for tactile
+representation transfer (Table 13: 84.9% vs 73.0% / 69.4% / 78.1%).</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Sim2real is only achieved for 4 of 10 tasks (recognition + 3D recon);
+    sound generation and visuo-tactile cross-gen would need new real datasets,
+    and the four manipulation tasks need nontrivial per-task robot deployment
+    and physics/optical/elastic calibration (Table 1, Appendix L). They offer
+    only "tentative guidelines," not a calibrated procedure.</li>
+  <li>OF-Real is modest: 100 objects total (53 used for contact localization,
+    50 for cross-gen, 5 for several manipulation tasks).</li>
+  <li>Tactile data is collected at the <em>same points</em> as audio, biasing
+    coverage toward geometrically-special points (rims, handles) rather than
+    uniform surface sampling.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>Several manipulation "results" are teasers on a <strong>single object</strong>
+    (wine glass, wooden cup, iron pan, rinsing cup) &mdash; Fig 8&ndash;11 are
+    single-object demonstrations, not aggregate success rates over an object
+    distribution. The appendix Tables 14&ndash;17 widen to 5 objects but still no
+    seeds/variance, so the manipulation claims are far weaker statistically than
+    the recognition tables.</li>
+  <li>The MCR baseline is introduced as the paper's own contribution yet
+    <em>loses</em> to the prior Point Filtering baseline on neural objects
+    (Table 4); the framing ("promising results... great potential") soft-pedals
+    that it's worse, justified by Point Filtering being inapplicable to OF-Real
+    (it needs arbitrary-point touch/audio).</li>
+  <li>No statistical significance anywhere &mdash; no error bars on the
+    recognition/reconstruction tables either. With objects this few, several
+    fusion-vs-single-modality gaps (e.g., V+T 0.88 vs T 0.83 grasp) could be
+    within noise.</li>
+  <li>"Touch is too local to recognize" is asserted from these specific GelSight
+    captures; it may be a property of single-frame static touch rather than touch
+    in general (dynamic/sliding touch could carry more). The benchmark doesn't
+    test that, which later tactile-representation work (AnyTouch, Sparsh-X)
+    directly contests.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is an <strong>adjacent infrastructure paper</strong>, not a manipulation
+policy paper &mdash; but it is the canonical empirical backing for the thesis
+behind the entire 2026-06-24 batch, and a direct foil for
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>.
+BLADE learns <em>visual</em> predicate classifiers (<code>turned-on(faucet)</code>,
+<code>open(drawer)</code>) by cropping to the relevant object and training a
+neural classifier on pixels. The big idea this batch is built around is that many
+manipulation predicates &mdash; <code>is_grasped</code>, <code>is_inserted</code>,
+<code>is_full</code>, <code>surface_is_rough</code>, <code>is_screwed_tight</code>
+&mdash; are <em>not visually evaluable</em>; they live in touch, force, and sound.
+ObjectFolder Benchmark is the cleanest quantitative evidence that these three
+modalities carry <strong>structurally different, non-redundant</strong>
+information: vision = global geometry/pose, audio = scale/material, touch =
+precise local contact geometry, and fusion beats any single channel on grasp
+stability, contact localization, material, and 3D shape. That is exactly the
+argument for why a BLADE-style abstraction layer would need <em>multisensory</em>
+predicate classifiers, not vision-only ones. The material-classification result
+(touch/audio resolve <code>surface_is_rough</code>-type material properties that
+vision guesses) and contact-localization (touch is locally precise but globally
+ambiguous &mdash; the inverse of vision) map almost one-to-one onto which
+predicates each sensor should ground. Concretely relevant downstream: the
+ObjectFolder simulators feed tactile/acoustic simulators in cluster I
+(<a href="../../raw/papers/tacto_tactile_simulator.pdf">TACTO</a>,
+<a href="../../raw/papers/soundspaces_2_visual_acoustic.pdf">SoundSpaces 2.0</a>),
+and its sim2real-gap measurement frames every "train in sim, deploy real"
+tactile/audio policy in clusters C/D. It is <em>not</em> a planning or
+abstraction paper, so I'm tagging it as an evidence/dataset anchor rather than a
+method to build on directly.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  For recognition, vision and audio tend to be more reliable compared to touch,
+  where the information is too local to recognize. ... it is possible to
+  hallucinate one modality from the other. This agrees with the notion of
+  degeneracy in cognitive studies.
+  <span class="quote-cite">&mdash; &sect;1 / p.2</span>
+</blockquote>
+
+<blockquote>
+  Touch, often as a good complement to vision, is especially useful to capture
+  the accurate local geometry of the contact point.
+  <span class="quote-cite">&mdash; &sect;1 / p.2</span>
+</blockquote>
+
+<blockquote>
+  Our ObjectFolder Real dataset is the first dataset that contains all three
+  modalities with rich annotations to facilitate multisensory learning research
+  with real object data.
+  <span class="quote-cite">&mdash; &sect;2 / p.3</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>Gao et al. 2021 &mdash; ObjectFolder</strong> [25] &mdash; the
+    original implicit-representation dataset this extends. Forward-ref
+    <a href="../../raw/papers/objectfolder_dataset_implicit_representations.pdf">PDF</a>.</li>
+  <li><strong>Gao et al. 2022 &mdash; ObjectFolder 2.0</strong> [28] &mdash; the
+    1,000 neural objects + sim2real predecessor; supplies the neural-object half
+    of every table here.
+    <a href="../../raw/papers/objectfolder_2_multisensory_sim2real.pdf">PDF</a>.</li>
+  <li><strong>Wang et al. &mdash; TACTO</strong> &mdash; GelSight tactile simulator
+    underpinning tactile rendering / sim2real.
+    <a href="../../raw/papers/tacto_tactile_simulator.pdf">PDF</a>.</li>
+  <li><strong>Chen et al. &mdash; SoundSpaces 2.0</strong> &mdash; visual-acoustic
+    simulation counterpart for the audio modality.
+    <a href="../../raw/papers/soundspaces_2_visual_acoustic.pdf">PDF</a>.</li>
+  <li><strong>Yuan/Dong/Adelson &mdash; GelSight / improved GelSight</strong> [20]
+    &mdash; the tactile sensor used for the touch captures.
+    <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">PDF</a>.</li>
+  <li><strong>Touch and Go</strong> [76] &mdash; the human-collected vision+touch
+    dataset compared against for tactile pre-training (Table 13).
+    <a href="../../raw/papers/touch_and_go_human_collected_vision_touch.pdf">PDF</a>.</li>
+  <li><strong>Lee et al. 2019 &mdash; Making Sense of Vision and Touch</strong>
+    [41] &mdash; cited multisensory representation-learning precursor.
+    <a href="../../raw/papers/making_sense_of_vision_and_touch.pdf">PDF</a>.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="objectfolder_dataset_implicit_representations.html">ObjectFolder</a>
+    and <a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a>
+    &mdash; the same authors' neural-object datasets this benchmark builds on and
+    measures sim2real against. The trilogy's third entry.</li>
+  <li><a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a>
+    &mdash; human-collected vision+touch dataset; the tactile-pretraining baseline
+    OF-Real beats in Table 13 (84.9% vs 78.1%).</li>
+  <li><a href="tacto_tactile_simulator.html">TACTO</a>,
+    <a href="taxim_gelsight_simulation.html">Taxim</a>,
+    <a href="tacex_gelsight_isaac_sim.html">TacEx</a> &mdash; cluster-I GelSight
+    simulators; the tactile-rendering machinery whose sim2real gap this paper
+    quantifies for downstream tactile policies.</li>
+  <li><a href="soundspaces_2_visual_acoustic.html">SoundSpaces 2.0</a> &mdash;
+    visual-acoustic simulator; the audio-modality analogue to the tactile
+    simulators above.</li>
+  <li><a href="making_sense_of_vision_and_touch.html">Making Sense of Vision and Touch</a>
+    &mdash; foundational visuo-tactile representation learning for contact-rich
+    tasks; conceptual precursor to fusing touch into manipulation.</li>
+  <li><a href="vtdexmanip_visual_tactile_dexterous_benchmark.html">VTDexManip</a>
+    and <a href="kaiwu_multimodal_manipulation_dataset.html">Kaiwu</a> &mdash;
+    sibling cluster-I multimodal manipulation benchmarks/datasets; complementary
+    coverage (dexterous / large-scale real manipulation vs object-centric).</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a> and
+    <a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>
+    &mdash; tactile foundation models that contest this paper's "touch is too
+    local to recognize" claim by learning richer (and dynamic) tactile
+    representations.</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a> and
+    <a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a> &mdash;
+    cluster-D acoustic/multisensory manipulation that operationalizes the
+    "audio carries material/scale" finding into closed-loop policies.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>GelSight: High-Resolution Robot Tactile Sensors for Estimating Geometry and Force</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Yuan, Dong, Adelson">
+<meta name="year" content="2017">
+<meta name="venue" content="Sensors (MDPI)">
+<meta name="arxiv_id" content="">
+<meta name="url" content="https://www.mdpi.com/1424-8220/17/12/2762">
+<meta name="pdf" content="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">
+<meta name="tags" content="tactile-sensing, vision-based-tactile, gelsight, foundational, haptics, force-torque, manipulation-planning, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- FORMAT VARIANT: foundational sensor-hardware classic. Method section is
+     renamed "Sensor design / formalism"; Setup is brief (this is a review of a
+     hardware lineage, not a single experiment). Adaptation per batch brief. -->
+
+<h1>GelSight: High-Resolution Robot Tactile Sensors for Estimating Geometry and Force</h1>
+<p class="meta">
+  Wenzhen Yuan, Siyuan Dong, Edward H. Adelson
+  &middot; MIT CSAIL
+  &middot; 2017
+  &middot; Sensors (MDPI), 17(12):2762
+  &middot; <a href="https://www.mdpi.com/1424-8220/17/12/2762">MDPI</a>
+  &middot; <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> The canonical write-up of GelSight &mdash; a
+vision-based tactile sensor that turns a soft elastomer + camera into a
+high-resolution depth camera <em>for touch</em>, reconstructing micron-scale
+contact geometry from photometric stereo and reading force/shear/slip from the
+motion of embedded markers; this is the hardware substrate that most modern
+visuo-tactile learning (DIGIT, TACTO, Sparsh, TVL, ...) is built on.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Most pre-2017 robot tactile sensors (resistive, capacitive, piezoelectric
+arrays) measured a <em>force / pressure distribution</em> over a fingertip at
+coarse spatial resolution (e.g., the commercial Pressure Profile Systems array
+at 5&nbsp;mm). The authors argue that for robots to manipulate like humans,
+<em>geometry</em> sensing matters as much as force: a fine, deformable surface
+that reads local shape and texture lets a robot recover object identity,
+material, contact area, and shear &mdash; properties a sparse force grid cannot.
+The paper's framing question is "what kind of tactile signal is needed for
+robots to better understand the environment?", and its answer is high-resolution
+geometry from a soft, vision-instrumented contact surface.</p>
+
+<h2>Sensor design / formalism</h2>
+<p><strong>Core idea (retrographic sensing).</strong> A slab of clear elastomer
+is coated on its outer face with an opaque, reflective membrane of <em>known,
+consistent reflectance</em>. When an object presses in, the membrane deforms to
+a relief replica of the object's surface but keeps its reflectance &mdash; so the
+optical signal depends only on local surface <em>shape</em>, not the object's
+own color or material. A camera behind the gel images this membrane under
+controlled illumination from multiple directions.</p>
+
+<p><strong>Shape via photometric stereo.</strong> Model the membrane as a height
+field <code>z = f(x,y)</code> with normal
+<code>N = (&part;f/&part;x, &part;f/&part;y, &minus;1)</code>. Under known,
+evenly-distributed lighting the shading at a pixel depends only on the local
+gradient, so the RGB image <code>I(x,y) = R(&part;f/&part;x, &part;f/&part;y)</code>
+(Eq. 1&ndash;2), where the three color channels carry illumination from three
+distinct directions. A calibrated <strong>lookup table</strong>
+<code>R<sup>&minus;1</sup></code> (built by pressing a sphere of known diameter,
+which spans all surface-normal directions) inverts intensity&rarr;gradient; the
+height map is then recovered by integrating the gradient field, solved fast via
+a Poisson equation <code>&nabla;<sup>2</sup>f = g</code> (Eq. 3&ndash;4) with a
+DST-based fast Poisson solver so it runs online. Resolution: 1&ndash;2&nbsp;&mu;m
+when optimized for metrology; 20&ndash;100&nbsp;&mu;m for compact robot-finger
+versions &mdash; far finer than human skin.</p>
+
+<p><strong>Force / torque / slip via markers.</strong> Black dots are printed
+between the elastomer base and the reflective membrane (Fig. 3). Their in-image
+motion <code>du = u &minus; u<sub>0</sub></code> tracks lateral surface
+displacement. The <em>pattern</em> of the marker motion field encodes the kind of
+load (normal &rarr; radial spread; shear &rarr; uniform translation; in-plane
+torque &rarr; rotation; tilt &rarr; gradient), and the <em>magnitude</em> is
+roughly proportional to the force/torque (Fig. 7). Because the
+displacement&rarr;force relation is nonlinear and shape-dependent, the authors
+use a <strong>CNN (VGG-16, ImageNet-pretrained, last layer &rarr; 4 outputs
+Fx,Fy,Fz,Tz)</strong> on the difference image to regress force/torque for unseen
+object shapes. <strong>Slip / incipient slip</strong> is read from
+<em>inhomogeneity</em> of the marker field: peripheral markers lag central ones
+before gross slip, quantified by the entropy of the displacement distribution
+(Eq. 5, Fig. 8&ndash;9).</p>
+
+<p><strong>Hardware lineage.</strong> The paper reviews several builds: the
+original desktop cube (Johnson &amp; Adelson 2009/2011, semi-specular or
+side-lit matte coating, photometric stereo over 3&ndash;6 colored LED
+directions); the first <em>fingertip</em> GelSight (Li et al. 2014, Baxter
+gripper, 35&times;35&times;60&nbsp;mm, 4-color line-array LEDs, semi-specular
+coating, hand-soldered &mdash; sensitive but over-complicated to fabricate); and
+the improved fingertip sensor (Dong et al. 2017, hexagonal, 3-color RGB
+collimated LEDs at 71&deg;, matte coating, mostly Formlabs-printed parts,
+<em>open-sourced</em> CAD &mdash; better precision, far simpler to reproduce).
+Section&nbsp;4.3 details elastomer fabrication: clear silicone/TPE base (Shore A
+5&ndash;20; fingertip gel ~Shore 00-45, neo-Hookean &mu;&nbsp;&asymp;
+0.145&nbsp;MPa), water-transfer-printed markers, and airbrushed/brushed
+metal-flake or aluminum-powder reflective coatings.</p>
+
+<h2>Coverage / setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> No public benchmark. Force CNN
+  trained on ~28,815 GelSight images of 6 balls (&oslash; 12&ndash;87&nbsp;mm),
+  5 cylinders (&oslash; 10&ndash;70&nbsp;mm), 2 flat rigid surfaces; tested on
+  6705 images of 3 <em>novel</em> objects (ball &oslash;25, cylinder &oslash;22,
+  flat plane).</li>
+  <li><strong>Hardware / simulator:</strong> Multiple GelSight builds (desktop
+  cube; fingertip versions for Baxter and WSG-50 grippers). Logitech C310 USB
+  webcam, 640&times;480 @ 30&nbsp;Hz; ground-truth force from an ATI Nano-17
+  force/torque sensor. No simulator (this <em>is</em> the real-hardware paper).</li>
+  <li><strong>Baselines:</strong> Conceptual comparison to prior tactile sensors
+  (resistive/capacitive arrays, BioTac, OptoForce, TacTip, fluid-filled
+  vision-based sensors); for force, GelSight is calibrated <em>against</em> the
+  ATI Nano-17 rather than compared to a competing learned baseline.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (VGG-16 fine-tuning; no
+  training-time or hardware details given).</li>
+</ul>
+
+<h2>Key insights / results</h2>
+<p><strong>Sensitivity.</strong> Minimum distinguishable normal force is mostly
+&lt;0.05&nbsp;N (Table&nbsp;1) &mdash; finer than the ATI Nano-17 reference can
+even resolve in most contact conditions, so the table is floored at
+&lt;0.05&nbsp;N. GelSight detects smaller contact forces than the commercial
+F/T sensor used to calibrate it.</p>
+<p><strong>Shape.</strong> Measured surface normals correlate well with
+ground truth from a calibration ball, especially the yaw (gradient direction:
+R<sup>2</sup>&nbsp;&asymp; 0.99) more than the pitch (gradient magnitude:
+R<sup>2</sup>&nbsp;&asymp; 0.78&ndash;0.83) (Fig. 13). Reconstructions capture
+both overall shape and fine texture (fingerprint ridges, a coin's relief).</p>
+<p><strong>Force (CNN, unseen objects).</strong></p>
+<table>
+  <tr><th>Quantity</th><th>R<sup>2</sup> (range across ball/cyl/plane)</th><th>RMSE</th></tr>
+  <tr><td>Fz (normal)</td><td>0.94&ndash;0.97</td><td>0.67&ndash;1.86&nbsp;N</td></tr>
+  <tr><td>Fx (shear)</td><td>0.92&ndash;0.94</td><td>0.19&ndash;0.48&nbsp;N</td></tr>
+  <tr><td>Fy (shear)</td><td>0.92&ndash;0.93</td><td>0.16&ndash;0.43&nbsp;N</td></tr>
+  <tr><td>Tz (in-plane torque)</td><td>0.84&ndash;0.89</td><td>3.72&ndash;4.91&nbsp;N&middot;mm</td></tr>
+</table>
+<p>All force R<sup>2</sup>&nbsp;&gt; 0.9; torque is the weakest channel. Marker
+displacement is linear with shear force even into partial slip (Fig. 7c), and
+displacement-field entropy rises monotonically with partial slip, giving a usable
+slip-warning signal (Fig. 8). <strong>Applications surveyed:</strong> USB-cable
+insertion via in-hand localization, fabric/material recognition from texture,
+hardness estimation from press-in dynamics, and slip-aware grasping.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><strong>Author-stated.</strong> (1) The force CNN does <em>not</em> generalize
+force cleanly across geometries &mdash; predictions stay biased by contact
+shape; robust force needs either a much broader (possibly simulated) dataset or a
+better feature extractor. (2) Slip/partial-slip analysis works best on flat or
+low-curvature contacts with enough markers in the patch; for complex/textured
+objects you must combine marker motion with shape motion. (3) Fabrication of the
+sensitive fingertip versions is hard to standardize (the 2017 hex design was
+specifically built to fix this).</p>
+<p><strong>What I noticed reading it.</strong> (a) This is a review/synthesis of
+the GelSight lineage, not a clean single-system evaluation &mdash; "the GelSight
+sensor" silently refers to several different builds across sections, so quoted
+numbers (resolution, force R<sup>2</sup>) are not all from one device. (b) Force
+ground truth is bootstrapped from one ATI Nano-17, whose own floor (0.05&nbsp;N)
+caps the reported sensitivity &mdash; the "more sensitive than ATI" claim is
+asserted qualitatively, not quantified below that floor. (c) Force/slip results
+are on a tiny set of canonical shapes (balls/cylinders/planes); the admitted
+shape-bias means out-of-distribution force reads should be treated as
+unreliable. (d) Marker tracking and photometric-stereo calibration are
+per-sensor and hand-tuned, foreshadowing the later push toward
+<em>simulators</em> (TACTO, Taxim) and <em>learned</em> representations (Sparsh,
+T3) that decouple downstream tasks from each physical gel's idiosyncrasies.</p>
+
+<h2>Why I care</h2>
+<p>This is a <strong>method/hardware anchor</strong>, not a manipulation-policy
+or planning paper &mdash; but it underwrites a thesis I care about for
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+many manipulation predicates are <em>not visually evaluable</em>.
+<code>is_grasped</code>, <code>is_inserted</code>, <code>is_screwed_tight</code>,
+<code>surface_is_rough</code>, <code>about_to_slip</code> live in contact
+geometry, shear, and slip &mdash; exactly the signals GelSight makes
+machine-readable at high resolution. BLADE learns visual predicate classifiers;
+the open question this paper plants is whether the same precondition/effect
+abstractions could be grounded in <em>tactile</em> classifiers over GelSight-style
+height/shear maps, letting bi-level planners reason about contact states a camera
+cannot see. GelSight is the substrate the rest of the 2026-06-24 touch batch sits
+on: it is the sensor behind the touch&ndash;language datasets
+(<a href="../../raw/papers/touch_vision_language_dataset_multimodal_alignment.pdf">TVL</a>,
+<a href="../../raw/papers/touch_and_go_human_collected_vision_touch.pdf">Touch and Go</a>),
+the tactile foundation models
+(<a href="../../raw/papers/sparsh_self_supervised_touch_representations.pdf">Sparsh</a>,
+<a href="../../raw/papers/t3_transferable_tactile_transformers.pdf">T3</a>), and the
+simulators that model it
+(<a href="../../raw/papers/tacto_tactile_simulator.pdf">TACTO</a>,
+<a href="../../raw/papers/taxim_gelsight_simulation.pdf">Taxim</a>). Read it as
+foundational context for that whole line, not as a manipulation result in itself.</p>
+
+<h2>Quotable</h2>
+<blockquote>"Unlike the traditional tactile sensors which measure contact force,
+GelSight basically measures geometry, with very high spatial resolution."
+<span class="quote-cite">&mdash; Abstract / p.1</span></blockquote>
+<blockquote>"We try to address the question with the answer that geometry sensing
+is equally important as the force sensing for robots."
+<span class="quote-cite">&mdash; &sect;1 / p.2</span></blockquote>
+<blockquote>"For the force measurements, R<sup>2</sup> is higher than 0.9 ... the
+GelSight measurement of force can be robust regardless of the geometry of the
+contact objects." <span class="quote-cite">&mdash; &sect;5.2 / p.17</span></blockquote>
+
+<h2>Related</h2>
+<p><strong>Cited / lineage papers worth ingesting next:</strong></p>
+<ul>
+  <li><a href="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">DIGIT</a>
+  &mdash; the low-cost, compact descendant of fingertip GelSight; same
+  retrographic principle, mass-producible.</li>
+  <li>Johnson &amp; Adelson, "Retrographic sensing for the measurement of surface
+  texture and shape" (CVPR 2009) and "Microgeometry capture using an elastomeric
+  sensor" (ACM TOG 2011) &mdash; the founding GelSight papers (refs [7,8]); not
+  in this batch, flagged for the corpus.</li>
+</ul>
+<p><strong>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</strong></p>
+<ul>
+  <li><a href="digit_low_cost_compact_tactile_sensor.html">DIGIT</a> &mdash; sibling
+  vision-based tactile sensor; the cheap/scalable counterpart to GelSight in the
+  same Cluster J foundations.</li>
+  <li><a href="tacto_tactile_simulator.html">TACTO</a> and
+  <a href="taxim_gelsight_simulation.html">Taxim</a> &mdash; simulators that render
+  GelSight/DIGIT images for sim-to-real tactile learning.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a> and
+  <a href="t3_transferable_tactile_transformers.html">T3</a> &mdash; self-supervised /
+  transferable representations learned over GelSight-style tactile images.</li>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL</a> and
+  <a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a> &mdash;
+  touch&ndash;vision(&ndash;language) datasets collected with GelSight-family
+  sensors.</li>
+</ul>
+
+</body>
+</html>

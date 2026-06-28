@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#f6f2ea"/>
+  <defs>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M30 0H0v30" fill="none" stroke="#ded8cc" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect width="960" height="540" fill="url(#grid)"/>
+  <rect x="54" y="48" width="852" height="444" rx="18" fill="#fffdfa" stroke="#ded8cc" stroke-width="2"/>
+  <rect x="54" y="48" width="852" height="182" rx="18" fill="#d9eef0"/>
+  <circle cx="780" cy="126" r="88" fill="#477987" opacity="0.2"/>
+  <circle cx="696" cy="104" r="38" fill="#477987" opacity="0.28"/>
+  <g transform="translate(96 90)">
+    <rect x="0" y="18" width="124" height="74" rx="18" fill="#477987"/>
+    <path d="M20 50c34-26 68-26 102 0M20 62c34 26 68 26 102 0" fill="none" stroke="#fffdfa" stroke-width="10" stroke-linecap="round"/>
+    <path d="M42 18l20-18 20 18" fill="none" stroke="#fffdfa" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+  <text x="250" y="126" font-family="Inter, Arial, sans-serif" font-size="31" font-weight="800" fill="#245866">LeRobot Shirt-Folding Dataset</text>
+  <text x="250" y="168" font-family="Inter, Arial, sans-serif" font-size="22" fill="#6c6a64">LeRobot, Hugging Face · 2026</text>
+  <text x="88" y="292" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800" fill="#171717">Bimanual t-shirt folding</text>
+  <text x="88" y="337" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800" fill="#171717">5,688 episodes · 131 hours</text>
+  <text x="88" y="382" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800" fill="#171717">3 RGB cameras · LeRobot v3.0</text>
+  <rect x="88" y="430" width="112" height="34" rx="7" fill="#f7f3eb" stroke="#dad4ca"/>
+  <text x="104" y="452" font-family="Consolas, monospace" font-size="15" fill="#374151">rgb</text>
+  <rect x="214" y="430" width="156" height="34" rx="7" fill="#f7f3eb" stroke="#dad4ca"/>
+  <text x="230" y="452" font-family="Consolas, monospace" font-size="15" fill="#374151">proprioception</text>
+  <rect x="384" y="430" width="116" height="34" rx="7" fill="#f7f3eb" stroke="#dad4ca"/>
+  <text x="400" y="452" font-family="Consolas, monospace" font-size="15" fill="#374151">lerobot</text>
+</svg>

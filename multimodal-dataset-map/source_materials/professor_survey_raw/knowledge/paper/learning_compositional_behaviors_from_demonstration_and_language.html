@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Learning Compositional Behaviors from Demonstration and Language (BLADE)</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Weiyu Liu, Neil Nie, Ruohan Zhang, Jiayuan Mao, Jiajun Wu">
+<meta name="year" content="2024">
+<meta name="venue" content="CoRL 2024">
+<meta name="arxiv_id" content="2505.21981">
+<meta name="url" content="https://arxiv.org/abs/2505.21981">
+<meta name="pdf" content="../../raw/papers/learning_compositional_behaviors_from_demonstration_and_language.pdf">
+<meta name="project_page" content="https://blade-bot.github.io/">
+<meta name="tags" content="long-horizon-manipulation, planning-abstractions, learning-from-language, imitation-learning, llm-planning, pddl, diffusion-policy, robot-learning, predicate-learning, neuro-symbolic">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-05-27">
+<meta name="source_prompt" content="user title request">
+<meta name="authored_by_weiyu" content="true">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Learning Compositional Behaviors from Demonstration and Language</h1>
+<p class="meta">
+  Weiyu Liu*, Neil Nie*, Ruohan Zhang, Jiayuan Mao&dagger;, Jiajun Wu&dagger;
+  &middot; Stanford / MIT
+  &middot; CoRL 2024
+  &middot; <a href="https://arxiv.org/abs/2505.21981">arXiv:2505.21981</a>
+  &middot; <a href="../../raw/papers/learning_compositional_behaviors_from_demonstration_and_language.pdf">PDF</a>
+  &middot; <a href="https://blade-bot.github.io/">project page</a>
+</p>
+
+<div class="own-paper">
+  <strong>Note:</strong> This is Weiyu's own paper (first author, equal contribution
+  with Neil Nie). The summary is faithful to what the paper claims; "Why I care"
+  is framed as anchoring future work rather than learning from external work.
+</div>
+
+<p><strong>One-liner.</strong> BLADE automatically recovers PDDL-style behavior
+abstractions (preconditions, effects, a contact-primitive <em>body</em>) from
+language-annotated demos by querying an LLM, learns visual classifiers for the
+predicates and diffusion-policy controllers for the bodies, then composes them
+via bi-level planning at test time &mdash; generalizing to novel initial states,
+perturbations, geometric constraints, and partial observability without any
+manually labeled symbolic state.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Long-horizon manipulation needs composition: chain short-horizon learned
+behaviors via planning in an abstract action space. The hard part is
+<em>automatically</em> acquiring those abstractions &mdash; preconditions and
+effects grounded in raw perception and low-level control &mdash; without manual
+state labels or hand-written symbolic definitions. Prior work either
+hand-defines transition models, learns flat dynamics that don't generalize
+long-horizon, or limits hierarchical policies to following sequentially
+specified subgoals. Symbolic-grounding approaches like
+<a href="../../raw/papers/migimatsu_bohg.pdf">Migimatsu &amp; Bohg</a> (cited
+as [66]; not yet ingested) require labeled symbolic states, and prior
+LLM-for-planning work (SayCan, Text2Motion) assumes state abstractions are
+already given.</p>
+
+<h2>Method</h2>
+<p>Three stages, shown in Fig 2 of the paper:</p>
+
+<p><strong>1. Behavior description learning.</strong> Each demo trajectory is
+segmented by contact primitives using proprioception (gripper open/close
+state) and object segmentation. The 7 primitives are:
+<code>open-gripper</code>, <code>close-gripper</code>, <code>move-to(x)</code>,
+<code>grasp(x,y)</code>, <code>place(x,y)</code>, <code>move(x)</code>,
+<code>push(x)</code>. The LLM is then prompted with: (i) environment
+description, (ii) the segment's language annotation plus those of preceding
+and following segments, (iii) all contact-primitive sequences associated with
+the language label across the dataset, (iv) PDDL syntax instructions and one
+example. The LLM proposes a PDDL operator extended with a <code>body</code>
+field (the contact-primitive sequence). Operators are refined by
+<em>abstract verification</em>: simulating accumulated effects of prior
+segments and checking each operator's preconditions hold &mdash; resample if
+not. This is done at the behavior level (for bad pre/eff) and the
+contact-primitive level (e.g., grasp can't be immediately followed by another
+grasp).</p>
+
+<p><strong>2. Classifier and policy learning.</strong> Once operators are
+fixed, BLADE auto-labels every observation in the dataset. Before behavior
+<em>a</em> starts at step <em>o<sub>t</sub></em>: predicates in
+<em>pre<sub>a</sub></em> are true and those in <em>eff<sub>a</sub></em> are
+false; after <em>a</em> finishes at <em>o<sub>t'</sub></em>:
+<em>eff<sub>a</sub></em> labels are true and propagated forward until
+explicitly altered by another behavior. <strong>Key contrast with Migimatsu
+&amp; Bohg [66]: they use only the first and last frame of each segment;
+BLADE uses every frame</strong>, vastly increasing classifier training
+diversity. Predicates are learned as neural-net classifiers
+<em>f<sub>&theta;</sub>(p): O &rarr; {T, F}</em>. In the real world, an
+open-vocabulary object detector ([68]) crops the input to the relevant
+object before the classifier (e.g., only faucet pixels feed
+<code>turned-on(faucet)</code>). For each behavior, a diffusion policy [1] is
+trained as the low-level controller.</p>
+
+<p><strong>3. Bi-level planning and execution.</strong> At test time the LLM
+translates the natural-language goal into a first-order logic formula over
+the learned predicates. The fast-forward heuristic [69] (planner-agnostic in
+principle) plans a behavior sequence in symbolic space. Execute the first
+behavior's diffusion policy, <em>replan after each completion</em> &mdash;
+which is how perturbation recovery, partial observability, and execution
+noise are handled. Geometric/visibility constraints are encoded as
+preconditions (e.g., opening a cabinet door requires the door visible and
+nothing blocking it); when violated, the planner generates moves to satisfy
+them automatically. Partial observability uses a most-likely-state
+assumption.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> CALVIN benchmark (split D,
+    ~6 hours of teleop play data, 34 behavior types) with 6 newly-designed
+    generalization tasks across three categories &mdash; Abstract Goal,
+    Geometric Constraint, Partial Observability &mdash; each requiring
+    3&ndash;7 chained behaviors. 20 initial states &times; 3 seeds per task.</li>
+  <li><strong>Hardware / simulator:</strong> CALVIN simulator + Franka Emika
+    7-DoF arm with parallel jaw gripper. Five RealSense RGB-D cameras (1
+    wrist-mounted, 4 workspace). Real-world domains: <em>Make Tea</em> and
+    <em>Boil Water</em>, 85 teleoperated demos each via 3D mouse.</li>
+  <li><strong>Baselines:</strong> HULC [72] (hierarchical policy from
+    language-annotated play, CALVIN-native); SayCan [6] (short-horizon
+    LLM feasibility); Robot-VILA [57] (VLM action prediction);
+    Text2Motion / T2M-Shooting [51] (learned long-horizon feasibility model;
+    tested with both GT and learned state classifiers).</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline numbers from CALVIN (Table 1, mean &plusmn; std success rate over
+3 seeds &times; 20 initial states):</p>
+
+<table>
+  <tr><th>Method</th><th>State Classifier</th><th>Abstract Goal</th><th>Geometric Constraint</th><th>Partial Observability</th></tr>
+  <tr><td>HULC [72]</td><td>N/A</td><td>2.78 &plusmn; 3.47</td><td>11.67 &plusmn; 11.55</td><td>0.00 &plusmn; 0.00</td></tr>
+  <tr><td>SayCan [6]</td><td>N/A</td><td>23.89 &plusmn; 1.92</td><td>1.67 &plusmn; 2.89</td><td>1.67 &plusmn; 2.89</td></tr>
+  <tr><td>VILA [57]</td><td>N/A</td><td>18.33 &plusmn; 2.48</td><td>0.00 &plusmn; 0.00</td><td>4.17 &plusmn; 5.20</td></tr>
+  <tr><td>T2M-Shooting [51]</td><td>Learned</td><td>57.78 &plusmn; 12.29</td><td>0.00 &plusmn; 0.00</td><td>13.33 &plusmn; 1.44</td></tr>
+  <tr><td><strong>BLADE (ours)</strong></td><td>Learned</td><td><strong>68.33 &plusmn; 10.14</strong></td><td><strong>26.67 &plusmn; 7.64</strong></td><td><strong>75.83 &plusmn; 3.82</strong></td></tr>
+  <tr><td>T2M-Shooting</td><td>GT</td><td>61.67 &plusmn; 5.00</td><td>0.00 &plusmn; 0.00</td><td>0.83 &plusmn; 1.44</td></tr>
+  <tr><td><strong>BLADE (ours)</strong></td><td>GT</td><td><strong>76.11 &plusmn; 6.74</strong></td><td><strong>56.67 &plusmn; 16.07</strong></td><td><strong>70.00 &plusmn; 5.00</strong></td></tr>
+</table>
+
+<p>Key wins:</p>
+<ul>
+  <li>+65% over HULC on Abstract Goal (despite same play-data input) &mdash;
+    HULC's hindsight-relabeling can't chain multi-behavior plans (e.g., 7
+    behaviors to place all blocks in a closed drawer).</li>
+  <li>+49% over Robot-VILA on Abstract Goal &mdash; VILA frequently predicts
+    infeasible first actions (e.g., always tries to open drawer first).</li>
+  <li>Only method that handles Geometric Constraint and Partial Observability
+    in a non-trivial way, because constraints are encoded as preconditions
+    the planner can resolve.</li>
+  <li>Ablation (Table 2): the every-frame predicate labeling beats
+    Migimatsu &amp; Bohg's first/last-frame approach by +20.7% F1 overall,
+    +16.3% on object states, +38.6% on spatial relations &mdash; which
+    translates directly into the planning success gap.</li>
+</ul>
+
+<p><strong>Real world (Fig 5):</strong> BLADE completes &ge;4/6 tasks for all
+four generalization types (unseen initial conditions, state perturbation,
+geometric constraints, partial observability) in both Make Tea and Boil
+Water. Robot-VILA fails most generalization tasks &mdash; e.g., places a
+teabag without locating the cup-in-cabinet, or loops on
+<code>grab-kettle</code> when the kettle is occluded.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Segmentation depends on gripper state &mdash; caging grasps and
+    contact-rich tasks would need richer contact detection.</li>
+  <li>Predicate <em>names</em> are assumed given in natural language; BLADE
+    learns dependencies <em>between</em> actions but not predicate invention.
+    VLM-driven predicate invention is flagged as future work.</li>
+  <li>Noisy state classification causes planning failures &mdash; need
+    planners robust to estimation noise.</li>
+  <li>Diffusion policies generalize only over local pose variation; novel
+    compositions still bottleneck on policy generalization.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>Scalability of LLM operator proposal is untested past 34 behavior
+    types &mdash; how does prompt size and consistency degrade at, say, 200?</li>
+  <li>What happens when two LLM-proposed operators have mutually
+    inconsistent preconditions? Abstract verification catches per-trajectory
+    inconsistency, but cross-operator conflicts aren't explicitly addressed.</li>
+  <li>Continuous parameters (pour amount, grasp pose, force) sit entirely
+    inside the diffusion policy &mdash; the abstraction layer is purely
+    categorical, which may be a limitation for force-modulated tasks.</li>
+  <li>Real-world results are reported as count-of-success out of 6, not
+    success rate with seeds &mdash; smaller statistical claim than the
+    simulation table.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is the anchor paper for the line of work I want to keep pushing:
+<strong>auto-generated structured abstractions over imitation-learned
+skills</strong>. Several directions worth tracking forward from this:</p>
+<ul>
+  <li><strong>Predicate invention</strong> &mdash; the most-cited limitation
+    by the authors. Worth a topic page once 2&ndash;3 papers are ingested
+    (Konidaris et al. [32], Silver et al. [33], Han et al. [36] are obvious
+    candidates).</li>
+  <li><strong>Operator scaling</strong> &mdash; revisit when papers on
+    LLM-PDDL grounding at larger action libraries appear.</li>
+  <li><strong>Force/continuous parameters</strong> &mdash; potential new
+    contribution area, marrying the symbolic body with continuous
+    constraint specs.</li>
+  <li><strong>Connections to VLA models</strong> &mdash; the
+    "structure-as-prior vs scale-everything" debate; BLADE is a clean
+    counterpoint to RT-2-style end-to-end policies. A topic page comparing
+    the two paradigms would situate future work.</li>
+</ul>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  BLADE leverages language-annotated demonstrations, extracts abstract
+  action knowledge from large language models (LLMs), and constructs a
+  library of structured, high-level action representations.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  BLADE can recover such structured representations automatically, without
+  manually labeled states or symbolic definitions.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  In contrast to earlier methods, such as Migimatsu and Bohg [66] and Mao
+  et al. [67], which directly use the first and last state of state-action
+  segments to train predicate classifiers, our method greatly increases the
+  diversity of training data.
+  <span class="quote-cite">&mdash; &sect;4.2, Automatic predicate annotation</span>
+</blockquote>
+
+<blockquote>
+  We re-run the planner after the low-level policy finishes &mdash; this
+  enables us to handle various types of uncertainties and perturbations,
+  including execution noise, partial observability, and human perturbation.
+  <span class="quote-cite">&mdash; &sect;4.3, Bi-Level Planning and Execution</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[1] Chi et al. 2023 &mdash; Diffusion Policy</strong> (RSS) &mdash;
+    the low-level controller. Foundational dependency.</li>
+  <li><strong>[6] Brohan et al. 2023 &mdash; Do as I can, not as I say (SayCan)</strong> (CoRL) &mdash;
+    baseline; canonical LLM-for-planning paper.</li>
+  <li><strong>[51] Lin et al. 2023 &mdash; Text2Motion</strong> &mdash; baseline;
+    closest competitor in spirit.</li>
+  <li><strong>[66] Migimatsu &amp; Bohg</strong> &mdash; closest prior on
+    predicate learning from segmented trajectories; the direct ablation
+    target.</li>
+  <li><strong>[67] Mao et al.</strong> &mdash; related symbolic action
+    representation work.</li>
+  <li><strong>[32] Konidaris et al. 2018 &mdash; From Skills to Symbols</strong> (JAIR) &mdash;
+    classical predicate-from-skills reference.</li>
+  <li><strong>[33] Silver et al. 2023 &mdash; Predicate Invention for Bilevel Planning</strong> (AAAI).</li>
+  <li><strong>[71] Mees et al. &mdash; CALVIN benchmark</strong> &mdash; defines
+    the simulation evaluation environment.</li>
+  <li><strong>[72] Mees et al. &mdash; HULC</strong> &mdash; the CALVIN-native baseline.</li>
+</ul>
+
+<p>Newly ingested in the 2026-05-27 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="exopredicator_learning_abstract_models_of_dynamic_worlds.html">ExoPredicator</a>
+    &mdash; same family of work (LLM-proposed symbolic abstractions, variational
+    Bayes); extends to <em>exogenous</em> processes that BLADE's purely
+    endogenous PDDL operators can't model.</li>
+  <li><a href="learning_adaptive_planning_representations_with_natural_language_guidance.html">Ada</a>
+    &mdash; another LLM-driven planning-abstraction paper; adapts the operator
+    library to the task distribution from language. Closest peer in framing.</li>
+  <li><a href="skill_induction_and_planning_with_latent_language.html">Skill Induction and Planning with Latent Language (SL)<sup>3</sup></a>
+    &mdash; segments demos by latent language; complementary to BLADE's
+    contact-primitive segmentation.</li>
+  <li><a href="language_guided_skill_learning_with_temporal_variational_inference.html">LAST</a>
+    &mdash; language-guided temporal-VI skill segmentation; methodologically
+    closer to SL<sup>3</sup> but with a probabilistic-segmentation lens.</li>
+  <li><a href="llm_guided_probabilistic_program_induction_for_pomdp_model_estimation.html">LLM-guided POMDP induction</a>
+    &mdash; LLM proposes a probabilistic world model from limited interaction;
+    points toward predicate-invention as program induction (a BLADE-flagged future direction).</li>
+  <li><a href="seeing_is_believing_belief_space_planning_with_foundation_models.html">Seeing is Believing</a>
+    &mdash; uses VLMs as uncertainty estimators in belief-space TAMP; relevant
+    to BLADE's most-likely-state assumption for partial observability.</li>
+  <li><a href="planning_with_reasoning_using_vision_language_world_model.html">VLWM</a>
+    and <a href="semantic_world_models.html">Semantic World Models</a>
+    &mdash; world-model alternatives that sit on the
+    "structure-vs-scale" debate flagged in Why I care.</li>
+  <li><a href="making_vlms_more_robot_friendly.html">Making VLMs More Robot-Friendly</a>
+    &mdash; self-critical distillation of procedural reasoning into VLMs;
+    relevant to scaling BLADE's LLM operator proposal.</li>
+</ul>
+<!-- TODO: revisit if predicate-invention papers (Konidaris [32], Silver [33], Han [36]) get ingested -->
+
+<p>Newly ingested in the 2026-05-28 targeted-search batch &mdash; directly
+relevant to this work (the Konidaris/Silver/Han TODO above is now fulfilled):</p>
+<ul>
+  <li><a href="learning_planning_abstractions_from_language.html"><strong>PARL</strong> (Liu, Chen, Hsu, Mao, Wu 2024)</a>
+    &mdash; <em>Weiyu's own ICLR 2024 paper, the precursor to BLADE.</em>
+    Joint induction of symbolic action space + latent state abstraction from
+    language demos. BLADE's "Why I care" anchor.</li>
+  <li><a href="from_skills_to_symbols.html">From Skills to Symbols (Konidaris et al. JAIR 2018)</a>
+    &mdash; The foundational predicate-from-options paper. Theoretical bedrock
+    BLADE's "Why I care" flagged as a key reference.</li>
+  <li><a href="predicate_invention_for_bilevel_planning.html">Predicate Invention for Bilevel Planning (Silver et al. AAAI 2023)</a>
+    &mdash; The Silver/MIT direct predecessor to predicate-learning-from-demos.
+    Surrogate-objective optimization &mdash; alternative to BLADE's LLM-proposal.</li>
+  <li><a href="learning_neuro_symbolic_relational_transition_models_for_bilevel_planning.html">NSRT (Chitnis et al. IROS 2022)</a>
+    &mdash; The bilevel-planning algorithm BLADE adapts. Direct architectural ancestor.</li>
+  <li><a href="grounding_predicates_through_actions.html">Migimatsu &amp; Bohg ICRA 2022</a>
+    &mdash; The direct ablation target BLADE compares against (every-frame vs first/last).</li>
+  <li><a href="interpret_interactive_predicate_learning_from_language_feedback.html">InterPreT (Han et al. RSS 2024)</a>
+    &mdash; The Han et al. work BLADE's "Why I care" flagged.
+    LLM-driven predicate learning from interactive language feedback.</li>
+  <li><a href="unifying_deep_predicate_invention_with_pretrained_foundation_models.html">UniPred (Wang et al. 2025)</a>
+    &mdash; Frontier: unifies top-down LLM-proposal and bottom-up demo-grounded
+    predicate invention. The recipe BLADE could become.</li>
+  <li><a href="visualpredicator_learning_abstract_world_models_with_neuro_symbolic_predicates.html">VisualPredicator (Liang et al. 2024)</a>
+    and <a href="from_pixels_to_predicates_learning_symbolic_world_models_via_vlms.html">From Pixels to Predicates (Athalye et al. RA-L 2026)</a>
+    &mdash; The frontier predicate-from-pixels / VLM-grounded line.</li>
+  <li><a href="neuro_symbolic_imitation_learning_discovering_symbolic_abstractions_for_skill_learning.html">Keller et al. ICRA 2025</a>
+    and <a href="few_shot_neuro_symbolic_imitation_learning_for_long_horizon_planning.html">Lorang et al. CoRL 2025</a>
+    &mdash; Two recent BLADE-recipe papers without an LLM (ASP solver / classical).
+    Direct comparison candidates.</li>
+  <li><a href="climb_language_guided_continual_learning_for_task_planning.html">CLIMB (Byrnes et al. ICRA 2025)</a>
+    &mdash; Continual extension of LLM-PDDL; complements BLADE's batch-learning design.</li>
+  <li><a href="learning_symbolic_operators_for_task_and_motion_planning.html">Learning Symbolic Operators for TAMP (Silver et al. IROS 2021)</a>
+    and <a href="learning_efficient_abstract_planning_models_that_choose_what_to_predict.html">Choose What to Predict (Kumar et al. CoRL 2023)</a>
+    &mdash; The Silver-Kumar-Chitnis operator-learning line BLADE builds against.</li>
+  <li><a href="pdsketch_integrated_planning_domain_programming_and_learning.html">PDSketch (Mao et al. NeurIPS 2022)</a>
+    &mdash; Mao co-author. The object-centric symbolic DSL that conceptually grounds BLADE/PARL/Ada.</li>
+  <li><a href="nscl_neuro_symbolic_concept_learner.html">NS-CL (Mao et al. ICLR 2019)</a>
+    and <a href="neuro_symbolic_concepts_mao_2025.html">Neuro-Symbolic Concepts (Mao 2025)</a>
+    &mdash; Mao's concept-centric philosophical line that frames BLADE's research thesis.</li>
+  <li><a href="discovering_state_and_action_abstractions_for_generalized_tamp.html">Curtis et al. AAAI 2022</a>
+    &mdash; The Curtis line predecessor to TAMPURA / Online Belief Replanning;
+    same joint state+action abstraction story as BLADE.</li>
+  <li><a href="poe_world_compositional_world_modeling_with_products_of_programmatic_experts.html">PoE-World (Piriyakulkij et al. NeurIPS 2025 Spotlight)</a>
+    &mdash; Yichao Liang + Hao Tang + Kevin Ellis sibling line: world models as
+    products of programmatic experts. The "many programs, many predicates" alternative.</li>
+</ul>
+
+<p>Newly ingested in the 2026-05-30 "what is semantic" batch &mdash; conceptual
+context for BLADE's predicate-<em>grounding</em> thesis (what it means for a learned
+symbol to be "semantic" / grounded in perception and action). Off-method but
+foundationally relevant:</p>
+<ul>
+  <li><a href="semantic_based_methods_for_understanding_human_movements_survey.html">Semantic-based methods for understanding human movements (Ramirez-Amaro, Yang, Cheng, RAS 2019)</a>
+    &mdash; survey of semantic action representations learned from human
+    demonstration; closest of the batch to BLADE's learning-from-demonstration +
+    symbolic-action-abstraction pipeline.</li>
+  <li><a href="learning_perceptually_grounded_word_meanings.html">Learning Perceptually Grounded Word Meanings (Tellex et al., talk)</a>
+    and <a href="zettlemoyer_learning_grounded_semantic_parsers_talk.html">Learning Grounded Semantic Parsers (Zettlemoyer, talk)</a>
+    &mdash; grounded-language precursors to BLADE's LLM step that translates a
+    natural-language goal into a first-order-logic formula over learned predicates.</li>
+  <li><a href="the_brains_concepts_sensory_motor_system.html">The Brain's Concepts (Gallese &amp; Lakoff 2005)</a>,
+    <a href="motor_cognition_motor_semantics_action_perception_theory.html">Motor cognition&ndash;motor semantics (Pulvermüller et al. 2014)</a>, and
+    <a href="brain_mechanisms_linking_language_and_action.html">Brain mechanisms linking language and action (Pulvermüller 2005)</a>
+    &mdash; the embodied-cognition argument that concepts/meaning are grounded in
+    sensorimotor representations; the cognitive-science backdrop for grounding
+    predicates in perception-action rather than in symbols alone.</li>
+</ul>
+<!-- These are an off-theme cross-disciplinary cluster ("what is semantic"); linked here as conceptual grounding context, not as method comparisons. -->
+
+<p>Newly ingested in the 2026-06-18 video-/world-models-for-robotics batch &mdash;
+adjacent (the video-model-as-forward-model angle), useful as planning-layer foils:</p>
+<ul>
+  <li><a href="video_language_planning.html">Video Language Planning (VLP)</a> &mdash; tree-search planning over a generated-video dynamics model; the closest analogue in this batch to BLADE's bi-level planning, but over pixels rather than symbolic predicates.</li>
+  <li><a href="inference_time_enhancement_generative_robot_policies_gpc.html">GPC</a> &amp; <a href="flip_flow_centric_generative_planning.html">FLIP</a> &mdash; inference-time planning that wraps a learned world model around a policy (look-ahead / flow+value search); a learned-forward-model counterpart to symbolic precondition/effect reasoning.</li>
+  <li><a href="robodreamer_compositional_world_models_robot_imagination.html">RoboDreamer</a> &mdash; <em>compositional</em> language-factored video world model; the compositionality thesis nearest to BLADE's compositional behaviors, in a generative-video setting.</li>
+  <li><a href="dreamdojo_generalist_robot_world_model.html">DreamDojo</a> &amp; <a href="v_jepa_2_self_supervised_video_models.html">V-JEPA 2</a> &mdash; generalist/latent world models supporting planning; the "scale/implicit-physics" pole of the structure-vs-scale debate BLADE sits on the other side of.</li>
+  <li><a href="dva_causal_video_models_data_efficient_robot_policy_learners.html">DVA</a> &amp; <a href="mimic_video_video_action_models_generalizable_robot_control.html">mimic-video</a> &mdash; the real-time video-as-policy frontier; the maximal implicit-control foil to BLADE's explicit abstractions.</li>
+</ul>
+
+<p>Newly ingested 2026-06-18 (direct user Ingest) &mdash; low-level-control layer:</p>
+<ul>
+  <li><a href="ambient_diffusion_policy_imitation_learning_from_suboptimal_data.html">Ambient Diffusion Policy</a> &mdash; Wei, Daskalakis, Daras, Tedrake (MIT) &mdash; trains diffusion-policy controllers (like BLADE's) from cheap <em>suboptimal/cross-task</em> data via noise-dependent data usage; its "locality" result (harvest motion primitives from wrong-task data) is a direct recipe for expanding BLADE's contact-primitive controller data, and its global-to-local noise hierarchy echoes BLADE's plan/controller split.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 language-+-multimodal-sensing batch &mdash;
+directly relevant: these extend BLADE's two learned components &mdash; <em>visual</em>
+predicate classifiers and <em>vision</em>-conditioned contact-primitive controllers &mdash;
+to the non-visual modalities where many manipulation predicates actually live
+(<code>is_grasped</code>, <code>is_inserted</code>, <code>is_full</code>,
+<code>surface_is_rough</code>, <code>is_screwed_tight</code>):</p>
+<ul>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">FuSe</a> &mdash; uses natural <em>language</em> to fuse touch + audio + vision into generalist policies; the closest existing answer to "what if BLADE's predicates and policies could read touch/sound, bound by language?"</li>
+  <li><a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a> &amp; <a href="touch_vision_language_dataset_multimodal_alignment.html">TVL</a> &mdash; learn language-aligned representations of <em>tactile</em> signals; the touch analogue of BLADE's visual predicate classifiers (a route to tactile preconditions/effects like <code>surface_is_rough</code>).</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>, <a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a> &amp; <a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a> &mdash; language-conditioned policies that close the loop on tactile/force; the multisensory counterpart to BLADE's contact-primitive controllers.</li>
+  <li><a href="hybrid_position_force_control_manipulators.html">Hybrid Position/Force Control</a> (Raibert &amp; Craig 1981) &mdash; the root formalism for force-controlled directions that BLADE's contact primitives ultimately bottom out in.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models</a> &amp; <a href="bridging_language_and_action_survey.html">Bridging Language and Action</a> &mdash; surveys framing exactly this space (force/contact in foundation models; how language enters manipulation), useful scaffolding for a BLADE-relative related-work section.</li>
+</ul>
+
+</body>
+</html>

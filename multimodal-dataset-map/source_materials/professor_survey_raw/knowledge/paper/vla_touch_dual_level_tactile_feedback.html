@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VLA-Touch: Enhancing Vision-Language-Action Models with Dual-Level Tactile Feedback</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Bi, Ma, Hao, Shou, Soh">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2507.17294">
+<meta name="url" content="https://arxiv.org/abs/2507.17294">
+<meta name="pdf" content="../../raw/papers/vla_touch_dual_level_tactile_feedback.pdf">
+<meta name="tags" content="vision-language-action, vla, tactile-sensing, contact-rich, foundation-models, tactile-language-model, diffusion-policy, vision-based-tactile, gelsight, multisensory">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>VLA-Touch: Enhancing Vision-Language-Action Models with Dual-Level Tactile Feedback</h1>
+<p class="meta">
+  Jianxin Bi*, Kevin Yuchen Ma, Ce Hao, Mike Zheng Shou, Harold Soh*
+  &middot; NUS (Dept. of Computer Science / Smart Systems Institute)
+  &middot; 2025
+  &middot; <a href="https://arxiv.org/abs/2507.17294">arXiv:2507.17294</a>
+  &middot; <a href="../../raw/papers/vla_touch_dual_level_tactile_feedback.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> VLA-Touch bolts tactile sensing onto a frozen VLA
+(RDT-1B) at two levels without any VLA fine-tuning: a pretrained tactile-language
+model (Octopi) turns GelSight signals into words for a GPT-4o planner, and a
+BRIDGeR interpolant diffusion controller refines the VLA's action chunk using
+low-dimensional tactile force signals &mdash; getting touch into both the planning
+and control loops of a generalist policy that was never trained on touch.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>State-of-the-art VLA models are trained almost entirely on vision, language,
+and action data, with no intrinsic mechanism to process tactile signals. This
+limits them on contact-rich tasks where object properties (hardness, surface
+roughness, whether a sealed cup is full) and contact dynamics (friction,
+contact events) are <em>visually ambiguous</em> &mdash; they live in touch, not
+pixels. The naive fix &mdash; fine-tune the VLA on tactile data &mdash; is blocked
+by the absence of large multi-modal (vision + language + action + touch)
+datasets. The authors ask: how can an agent acquire and plan with tactile
+information when most pretrained models have never seen touch, and how do you
+inject touch into a VLA whose backbone has no tactile input modality? Their
+answer is a deliberately <em>modular, loosely-coupled</em> scaffold that probes
+the utility of touch in both planning and control without touching the base VLA.</p>
+
+<h2>Method</h2>
+<p>A dual-level framework (Fig 1), explicitly analogized to the human neural
+system: a VLM task planner (prefrontal cortex), a tactile-language model
+(secondary somatosensory cortex), and a tactile-augmented controller (posterior
+parietal cortex). Base VLA is Robot Diffusion Transformer (RDT-1B); the method
+is claimed to generalize across VLA architectures.</p>
+
+<p><strong>1. Tactile-assisted task planning (high level).</strong> A
+language-conditioned VLM planner (<code>GPT-4o</code>) is given task goal
+<code>g</code>, scene image, and a system prompt declaring the robot's
+capabilities (one arm + gripper + a tactile sensor that can classify hardness,
+roughness, surface patterns), a one-sentence-per-step response format, and an
+interaction protocol promising feedback after each action. It emits one
+elemental manipulation instruction <code>I_k</code> at a time. When an
+instruction completes (or max steps exceeded), tactile signals
+<code>o^m_{t-n:t}</code> from the GelSight are converted by <strong>Octopi</strong>
+[35] &mdash; a pretrained tactile-language model for GelSight, processing a
+6-frame tactile sequence &mdash; into a linguistic description <code>L^m_t</code>
+of contacted-object properties (roughness, hardness). That text is fed back to
+GPT-4o to generate the next instruction. This interleaved plan/execute loop
+(Algorithm 1) repeats until the goal is met. For <em>force</em> specifically
+(Octopi is not pretrained for force), a marker-tracking algorithm produces
+estimated force vectors plus baseline reference values handed to GPT-4o as
+calibration points.</p>
+
+<p><strong>2. Tactile policy refinement (low level).</strong> Because RDT does
+not natively ingest tactile signals, VLA-Touch wraps an
+<strong>interpolant-based diffusion controller (BRIDGeR [44])</strong> around the
+VLA's output. Unlike standard diffusion that denoises from Gaussian noise,
+BRIDGeR uses a stochastic interpolant to diffuse <em>from an informative source
+distribution</em> &mdash; here the VLA-generated action chunk &mdash; toward the
+expert distribution, which gives strong refinement in few steps. The controller
+<code>&pi;_I(&acirc;_{t:t+T_i} | a_{t:t+T_i}, s_t, m_t)</code> conditions on the
+source action chunk, current state <code>s_t</code> (RGB + proprioception), and a
+tactile signal <code>m_t</code>. The tactile force <code>m_t = (X, Y, M)</code>
+is computed from a 7&times;9 GelSight marker array: per-marker displacement
+&rarr; per-marker force vectors &rarr; <em>aggregated</em> into a summed force
+vector + magnitude (following [9]'s aggregation, for noise reduction and
+compactness). RGB is embedded with a frozen DinoV2. The controller is trained by
+supervised MSE (Eq. 3) on paired (VLA-generated source action, expert action)
+data: states sampled from expert demos, source actions generated by the VLA. At
+inference a sliding window refines non-overlapping segments sequentially &mdash;
+the first 48 steps of each 64-step VLA chunk are refined and executed, then the
+VLA regenerates from the endpoint. Refined actions execute at &le;8 Hz via a
+Cartesian PD controller (impedance controller for the Mango Peeling task).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> No public benchmark. Three
+    self-collected real-world contact-rich tasks &mdash; <em>Cup</em> (pick a
+    lidded cup, sense via touch whether it holds water, place at the matching
+    location without spilling), <em>Wipe</em> (touch-select the smoother of two
+    sponges, then wipe ink off a plate), <em>Peel</em> (touch-identify the
+    softer/harder of two mangoes, peel the selected one). Interpolant-controller
+    training data collected via kinesthetic teaching: Cup 100 episodes (~8 min),
+    Wipe 120 episodes (~15 min), Peel 180 episodes (~30 min); sensor streams
+    (2 cameras, GelSight, proprioception) logged at 10 Hz; each episode labeled
+    with a linguistic instruction.</li>
+  <li><strong>Hardware / simulator:</strong> Real-world only. Franka Emika Panda
+    + Robotiq 2F-140 gripper. One GelSight Mini tactile sensor on one finger.
+    Two RealSense cameras (fixed overhead scene cam + wrist-mounted). Base VLA:
+    RDT-1B. Tactile-language model: Octopi. Planner: GPT-4o.</li>
+  <li><strong>Baselines:</strong> Planning &mdash; GPT-4o (scene image only, no
+    tactile), GPT-4o + raw tactile images, GPT-4o + Octopi (ours). Control
+    &mdash; vanilla RDT, RDT + RNN/LSTM residual controller, RDT + Interpolant
+    controller (ours). System ablations &mdash; w/o Planning (GPT-4o plan only),
+    w/o Control (RDT manipulation only), plus interpolant-controller modality
+    ablations w/o Touch and w/o Vision.</li>
+  <li><strong>Compute:</strong> Single RTX 4090 (inference workstation, and
+    fine-tuning). RDT first fine-tuned on unrelated Franka data (100k steps,
+    ~80 hrs) to align action spaces, then per-task fine-tuned (~20k steps,
+    ~16 hrs each) <em>without</em> tactile modality before the interpolant
+    controller is added.</li>
+</ul>
+
+<h2>Results</h2>
+<p>All numbers are real-world, reported as count-of-success out of 20 trials.
+Headline claims: linguistic tactile feedback improves planning efficiency by
+up to 40%; the tactile-incorporated controller achieves up to 35% higher
+manipulation success vs vision-only VLA baselines; the full dual-level system
+gives up to 35% higher task success than tactile-in-planning-only or
+tactile-in-control-only.</p>
+
+<p><strong>Planning (Fig 3C, 20 trials, success rate).</strong> Vision-only
+GPT-4o is non-committal and near random on tactile properties. Raw tactile
+images let GPT-4o nail roughness (100%) but it struggles with force (50%) and
+hardness (60%). Octopi linguistic feedback: <strong>force 90%, roughness 100%,
+hardness 75%</strong> &mdash; structured language beats raw tactile images for
+the off-the-shelf VLM on force and hardness, though raw images edge it on
+hardness in their own appendix study.</p>
+
+<p><strong>Manipulation (Table 1, /20).</strong> Interpolant controller wins
+across all three tasks vs base RDT and the residual controller:</p>
+
+<table>
+  <tr><th>Task</th><th>Metric</th><th>RDT</th><th>Residual</th><th>Interpolant (ours)</th><th>w/o Touch</th><th>w/o Vision</th></tr>
+  <tr><td rowspan="2">Cup</td><td>Pick</td><td>9</td><td>7</td><td><strong>12</strong></td><td>10</td><td>10</td></tr>
+  <tr><td>Place</td><td>7</td><td>6</td><td><strong>10</strong></td><td>5</td><td>7</td></tr>
+  <tr><td rowspan="3">Wipe</td><td>Pick</td><td>11</td><td>15</td><td><strong>17</strong></td><td>15</td><td>15</td></tr>
+  <tr><td>Wipe Partial</td><td>8</td><td>13</td><td>16</td><td>12</td><td>10</td></tr>
+  <tr><td>Wipe</td><td>5</td><td>6</td><td><strong>12</strong></td><td>7</td><td>8</td></tr>
+  <tr><td rowspan="3">Peel</td><td>Pick</td><td>13</td><td>14</td><td><strong>18</strong></td><td>16</td><td>13</td></tr>
+  <tr><td>Peel Partial</td><td>8</td><td>12</td><td>13</td><td>12</td><td>8</td></tr>
+  <tr><td>Peel</td><td>6</td><td>7</td><td><strong>10</strong></td><td>5</td><td>5</td></tr>
+</table>
+
+<p>Interpolant lifts base RDT full-task success by 42% (Cup), 140% (Wipe), 67%
+(Peel); it also beats the residual controller by 67% / 100% / 42%. The authors
+attribute this to the interpolant better capturing the <em>multi-modal</em>
+nature of demonstration data (residual controller produces averaged policies
+that terminate early / sit posterior to targets). Notably the residual
+controller sometimes <em>loses</em> to vanilla RDT on Cup picking (7 vs 9).</p>
+
+<p><strong>Dual-level ablation (Table 2, /20).</strong> Removing tactile from
+planning drops success by 44% (Cup), 58% (Wipe), 14% (Peel); removing it from
+control drops 33% (Cup), 58% (Wipe), 43% (Peel). Full VLA-Touch: Cup 9, Wipe 12,
+Peel 7. Both levels are needed.</p>
+
+<p><strong>Interpolant modality ablation (Table 1, last two cols).</strong>
+Removing touch hurts contact-rich phases hardest (Cup placement &minus;50%, wiping
+&minus;42%, peeling &minus;50%); removing vision hurts spatial positioning more
+mildly (Cup placement &minus;30%, complete wiping 12&rarr;8, complete peeling
+10&rarr;5) &mdash; touch and vision are complementary.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Gripper control setup differs from Octopi's pretraining dataset, creating
+    contact-measurement discrepancies that compromise tactile interpretation
+    &mdash; observed especially for object hardness.</li>
+  <li>Generalization is studied only across object positioning / target
+    locations (cup heights, ink patterns, mango specimens), not across tasks;
+    cross-task generalization would need substantially more training.</li>
+  <li>The interpolant controller runs at 8 Hz and does not exploit high-frequency
+    tactile signals (&ge;25 Hz) that could help dynamic interactions.</li>
+  <li>Future work flagged: active grasping via combined visual-tactile feedback;
+    event-triggered inference to cut latency during stable contact periods;
+    task-agnostic policy refinement that scales to more tasks.</li>
+  <li>In the appendix they concede natural-language tactile descriptions can
+    <em>underperform</em> the raw continuous classifier output on subtle hardness
+    differences (mango: language 60% vs continuous 75%) &mdash; language is a
+    lossy bottleneck for fine physical properties.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Statistics are thin.</strong> Every headline is count-out-of-20 on
+    three bespoke tasks, no seeds or variance, no public benchmark. "Up to 35%"
+    aggregates the most favorable task. Hard to compare against anything.</li>
+  <li><strong>Two heavyweight dependencies, frozen.</strong> The planning level
+    is entirely GPT-4o + Octopi; failure modes (Octopi mis-classifying hardness
+    because of the gripper mismatch) cascade silently into planning. The
+    "modular scaffold" framing is honest but it means the contribution is more
+    integration-engineering than a new learned representation.</li>
+  <li><strong>The force path is a hack.</strong> Octopi can't do force, so they
+    bolt on a marker-tracking estimator and hand GPT-4o reference magnitudes
+    (empty cup ~0.55 N, full cup ~1.1 N) as in-context calibration. Clever, but
+    those reference values look task-specific and hand-tuned, not learned.</li>
+  <li><strong>Tactile is aggregated to (X, Y, M).</strong> The whole 7&times;9
+    marker field collapses to a 3-D force at the controller &mdash; deliberately
+    compact, but throws away spatial/shear structure that contact-rich tasks like
+    peeling presumably care about. An untested assumption that the summary force
+    suffices.</li>
+  <li><strong>Residual controller occasionally underperforms vanilla RDT</strong>
+    (Cup pick 7 vs 9), which undercuts "any tactile controller helps" &mdash; the
+    win is specifically the interpolant formulation, not tactile conditioning
+    per se.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely on-thesis for the line I keep flagging from
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+<strong>many manipulation predicates are not visually evaluable</strong> &mdash;
+<code>is_full(cup)</code>, <code>surface_is_rough(sponge)</code>,
+<code>is_soft(mango)</code> live in touch and force, not pixels. VLA-Touch is a
+clean existence proof that these touch-resident predicates can be lifted into a
+<em>symbolic / linguistic planning loop</em>: Octopi converts contact into words,
+GPT-4o plans over those words. That is exactly the predicate-grounding-in-touch
+move BLADE's visual classifiers can't make. Where BLADE auto-labels visual
+predicate classifiers from every frame and composes diffusion-policy bodies via
+bi-level planning, VLA-Touch instead interleaves an LLM planner with a frozen VLA
++ an interpolant refiner &mdash; no learned symbolic operators, no
+preconditions/effects, replanning driven by linguistic tactile feedback rather
+than a fast-forward heuristic over learned predicates. The interesting gap: their
+"tactile property" feedback (hard/soft/rough) is essentially an <em>ad hoc
+predicate read out of a frozen tactile-language model</em>, never inducted as a
+reusable symbol with pre/eff semantics. A BLADE-style pipeline that <em>invents</em>
+tactile predicates (<code>is_full</code>, <code>is_screwed_tight</code>) from
+touch-language data and grounds them as classifiers for bi-level planning would
+strictly subsume this &mdash; that is a concrete project. Their controller layer
+(BRIDGeR interpolant refining a frozen VLA chunk) is also a direct foil to BLADE's
+per-behavior diffusion policies: refinement-of-a-foundation-policy vs
+train-a-controller-per-behavior. Solidly relevant; not a competitor, a
+complementary touch-grounding instance.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We hypothesize that tactile feedback benefits contact-rich manipulation at two
+  levels: 1) at the planning level, tactile feedback enables reasoning about
+  object properties such as hardness and surface roughness that are visually
+  ambiguous; and 2) at the control level, tactile sensing informs contact
+  dynamics including surface friction and contact event detection for precise
+  manipulation.
+  <span class="quote-cite">&mdash; &sect;1 / p.1</span>
+</blockquote>
+<blockquote>
+  Current VLA models are predominantly trained on visual, language, and action
+  data, with no intrinsic mechanisms to process or reason over tactile inputs;
+  this fundamentally limits their ability to leverage tactile feedback.
+  <span class="quote-cite">&mdash; &sect;1 / p.1</span>
+</blockquote>
+<blockquote>
+  This highlights the limitations of using natural language to represent physical
+  properties sensed through touch.
+  <span class="quote-cite">&mdash; Appendix B / p.16</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next (forward refs):</p>
+<ul>
+  <li><strong>Octopi</strong> [35] &mdash; the tactile-language model VLA-Touch's
+    planning level is built on; reads GelSight into property language.
+    <a href="../../raw/papers/octopi_object_property_reasoning_tactile_language.pdf">octopi_object_property_reasoning_tactile_language.pdf</a></li>
+  <li><strong>BRIDGeR / "Don't start from scratch"</strong> [44] (Chen, Lim, Lin,
+    Chen, Soh 2024) &mdash; the interpolant-based diffusion refinement the control
+    level adopts; same group (Soh). <em>Not in the batch cross-ref list; flag for ingest.</em></li>
+  <li><strong>RDT-1B</strong> [5/43] &mdash; the base VLA backbone.
+    <em>Not in the batch cross-ref list; foundational dependency, flag for ingest.</em></li>
+  <li><strong>Beyond Sight (FuSe)</strong> [26] (Jones, Mees, Sferrazza et al. 2025)
+    &mdash; cited as the prior that extends VLAs to heterogeneous sensors via
+    language grounding; closest neighbor in spirit.
+    <a href="../../raw/papers/beyond_sight_fuse_heterogeneous_sensors_language.pdf">beyond_sight_fuse_heterogeneous_sensors_language.pdf</a></li>
+  <li><strong>TLA / Tactile-Language-Action</strong> [27] (Hao, Zhang, Li et al. 2025)
+    &mdash; cited as incorporating tactile feedback for language-conditioned policy
+    but excluding vision; shared author (Ce Hao).
+    <a href="../../raw/papers/tactile_vla_physical_knowledge_generalization.pdf">tactile_vla_physical_knowledge_generalization.pdf</a> (closest batch slug; verify it is the same TLA work)</li>
+  <li><strong>Reactive Diffusion Policy</strong> [38] (Xue et al. 2025) &mdash;
+    the slow-fast visuo-tactile controller whose marker-force aggregation [9]
+    VLA-Touch reuses.
+    <a href="../../raw/papers/reactive_diffusion_policy_slow_fast_visuotactile.pdf">reactive_diffusion_policy_slow_fast_visuotactile.pdf</a></li>
+  <li><strong>GelSight Mini</strong> [31] &mdash; the vision-based tactile sensor.
+    <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">gelsight_high_resolution_tactile_sensors.pdf</a></li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+    &mdash; the exact tactile-language model VLA-Touch uses for its planning
+    level; read this to understand what "linguistic tactile feedback" actually is.</li>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">Beyond Sight (FuSe)</a>
+    &mdash; same problem (get non-visual sensors into a generalist VLA via
+    language), but FuSe fine-tunes with heterogeneous-sensor language grounding
+    whereas VLA-Touch keeps the VLA frozen. Direct design contrast.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>
+    and <a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a>
+    &mdash; sibling tactile-VLA approaches; unlike VLA-Touch they push touch
+    <em>into</em> the policy/backbone rather than wrapping a frozen one.</li>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>,
+    <a href="taf_vla_tactile_force_alignment_vla.html">TaF-VLA</a>,
+    <a href="favla_force_adaptive_fast_slow_vla.html">FAVLA</a> &mdash; the
+    force-aware VLA cluster; same contact-rich target, different (force/MoE,
+    alignment, fast-slow) integration points.</li>
+  <li><a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive Diffusion Policy</a>
+    &mdash; source of the marker-force aggregation [9] VLA-Touch borrows; also a
+    slow-fast visuo-tactile refinement idea adjacent to the interpolant
+    controller.</li>
+</ul>
+<!-- BRIDGeR [44] and RDT-1B are core dependencies not in the batch cross-ref list; flagged above for separate ingest. -->
+
+</body>
+</html>

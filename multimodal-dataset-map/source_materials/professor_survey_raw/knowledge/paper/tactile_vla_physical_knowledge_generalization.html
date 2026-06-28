@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tactile-VLA: Unlocking Vision-Language-Action Model's Physical Knowledge for Tactile Generalization</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Huang, Wang, Lin, Hu, Wen, Gao">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2507.09160">
+<meta name="url" content="https://arxiv.org/abs/2507.09160">
+<meta name="pdf" content="../../raw/papers/tactile_vla_physical_knowledge_generalization.pdf">
+<meta name="tags" content="vision-language-action, vla, tactile-sensing, force-control, contact-rich, foundation-models, visuo-tactile, multisensory, imitation-learning, flow-matching">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Tactile-VLA: Unlocking Vision-Language-Action Model's Physical Knowledge for Tactile Generalization</h1>
+<p class="meta">
+  Jialei Huang*, Shuo Wang*, Fanqi Lin, Yihang Hu, Chuan Wen, Yang Gao
+  &middot; Tsinghua University / UESTC / Shanghai Jiao Tong University
+  &middot; 2025
+  &middot; <a href="https://arxiv.org/abs/2507.09160">arXiv:2507.09160</a>
+  &middot; <a href="../../raw/papers/tactile_vla_physical_knowledge_generalization.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Tactile-VLA fuses tactile sensing as a native
+input modality into a pretrained VLA and adds a hybrid position-force action
+expert, arguing that a VLM <em>already</em> knows that "gently" means low
+force and a fragile pitaya needs a soft grip &mdash; so with only a few
+demonstrations you can connect that latent physical commonsense to real
+force control and get zero-shot generalization in contact-rich tasks.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Current VLAs excel at high-level reasoning and at deciding <em>what</em>
+action to take, but stumble when grounding decisions in the fine-grained
+physical realities of contact &mdash; they answer "pick up the apple" but not
+"pick up the apple <em>softly</em>." Vision and language give high-level
+semantic information; tactile sensing gives the rich, local, temporally
+dynamic feedback (friction, compliance, material sensitivity) that
+contact-rich tasks need. Prior haptics-in-robotics work treats touch as a
+supplementary <em>perceptual</em> modality, not something that directly drives
+the policy's action generation. The paper's thesis: a VLM's pretrained
+prior <em>already contains</em> semantic understanding of physical
+interaction, and the missing piece is a bridge from that latent knowledge to
+the robot's tactile sensors and to force as an explicit action output.</p>
+
+<h2>Method</h2>
+<p>Tactile-VLA fuses vision, language, tactile, and proprioception, and
+outputs force-aware actions via a hybrid position-force controller. The
+architecture is in Fig 2.</p>
+
+<p><strong>Token-level multimodal fusion.</strong> Inputs are separately
+encoded then concatenated into a single prefix fed to a pretrained VLM trunk
+(Gemma 2.6B). A ViT encoder <code>E'<sub>vis</sub></code> encodes the last
+<code>H</code> frames (as in &pi;<sub>0</sub>); language goes through a common
+tokenizer <code>E<sub>lang</sub></code>; a simple MLP <code>E'<sub>&psi;</sub></code>
+encodes the concatenated history of <code>H</code> tactile measurements into a
+single fused token. The prefix is
+<code>S<sub>t</sub> = [E'<sub>vis</sub>(I<sub>t-H+1</sub>),&hellip;,
+E'<sub>vis</sub>(I<sub>t</sub>), E<sub>lang</sub>(L<sub>t</sub>),
+E'<sub>&psi;</sub>([T<sub>t-H+1</sub>,&hellip;,T<sub>t</sub>])]</code> (Eq 1). A
+<em>non-causal</em> attention mask over the prefix lets vision, language, and
+tactile tokens cross-attend freely.</p>
+
+<p><strong>Tactile-aware action expert.</strong> A 300M action expert consumes
+the prefix and outputs an augmented action vector <code>a<sub>t</sub></code>
+that explicitly specifies a target position <code>P<sub>target</sub></code>
+<em>and</em> a target contact force <code>F<sub>target</sub></code>. Both
+targets come from the imitation demonstrations &mdash; by putting force
+directly in the action space, the model learns to control interaction
+intensity. Shared components initialize from &pi;<sub>0</sub>; the tactile
+encoder and modified action expert are randomly initialized. The whole model
+is finetuned end-to-end with a Conditional Flow Matching (CFM) objective that
+penalizes deviation in both kinematic and force dimensions &mdash; this is what
+forces the model to map linguistic nuance ("gently") to a force magnitude
+(e.g., 0.5N).</p>
+
+<p><strong>Hybrid position-force controller.</strong> The strategy is
+position-dominant (most manipulation is kinematic; force matters only during
+contact), following <a href="../../raw/papers/hybrid_position_force_control_manipulators.pdf">Raibert
+&amp; Craig 1981</a>, with an indirect force-control adjustment inspired by
+impedance control (Hogan 1985). Unlike classic impedance control aiming for
+passive compliance, the goal here is <em>active</em> tracking of a target
+force. The controller measures force error <code>&Delta;F = F<sub>target</sub>
+&minus; F<sub>measured</sub></code> and applies a corrective positional
+adjustment only when <code>&Vert;&Delta;F&Vert; &gt; &tau;</code> (a threshold,
+for smoothness): <code>P<sub>hybrid</sub> = P<sub>target</sub> + K&middot;&Delta;F</code>
+if over threshold, else <code>P<sub>target</sub></code> (Eq 2), with <code>K</code> a
+gain matrix. A PID controller then actuates the joints to
+<code>P<sub>hybrid</sub></code>. Two force channels are decoupled: the
+gripper's Cartesian position regulates the net <em>external</em> force on the
+object, while the gripper width regulates the internal <em>grasping</em>
+force &mdash; i.e., how firmly the object is held.</p>
+
+<p><strong>Tactile-VLA-CoT.</strong> A reasoning-augmented variant that runs a
+chain-of-thought via the VLM's own pretrained decoder. Force and tactile
+feedback become reasoning cues, not just policy inputs: triggered at fixed
+intervals, the model first decides whether the task succeeded, and on failure
+analyzes the cause from sensory feedback (e.g., "grasping force is sufficient,
+but normal force is too low") and emits a new corrective instruction (e.g.,
+"wipe the board again, but apply more downward force"). It is finetuned on a
+small targeted dataset where each failure sample (e.g., wiping with slippage)
+is paired with a language annotation of the failure's cause &mdash; this both
+preserves the VLM's general reasoning (mitigating catastrophic forgetting) and
+extends reasoning to the tactile modality.</p>
+
+<p><strong>Data collection (Fig 4).</strong> Built on UMI (a portable handheld
+gripper, Chi et al. 2024), augmented with dual high-resolution tactile sensors
+capturing both normal and shear forces, so human operators give demonstrations
+that are explicitly guided by force. Tactile is captured at 100Hz, visual at
+20Hz, then tactile is down-sampled to align with visual frames; timestamps are
+aligned across streams before each session.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected "VLA-T" dataset on
+    three contact-rich tasks. <em>USB/Charger Insertion &amp; Extraction</em>:
+    100 demos each for "soft" and "hard" USB manipulations + 100 for the
+    charger (kinematic-only, no force language). <em>Tabletop Grasping</em>: 50
+    demos per object over 6 training objects (categorized Solid&amp;Heavy /
+    Solid&amp;Light / Fragile&amp;Light), evaluated on 6 additional unseen (OOD)
+    objects. <em>Wiping the Board</em>: 100 successful + 100 failed wiping demos
+    on a whiteboard; blackboard never seen in training (zero-shot transfer).</li>
+  <li><strong>Hardware / simulator:</strong> Real-world only. UMI-based handheld
+    3D-printed gripper with dual high-resolution tactile sensors (normal +
+    shear) and a GoPro camera (Fig 4). VLM backbone Gemma 2.6B; tactile-aware
+    action expert 300M.</li>
+  <li><strong>Baselines:</strong> &pi;<sub>0</sub>-base (a VLA flow model for
+    general robot control); &pi;<sub>0</sub>-fast (a variant); Tactile-VLA
+    (ours); Tactile-VLA-CoT (ours with reasoning). Baselines lack the
+    tactile-fusion architecture.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Across all three RQs Tactile-VLA beats the force-blind &pi;<sub>0</sub>
+baselines, often by large margins. <strong>RQ1 (force-language instruction
+following).</strong> On USB/Charger insertion success (Table 1):</p>
+
+<table>
+  <tr><th>Model</th><th>USB (%)</th><th>Charger (%)</th></tr>
+  <tr><td>&pi;<sub>0</sub>-base</td><td>5</td><td>40</td></tr>
+  <tr><td>&pi;<sub>0</sub>-fast</td><td>0</td><td>25</td></tr>
+  <tr><td><strong>Tactile-VLA</strong></td><td><strong>35</strong></td><td><strong>90</strong></td></tr>
+</table>
+
+<p>On applied force (Table 2), Tactile-VLA cleanly separates "softly" (0.51N)
+from "hard" (2.57N) on the trained USB task, interpolates unseen adverbs
+("gently" 0.75N, "firmly" 1.98N), and even <em>extrapolates</em> ("harder"
+2.94N &gt; "hard"). Crucially it transfers this zero-shot to the
+language-force-free charger task (4.68N for "softly" vs 9.13N for "hard"),
+whereas the &pi;<sub>0</sub> baselines show no correlation between adverb and
+applied force.</p>
+
+<p><strong>RQ2 (tactile commonsense, Table 3, grasping success without
+deformation, 10 trials/object).</strong> Tactile-VLA reaches 80&ndash;100% on
+both in-domain and OOD objects across Solid&amp;Heavy, Solid&amp;Light, and
+Fragile&amp;Light categories. The starkest gap is fragile items: on OOD
+BlueBerry / PaperBox it scores 100 / 90 while both baselines score 0 / 0 &mdash;
+the baselines crush fragile objects. Fig 6 shows it applies hard / medium /
+soft force to heavy / light / fragile objects respectively, even for unseen
+ones.</p>
+
+<p><strong>RQ3 (reasoning-based adaptation, Table 4, success over ID
+whiteboard vs OOD blackboard).</strong></p>
+
+<table>
+  <tr><th>Type</th><th>In-Domain (Whiteboard)</th><th>Out-of-Domain (Blackboard)</th></tr>
+  <tr><td>&pi;<sub>0</sub>-base</td><td>40</td><td>0</td></tr>
+  <tr><td>&pi;<sub>0</sub>-fast</td><td>45</td><td>0</td></tr>
+  <tr><td>Tactile-VLA</td><td>80</td><td>15</td></tr>
+  <tr><td><strong>Tactile-VLA-CoT</strong></td><td>75</td><td><strong>80</strong></td></tr>
+</table>
+
+<p>On the zero-shot blackboard, the CoT variant recognizes the failure from
+force feedback, reasons that more force is needed, and autonomously raises the
+applied force from the 3.5N default (trained at 5N) to 6.7N (~34% above
+training), succeeding where plain Tactile-VLA (15%) and the baselines (0%)
+fail. Note the CoT variant slightly <em>under</em>-performs plain Tactile-VLA
+in-domain (75 vs 80) &mdash; the reasoning loop helps OOD but is not free on the
+familiar task.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The contribution is framed as <em>unlocking</em> a VLM's existing prior,
+    so generalization is bounded by what the pretrained VLM already "knows"
+    about physical interaction &mdash; objects/forces far outside that prior are
+    not addressed.</li>
+  <li>CoT reasoning is triggered at fixed intervals, a "simple and effective"
+    heuristic rather than a learned decision of when to reason.</li>
+  <li>The hybrid controller applies a force correction only above a threshold
+    <code>&tau;</code> for smoothness; tuning of <code>&tau;</code>, <code>K</code>,
+    and PID gains is not analyzed.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Tiny-N statistics.</strong> USB/Charger success rates appear to
+    be over 20 trials (rates like 5%, 35%, 90% are multiples of 5); grasping is
+    10 trials/object; force numbers in Table 2 are single reported values with
+    no variance. These are count-of-success-style claims, not rate-with-CI &mdash;
+    a much smaller statistical claim than the strong "semantic generalization"
+    framing suggests.</li>
+  <li><strong>No tactile-foundation-model baseline.</strong> Baselines are only
+    force-blind &pi;<sub>0</sub> variants. There is no comparison against an
+    ablation that adds tactile <em>input</em> but not the force <em>action</em>
+    output, nor against other tactile-VLA contemporaries (FuSe, ForceVLA, TLA)
+    &mdash; so it's unclear how much of the win is the architecture vs. simply
+    having force in the action space + a force controller.</li>
+  <li><strong>"VLM already knows" is asserted, not isolated.</strong> The
+    headline claim is that the VLM's prior contains the force semantics, but
+    there's no probe (e.g., freeze the VLM, randomize its weights, swap
+    backbones) showing the zero-shot adverb interpolation degrades without the
+    pretrained prior. The transfer could partly be the action expert
+    generalizing over a continuous force regression target.</li>
+  <li>All evaluation is real-world single-arm UMI gripper; no sim, no
+    cross-embodiment, and "force" is mediated by two specific high-res tactile
+    sensors &mdash; sensor-dependence of the learned force semantics is untested.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This paper is a direct, concrete instance of the batch's central thesis,
+and a sharp foil to <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>.
+BLADE's abstraction layer is purely <em>categorical</em>: continuous
+parameters like grasp force live entirely inside the diffusion policy, and one
+of BLADE's flagged open questions was exactly "force/continuous parameters."
+Tactile-VLA shows the complementary move &mdash; lift force to a first-class,
+<em>language-conditioned</em> action output (<code>F<sub>target</sub></code>),
+so that an adverb like "gently" maps to 0.5N. That is precisely the kind of
+predicate that is <strong>not visually evaluable</strong>: <code>is_grasped</code>,
+<code>grip_is_gentle</code>, <code>surface_pressure_sufficient</code>,
+<code>is_screwed_tight</code> live in touch/force, not pixels. The wiping-CoT
+result &mdash; "normal force is too low, apply more downward pressure" &mdash; is
+a tactile <em>predicate evaluation</em> dressed as chain-of-thought, which is
+suggestive for predicate-from-touch invention on top of a BLADE-style
+abstraction layer.</p>
+<p>Where it diverges from my line: there is no symbolic planning, no operator
+library, no long-horizon composition &mdash; it's a single end-to-end
+force-aware policy with a reasoning wrapper. So it's relevant as the
+<em>low-level force-grounding</em> substrate a BLADE-style planner could sit
+on top of, not as a planning-abstractions paper itself. The "VLM prior already
+contains physical semantics" claim is also the same structure-vs-scale debate
+BLADE sits on the other side of: here scale (a pretrained VLM) supplies the
+force commonsense that BLADE would want to make explicit and symbolic.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  A key finding is that the VLM's prior knowledge already contains semantic
+  understanding of physical interaction; by connecting it to the robot's
+  tactile sensors with only a few demonstrations, we can activate this prior
+  knowledge to achieve zero-shot generalization in contact-rich tasks.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  This capability is essential for differentiating commands that share the
+  same motion but differ in force, such as "insert the USB firmly" versus
+  "insert the USB gently".
+  <span class="quote-cite">&mdash; &sect;2.1 / p.3</span>
+</blockquote>
+<blockquote>
+  The gripper's Cartesian position is used to exclusively regulate the net
+  external force applied to an object, while the gripper width is used in
+  parallel to control the internal grasping force, thus dictating how firmly
+  the object is held.
+  <span class="quote-cite">&mdash; &sect;2.2 / p.4</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>Hao et al. 2025 &mdash; TLA: Tactile-Language-Action model</strong>
+    (arXiv:2503.08548) &mdash; the closest contemporary; tactile + language +
+    action for contact-rich manipulation. Not in this batch's cross-ref list;
+    worth flagging for a future ingest.</li>
+  <li><strong><a href="../../raw/papers/forcevla_force_aware_moe_contact_rich.pdf">Yu et al. 2025 &mdash; ForceVLA</a></strong>
+    (arXiv:2505.22159) &mdash; concurrent force-aware MoE VLA; cited as the
+    modality-specific-routing counterpoint to Tactile-VLA's token fusion.</li>
+  <li><strong><a href="../../raw/papers/beyond_sight_fuse_heterogeneous_sensors_language.pdf">Jones et al. 2025 &mdash; FuSe (Beyond Sight)</a></strong>
+    (arXiv:2501.04693) &mdash; concurrent; finetunes generalist policies on
+    heterogeneous sensors via language grounding, cited as the auxiliary-loss
+    counterpoint.</li>
+  <li><strong>Black et al. 2024 &mdash; &pi;<sub>0</sub></strong>
+    (arXiv:2410.24164) &mdash; the VLA flow model the architecture and baselines
+    build on. Foundational dependency.</li>
+  <li><strong>Chi et al. 2024 &mdash; UMI (Universal Manipulation Interface)</strong>
+    &mdash; the handheld data-collection device augmented with tactile sensors.</li>
+  <li><strong>Xue et al. 2025 &mdash; Reactive Diffusion Policy</strong>
+    (arXiv:2503.02881) &mdash; slow-fast visuo-tactile policy; cited as a
+    hierarchical decouple-planning-and-control tactile approach.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">FuSe</a>
+    &mdash; same cluster C; the closest sibling on fusing heterogeneous
+    (incl. tactile) sensors into a generalist VLA via language, but via
+    auxiliary contrastive/generative losses rather than force in the action
+    space.</li>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>
+    &mdash; same cluster C; force-aware mixture-of-experts VLA, the
+    architectural alternative to Tactile-VLA's token-level fusion + hybrid
+    controller.</li>
+  <li><a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a>,
+    <a href="vla_touch_dual_level_tactile_feedback.html">VLA-Touch</a>,
+    <a href="taf_vla_tactile_force_alignment_vla.html">TaF-VLA</a>,
+    <a href="favla_force_adaptive_fast_slow_vla.html">FAVLA</a>,
+    <a href="bi_lat_bilateral_control_language_action_chunking.html">Bi-LAT</a>
+    &mdash; the rest of cluster C; the multisensory tactile/force VLA-policy
+    landscape this paper lives in.</li>
+  <li><a href="hybrid_position_force_control_manipulators.html">Hybrid Position/Force Control (Raibert &amp; Craig 1981)</a>
+    &mdash; the control-theory classic Tactile-VLA's hybrid controller is built
+    directly on.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+    &mdash; situates Tactile-VLA in the broader push to put force into
+    foundation-model policies.</li>
+</ul>
+
+</body>
+</html>
