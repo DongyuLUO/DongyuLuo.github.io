@@ -71,12 +71,12 @@ a {
   color: var(--blue);
 }
 
-.brand i {
-  width: 7px;
-  height: 20px;
-  margin-left: 5px;
-  background: var(--blue);
-  display: inline-block;
+.brand-logo {
+  width: 48px;
+  height: 48px;
+  margin-left: 8px;
+  object-fit: contain;
+  display: block;
 }
 
 .site-header nav {
