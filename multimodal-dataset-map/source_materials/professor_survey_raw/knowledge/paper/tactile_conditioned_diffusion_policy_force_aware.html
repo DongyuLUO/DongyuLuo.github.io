@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tactile-Conditioned Diffusion Policy for Force-Aware Robotic Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Helmut, Funk, Schneider, de Farias, Peters">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint (submitted to IEEE)">
+<meta name="arxiv_id" content="2510.13324">
+<meta name="url" content="https://arxiv.org/abs/2510.13324">
+<meta name="pdf" content="../../raw/papers/tactile_conditioned_diffusion_policy_force_aware.pdf">
+<meta name="tags" content="diffusion-policy, tactile-sensing, force-control, contact-rich, vision-based-tactile, gelsight, imitation-learning, learning-from-demonstration, robot-learning, visuo-tactile">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Tactile-Conditioned Diffusion Policy for Force-Aware Robotic Manipulation</h1>
+<p class="meta">
+  Erik Helmut, Niklas Funk, Tim Schneider, Cristiana de Farias, Jan Peters
+  &middot; TU Darmstadt / DFKI / Hessian.AI
+  &middot; 2025 (arXiv preprint, submitted to IEEE)
+  &middot; <a href="https://arxiv.org/abs/2510.13324">arXiv:2510.13324</a>
+  &middot; <a href="../../raw/papers/tactile_conditioned_diffusion_policy_force_aware.pdf">PDF</a>
+  &middot; <a href="https://tactile-farm.github.io">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> FARM puts grip <em>force</em> into both the
+observation and the action space of a diffusion policy &mdash; estimating a
+shear+normal force-distribution image from a GelSight Mini and predicting target
+grip force jointly with pose and grip width &mdash; so the policy can actively
+regulate contact force rather than letting it fall out as an accident of gripper
+position commands, all learned from robot-free handheld-UMI demos.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Contact-rich manipulation (handling an egg, a grape, a screw) hinges on
+applying the <em>right</em> grip force throughout the task. Most visuotactile
+imitation-learning work treats touch as just another observation modality &mdash;
+useful for resolving occlusion or detecting contact, but feeding the policy only
+through the observation embedding, so the applied force remains an
+<em>uncontrolled consequence</em> of gripper-width commands. What is missing,
+the authors argue, is a framework where tactile feedback is not only perceived
+but explicitly written into the action space, letting the policy <em>target</em>
+the contact interaction it wants to produce. FARM addresses this gap, and pairs
+it with a robot-free data-collection paradigm (handheld UMI gripper) to dodge the
+embodiment gap that teleoperation/kinesthetic methods incur.</p>
+
+<h2>Method</h2>
+<p><strong>Force grounding via FEATS.</strong> A GelSight Mini (vision-based
+tactile sensor) sits on one fingertip; the opposite finger holds a passive
+gel-pad shell for symmetric contact. Raw GelSight images are passed through
+<a href="../../raw/papers/feats_force_distribution_estimation_gelsight.pdf">FEATS</a>
+(Helmut et al. 2025, the authors' own finite-element-trained force estimator),
+which outputs spatial shear (x, y) and normal (z) force distributions. These are
+packed into a 3-channel <code>96&times;96&times;3</code> "force image" (one
+channel per force component, each independently normalized). The total normal
+force <code>F&#x302;<sub>z</sub></code> is also extracted as a scalar by
+integrating the normal-force field &mdash; this scalar is exactly what the
+deployment controller regulates.</p>
+
+<p><strong>FARM diffusion policy.</strong> Built on Chi et al.'s
+<a href="../../raw/papers/diffusion_policy_visuomotor_action_diffusion.pdf">Diffusion Policy</a>
+(1D temporal CNN with FiLM conditioning, LeRobot implementation). Observation
+at time <code>t</code>: in-hand RGB (<code>96&times;96&times;3</code>), grip
+width (ArUco-marker distance), the FEATS force image + scalar normal force, and
+6-DoF pose (3D position + 6D rotation). Separate ResNet-18 encoders for RGB and
+the force image. The policy <strong>jointly predicts pose, target grip width
+<code>w<sup>d</sup></code>, and target grip force
+<code>F<sup>d</sup><sub>z</sub></code></strong> over a 32-step prediction
+horizon / 16-step execution horizon, observation horizon 2. The key move:
+because force and grip width are <em>both</em> conditioning inputs and denoised
+outputs, the policy can anticipate and regulate the force needed at upcoming
+steps (Fig 3). Trained with MSE on the denoising noise; DDPM (100 steps) train,
+DDIM (10 steps) inference.</p>
+
+<p><strong>Dual-mode deployment controller.</strong> On the actuated UMI gripper,
+a controller switches between position control of grip width (free space /
+approach / release) and closed-loop force control (in contact). It checks both
+the predicted target force and the FEATS-estimated contact force against a
+<code>-0.5 N</code> threshold (set from FEATS noise characteristics); if both
+indicate contact, it runs a PID controller on the force error
+<code>e = F&#x302;<sub>z</sub> - F<sup>d</sup><sub>z</sub></code> (with
+anti-windup), converting the correction into a grip-width position command for
+the DYNAMIXEL motor. Force loop runs at 25 Hz (synced to GelSight); the diffusion
+policy runs at 7 Hz. Crucially, execution does <em>not</em> wait for force
+convergence before advancing &mdash; a contrast the authors draw against
+Feel-the-Force.</p>
+
+<p><strong>Hardware: matched handheld + actuated UMI grippers.</strong> Demos are
+collected robot-free with an adapted handheld UMI gripper (RealSense D405 swapped
+in for the GoPro, OptiTrack motion capture, rigid fingers, GelSight Mini). A
+purpose-built <em>Actuated UMI</em> gripper (single DYNAMIXEL XL430 motor,
+belt-driven, spring-return) mirrors the handheld geometry sensor-for-sensor, so
+policies transfer as a drop-in with no retargeting. Both open-sourced.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> No standard benchmark. 30 expert
+    demos per task (same expert), collected via the handheld UMI gripper, on
+    three custom real-world tasks: <em>plant insertion</em> (high static force),
+    <em>grape picking</em> (low/delicate force), <em>screw tightening</em>
+    (time-dependent, contact-state-detection-heavy).</li>
+  <li><strong>Hardware / simulator:</strong> Real Franka Research 3 arm +
+    Actuated UMI gripper, Cartesian impedance control (franky library). GelSight
+    Mini tactile sensor (25 Hz reference clock), Intel RealSense D405, OptiTrack,
+    ArUco markers. No simulator &mdash; all real-world.</li>
+  <li><strong>Baselines:</strong> Three ablated variants, each itself a diffusion
+    policy sharing RGB + pose + grip-width inputs &mdash; (1) <em>Force-Aware</em>:
+    scalar normal force only as tactile input, with force in the action space
+    (dual-mode control); (2) <em>Tactile-Aware</em>: raw GelSight image as input
+    but <em>no</em> target force action (pose + grip width only); (3)
+    <em>Vision-Only</em>: no tactile, binary open/close gripper command. (No
+    external prior-method baseline.)</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (training: 60000 iterations
+    per policy; no GPU/wall-clock given).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: success rate over 20 rollouts per task (Fig 5). FARM ties the
+Force-Aware baseline on the two static-force tasks and dominates on the
+time-dependent screw task where scalar force is insufficient.</p>
+
+<table>
+  <tr><th>Method</th><th>Plant Insertion</th><th>Grape Picking</th><th>Screw Tightening</th></tr>
+  <tr><td><strong>FARM (force image)</strong></td><td><strong>95%</strong></td><td><strong>95%</strong></td><td><strong>100%</strong></td></tr>
+  <tr><td>Force-Aware (scalar force)</td><td>95%</td><td>85%</td><td>10%</td></tr>
+  <tr><td>Tactile-Aware (raw image, no force action)</td><td>65%</td><td>60%</td><td>40%</td></tr>
+  <tr><td>Vision-Only (binary gripper)</td><td>85%</td><td>0%</td><td>0%</td></tr>
+</table>
+
+<ul>
+  <li><strong>Force in the action space matters most when force must be
+    delicate.</strong> Grape picking: vision-only crushes the grape every time
+    (0%); only explicit force control avoids it.</li>
+  <li><strong>Scalar force is not enough for contact-state detection.</strong>
+    On screw tightening the scalar Force-Aware baseline collapses to 10% (loses
+    Allen-key alignment, slips out of the head), while FARM's full force-image
+    hits 100%. This is the paper's central argument for high-dimensional force.</li>
+  <li><strong>Where FARM does <em>not</em> beat the simpler baseline:</strong> on
+    plant insertion (95% vs 95%) and grape picking the scalar Force-Aware
+    baseline matches FARM &mdash; the authors concede scalar force suffices for
+    "consistent static force demands."</li>
+  <li><strong>Force-domain fidelity (screw task, Fig 6).</strong> Wasserstein-1
+    distance between rollout and demo force distributions: FARM 0.7538 N &lt;
+    Force-Aware 1.6580 N &lt; Tactile-Aware 4.3801 N (under-forces) &lt;
+    Vision-Only 5.0515 N (over-forces). FARM's applied forces track the
+    demonstrations most closely.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Force estimates inherit FEATS model error &mdash; deviations possible from
+    FE-model assumptions or cross-sensor generalization.</li>
+  <li>Future work: bimanual manipulation, anthropomorphic hands, and a
+    flow-matching objective to improve policy reactivity.</li>
+  <li>Implicitly: scalar force already saturates the easy (static-force) tasks,
+    so the force-image benefit is demonstrated on only one of three tasks.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>N is small and uncontrolled.</strong> 20 rollouts/task, 30 demos,
+    one expert, three bespoke tasks, no seeds, no confidence intervals. The
+    100%-vs-10% screw gap is striking but rests on 20 trials of a single
+    hand-tuned setup; the statistical claim is count-of-success, not a rate with
+    variance.</li>
+  <li><strong>No external baseline.</strong> Every comparison is an internal
+    ablation of FARM's own input/action design. There is no head-to-head against
+    <a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive
+    Diffusion Policy</a> or Feel-the-Force, both discussed at length in related
+    work &mdash; so "outperforms several baselines" means "outperforms its own
+    degraded variants."</li>
+  <li><strong>The force "action" is really a width correction.</strong> The PID
+    on force error ultimately emits a grip-width position command to the
+    DYNAMIXEL; force control is layered on a position actuator, not a true torque
+    interface. Whether this is "force-based control space" or a clever
+    width-modulation scheme is partly semantic.</li>
+  <li><strong>Single-fingertip sensing.</strong> Only one finger has a real
+    GelSight; the other is a passive gel shell. Force distribution is therefore
+    one-sided, which may bias the FEATS estimate for asymmetric grasps.</li>
+  <li><strong>Switching threshold is a magic number.</strong> The
+    <code>-0.5 N</code> contact threshold is tuned to FEATS noise; robustness to
+    a different sensor / gel wear is untested.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This paper is a direct, concrete instance of the thesis underneath this whole
+2026-06-24 batch: <strong>many manipulation predicates are not visually
+evaluable</strong> &mdash; <code>is_screwed_tight</code> is the textbook example,
+and the paper says so outright ("vision alone cannot determine the screw's
+state"). Where
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+learns <em>visual</em> predicate classifiers and stuffs all continuous
+parameters (grasp pose, force) inside the diffusion-policy body, FARM is exactly
+the complement: it keeps the policy flat but makes <em>force</em> a
+first-class, grounded, controllable quantity in both observation and action. The
+two are orthogonal and composable &mdash; FARM is roughly what BLADE's
+contact-primitive controllers <em>should</em> become if the abstraction layer
+ever needs to express force-modulated predicates like <code>grip_is_firm</code>
+or <code>screw_is_tight</code>. BLADE's own "Why I care" flags
+"force/continuous parameters" as a potential contribution area; FARM is a clean
+existence proof that force can be folded into a diffusion policy's action space
+without exotic machinery (just FEATS + a force-image channel + a dual-mode
+controller).</p>
+<p>Most relevant connection: a tactile predicate like
+<code>screw_is_tight</code> is not just unobservable in RGB &mdash; it is a
+<em>force-trajectory</em> property (resistance rising over time), which is why
+FARM's scalar-force baseline fails where its force-<em>distribution</em> variant
+succeeds. That argues that force-aware predicate evaluation in a BLADE-style
+system needs more than a single scalar; it needs the spatial/temporal force
+field. A useful pointer for any future "force predicates for bi-level planning"
+direction.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  In most of these methods, tactile sensing is treated primarily as an additional
+  observation modality &hellip; while the applied forces themselves remain an
+  uncontrolled consequence of gripper commands.
+  <span class="quote-cite">&mdash; &sect;I / p.1</span>
+</blockquote>
+<blockquote>
+  This task relies on tactile feedback to detect tightness, as vision alone
+  cannot determine the screw's state.
+  <span class="quote-cite">&mdash; &sect;IV-A, Screw Tightening Task / p.6</span>
+</blockquote>
+<blockquote>
+  By embedding forces directly into the action representation, our method
+  provides finer-grained control at the contact interface.
+  <span class="quote-cite">&mdash; &sect;II-B / p.2</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[8] Helmut et al. 2025 &mdash; FEATS</strong>
+    (<a href="../../raw/papers/feats_force_distribution_estimation_gelsight.pdf">arXiv:2411.03315</a>)
+    &mdash; the force-distribution estimator FARM is built on; the entire
+    "force-grounding" claim depends on it. Foundational dependency.</li>
+  <li><strong>[30] Chi et al. 2024 &mdash; Diffusion Policy</strong>
+    (<a href="../../raw/papers/diffusion_policy_visuomotor_action_diffusion.pdf">IJRR</a>)
+    &mdash; the base policy architecture.</li>
+  <li><strong>[9] Chi et al. 2024 &mdash; Universal Manipulation Interface (UMI)</strong>
+    (RSS) &mdash; the handheld robot-free data-collection paradigm FARM adapts.</li>
+  <li><strong>[28] Adeniji et al. 2025 &mdash; Feel-the-Force</strong>
+    (<a href="../../raw/papers/feel_the_force_contact_driven_learning_from_humans.pdf">arXiv:2506.01944</a>)
+    &mdash; closest competitor: also puts force in the action space, but via a
+    tactile glove + PD controller that must converge before advancing. Direct
+    contrast.</li>
+  <li><strong>[26] Liu et al. 2025 &mdash; ViTaMIn</strong>
+    (arXiv:2504.06156) &mdash; another custom-UMI robot-free visuotactile
+    interface; representation-learning angle.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive Diffusion Policy</a>
+    &mdash; the [6] reference FARM explicitly distinguishes itself from: RDP
+    controls robot-arm force via a slow-fast latent diffusion + asymmetric
+    tokenizer (learned impedance), whereas FARM controls <em>grip</em> force with
+    a single transparent policy. The closest methodological sibling in the batch.</li>
+  <li><a href="mimictouch_human_tactile_demos.html">MimicTouch</a>
+    &mdash; the [25] reference; another robot-free human-tactile-demo pipeline,
+    but non-parametric retrieval + residual RL rather than diffusion. Same
+    "robot-free tactile demos" lineage.</li>
+  <li><a href="foar_force_aware_reactive_policy.html">FoAR</a>,
+    <a href="factr_force_attending_curriculum_training.html">FACTR</a>, and
+    <a href="favla_force_adaptive_fast_slow_vla.html">FAVLA</a>
+    &mdash; cluster-F force/proprioception policy siblings; FARM is the
+    grip-force-as-action point in that design space.</li>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a> and
+    <a href="taf_vla_tactile_force_alignment_vla.html">TaF-VLA</a>
+    &mdash; the VLA-scale counterparts to FARM's single-task force-aware policy;
+    contrast small-data diffusion vs foundation-model force integration.</li>
+  <li><a href="gelsight_high_resolution_tactile_sensors.html">GelSight</a>
+    &mdash; the sensor FARM (and FEATS) depend on; foundational hardware.</li>
+</ul>
+
+</body>
+</html>

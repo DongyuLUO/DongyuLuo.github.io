@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AudioCLIP: Extending CLIP to Image, Text and Audio</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Guzhov, Raue, Hees, Dengel">
+<meta name="year" content="2021">
+<meta name="venue" content="arXiv (later ICASSP 2022)">
+<meta name="arxiv_id" content="2106.13043">
+<meta name="url" content="https://arxiv.org/abs/2106.13043">
+<meta name="pdf" content="../../raw/papers/audioclip_extending_clip.pdf">
+<meta name="tags" content="audio-language, contrastive-learning, clip, foundation-models, audio-sensing, multimodal-binding, representation-learning, self-supervised-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- Off-genre audio-language ML paper (no robot). Structure kept; headers lightly adapted. Marked as method anchor / adjacent in "Why I care", per batch brief Cluster E. -->
+
+<h1>AudioCLIP: Extending CLIP to Image, Text and Audio</h1>
+<p class="meta">
+  Andrey Guzhov, Federico Raue, J&ouml;rn Hees, Andreas Dengel
+  &middot; DFKI GmbH / TU Kaiserslautern
+  &middot; 2021 (arXiv; later ICASSP 2022)
+  &middot; <a href="https://arxiv.org/abs/2106.13043">arXiv:2106.13043</a>
+  &middot; <a href="../../raw/papers/audioclip_extending_clip.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> AudioCLIP bolts an audio encoder (ESResNeXt)
+onto a frozen-then-fine-tuned CLIP text+image model and trains all three
+heads contrastively on AudioSet's audio/frame/label triples, producing a
+single tri-modal embedding space that lets you query across text, image, and
+audio in any direction and do zero-shot environmental-sound classification.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Audio classification had benefited from importing visual-domain models, but
+multimodal audio work almost always combined <em>at most two</em> modalities
+and used the visual stream sequentially, processing one modality at a time.
+Meanwhile labeled audio data is scarce, which had pushed the field toward
+zero-/few-shot contrastive methods conditioned on textual descriptions. The
+paper's bet: CLIP already aligns text and image in a shared space with strong
+domain-transfer ("zero-shot") behavior, so adding a third <em>audible</em>
+modality as a first-class citizen should (i) extend CLIP's zero-shot
+generalization to audio and (ii) enable cross-modal querying in any
+combination of the three. The glue that makes this possible is AudioSet,
+whose YouTube snippets supply audio, video frames, and class labels
+simultaneously.</p>
+
+<h2>Method</h2>
+<p>The architecture (Fig 1) is three encoder heads feeding one shared
+embedding space of size <code>1024</code> (CLIP's dimension).</p>
+
+<p><strong>Text and image heads = CLIP.</strong> A 12-layer Transformer text
+encoder (BPE vocab 49&nbsp;408, sequence length clipped at 76) and a modified
+ResNet-50 image encoder (global average pool replaced by a QKV-attention
+layer). The ResNet variant is chosen over ViT for lower compute. These were
+pre-trained jointly on CLIP's ~400M text-image pairs and are used here as
+weight initializers.</p>
+
+<p><strong>Audio head = ESResNeXt.</strong> A ResNeXt-50 backbone fronted by a
+<em>trainable</em> time-frequency transformation built on complex frequency
+B-spline wavelets (~30M params). It natively handles multi-channel audio and
+is robust to additive white Gaussian noise and sample-rate decrease. It is
+initialized from ImageNet weights, then pre-trained on AudioSet.</p>
+
+<p><strong>Loss.</strong> CLIP's symmetric cross-entropy similarity loss is
+extended from one term (text&harr;image) to three:
+text&harr;image, text&harr;audio, image&harr;audio. All three modalities (or
+any pair) can be processed simultaneously.</p>
+
+<p><strong>Staged training.</strong> The recipe is deliberately multi-step:</p>
+<ul>
+  <li><strong>(1) Audio-head standalone pre-training</strong> on AudioSet
+    (ImageNet-init ESResNeXt, trained for more epochs than the original
+    &mdash; 30 vs 5).</li>
+  <li><strong>(2) Cooperative audio-head pre-training:</strong> drop the
+    classification layer for a randomly-initialized embedding layer, then
+    train the audio head jointly with the <em>frozen</em> text and image heads
+    &mdash; i.e., a multi-modal knowledge-distillation setup where text/image
+    heads are teachers.</li>
+  <li><strong>(3) AudioCLIP full training:</strong> unfreeze and tune all
+    three heads together on AudioSet (audio snippets + their video frames +
+    class names) so the model also absorbs AudioSet's image and text
+    distributions, not just CLIP's.</li>
+  <li><strong>(4) Downstream fine-tuning:</strong> tune the audio head on
+    UrbanSound8K and ESC-50 in a bimodal (audio+text) fashion, one class label
+    per sample.</li>
+</ul>
+<p>Augmentations for the small audio datasets: time scaling (joint
+duration+pitch, factors in [&minus;1.5, 1.5]), time inversion (p=0.5), random
+crop/padding, and AWGN (SNR 10&ndash;120 dB, p=0.25). Optimizer SGD with
+Nesterov momentum 0.9, weight decay 5&times;10<sup>&minus;4</sup>, batch 64.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> AudioSet (~1.8M train, ~20k
+    eval, 527 classes; audio + extracted video frames) as the tri-modal
+    training glue; ImageNet as image zero-shot target; UrbanSound8K (8732
+    tracks, 10 classes, 10 folds) and ESC-50 (2000 tracks, 50 classes, 5
+    folds) as audio classification targets. CLIP's ~400M text-image dataset
+    used only indirectly (weight init).</li>
+  <li><strong>Hardware / simulator:</strong> <em>not reported</em> (no GPU
+    type / count given; no simulator &mdash; this is a non-robot ML paper).</li>
+  <li><strong>Baselines:</strong> Audio-classification SOTA &mdash; ESResNet
+    [9], WEANET, DenseNet-201 ensemble [17], ESResNeXt [10], AST [8], ERANN
+    [30]; zero-shot audio baselines VGGish+Word2Vec(+GloVe) [32,33]; Human
+    [19] on ESC-50; and AudioCLIP's own audio-head (ESResNeXt, their training)
+    as an internal baseline (Table 3).</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (epoch counts given &mdash;
+    30 for AudioSet training, 50 for downstream &mdash; but no wall-clock or
+    hardware).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: AudioCLIP (full training) sets new SOTA environmental-sound
+classification accuracy of <strong>90.07%</strong> on UrbanSound8K and
+<strong>97.15%</strong> on ESC-50, and a new <em>zero-shot</em> baseline of
+<strong>68.78%</strong> (US8K) / <strong>69.40%</strong> (ESC-50, partial
+training) &mdash; the latter beating a commonly-trained baseline CNN (64.50%).</p>
+
+<table>
+  <tr><th>Model (Table 3)</th><th>US8K acc%</th><th>ESC-50 acc%</th></tr>
+  <tr><td>Human [19]</td><td>&ndash;</td><td>81.30</td></tr>
+  <tr><td>ESResNeXt (2021) [10]</td><td>89.14</td><td>95.20</td></tr>
+  <tr><td>AST (2021) [8]</td><td>&ndash;</td><td>95.60</td></tr>
+  <tr><td>ERANN (2021) [30]</td><td>&ndash;</td><td>96.10</td></tr>
+  <tr><td>Audio-Head (ESResNeXt, their training)</td><td>89.49</td><td>95.90</td></tr>
+  <tr><td>AudioCLIP (partial training)</td><td>89.95</td><td>96.65</td></tr>
+  <tr><td><strong>AudioCLIP (full training)</strong></td><td><strong>90.07</strong></td><td><strong>97.15</strong></td></tr>
+</table>
+
+<p><strong>Where each component helps (Table 2, ablation of partial vs full
+AudioSet training).</strong> Full tri-modal training improves AudioSet mAP
+(audio 25.85&rarr;28.36; both-modality 25.11&rarr;32.38) and the downstream
+audio accuracies. <strong>Where it loses:</strong> full training <em>hurts</em>
+image-only performance &mdash; ImageNet accuracy drops 40.51&rarr;21.79 and
+AudioSet image-mAP behavior is mixed &mdash; because tuning the image head on
+AudioSet frames pulls it away from CLIP's natural image distribution. Extended
+audio-head pre-training alone (30 vs 5 epochs, Table 1) already lifts AudioSet
+mAP 28.17&rarr;34.14 and downstream US8K/ESC-50 to 89.49/95.90.</p>
+
+<p><strong>Cross-modal querying (Table 4).</strong> Audio-by-text on ESC-50
+reaches P@1 51.78 / mAP ~77; text-by-image (ImageNet) audio-head P@1 5.42 /
+R@1 84.15 / mAP 52.91. Full training generally improves AudioSet and
+downstream querying mAP but <em>degrades</em> ImageNet querying (again the
+distribution-shift cost). The qualitative point stands: a single model
+retrieves across text&harr;image&harr;audio in any direction.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Evaluated on a narrow set of datasets/tasks; they flag wider evaluation
+    as future work.</li>
+  <li>Backbones are mid-tier (ResNet-50 image head, ESResNeXt audio head);
+    they note stronger backbones could improve results.</li>
+  <li>Implicitly: full tri-modal training trades image-domain performance for
+    audio gains (the ImageNet drop), an unresolved tension.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>The "zero-shot" framing is weak.</strong> AudioCLIP is trained
+    on AudioSet (527 classes) and then "zero-shot" evaluated on ESC-50 /
+    US8K, whose class vocabularies overlap heavily with everyday-sound
+    AudioSet labels. This is closer to transfer with label overlap than to
+    true open-vocabulary zero-shot; the paper leans on CLIP's terminology
+    without quantifying label leakage.</li>
+  <li><strong>Audio is bound through frozen vision/text teachers, not learned
+    jointly from scratch.</strong> The shared space is anchored to CLIP's
+    geometry; the audio modality is fit <em>into</em> a pre-existing
+    text-image manifold. Whether the resulting audio embedding captures
+    acoustic structure that text/image can't express (timbre, onset, material
+    resonance) is never probed &mdash; only label-classification accuracy is.</li>
+  <li><strong>No ablation isolating the three loss terms.</strong> We see
+    partial (audio-head only) vs full, but not, e.g., text&harr;audio alone vs
+    +image&harr;audio. So the marginal value of the <em>image</em> modality to
+    audio learning is unquantified.</li>
+  <li><strong>AudioSet supervision is coarse.</strong> Frames are sampled from
+    10s YouTube clips; the audio-frame correspondence is weak (the visible
+    frame need not depict the sound source). This noisy pairing likely caps
+    how tight the image&harr;audio alignment can get.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p><strong>Adjacent / method anchor &mdash; not a manipulation paper.</strong>
+There is no robot, no policy, no contact here; AudioCLIP is an audio-language
+representation-learning paper. I'm filing it as the canonical
+<em>audio&harr;language alignment</em> method anchor for the batch, the audio
+analogue of how
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+relies on language to name predicates.</p>
+<p>The tangential relevance to my thesis &mdash; that many manipulation
+predicates (<code>is_inserted</code>, <code>is_full</code>,
+<code>is_screwed_tight</code>, <code>surface_is_rough</code>) live in
+touch/force/<em>sound</em> rather than in vision &mdash; is this: if a
+predicate like <code>is_pouring</code> or <code>cup_is_full</code> is most
+legible in the audio stream, then a CLIP-style contrastive recipe that binds
+<em>audio</em> to <em>language</em> is exactly the mechanism that could let an
+LLM-named predicate (BLADE-style) be grounded in an acoustic classifier rather
+than a visual one. AudioCLIP is the upstream representation; the robot
+papers in cluster D (ManiWAV, SonicSense, Making Sense of Audio Vibration)
+are where that grounding gets cashed out on contact-rich tasks. AudioCLIP
+itself does none of this &mdash; I should not overstate it. It is a building
+block, not a manipulation result.</p>
+<p>Concretely worth tracking: AudioCLIP predates and is methodologically
+parallel to
+<a href="../../raw/papers/clap_audio_concepts_language.pdf">CLAP</a> (cluster
+E), and is the audio precursor to the all-modality binding papers
+<a href="../../raw/papers/imagebind_one_embedding_space.pdf">ImageBind</a> and
+<a href="../../raw/papers/languagebind_language_anchored.pdf">LanguageBind</a>
+(cluster H) &mdash; AudioCLIP binds three modalities by extending CLIP's loss;
+ImageBind generalizes the trick to six by binding everything to images.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Such a combination enables the proposed model to perform bimodal and unimodal
+  classification and querying, while keeping CLIP's ability to generalize to
+  unseen datasets in a zero-shot inference fashion.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  The joint use of three modalities during the training results in
+  out-performance of previous models &hellip; extends zero-shot capabilities of
+  the base architecture to the audio modality and introduces an ability to
+  perform cross-modal querying using text, image and audio in any combination.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.2</span>
+</blockquote>
+<blockquote>
+  Parameters of the two other subnetworks, namely text- and image-head, were
+  frozen during the cooperative pre-training of the audio encoding head, thus,
+  these heads served as teachers in a multi-modal knowledge distillation setup.
+  <span class="quote-cite">&mdash; &sect;4.3 Training / p.7</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>Radford et al. 2021 &mdash; CLIP [21]</strong> (Learning
+    Transferable Visual Models from Natural Language Supervision) &mdash; the
+    base model AudioCLIP extends; foundational dependency. Not in this batch's
+    cross-ref list, but the obvious upstream anchor.</li>
+  <li><strong>Guzhov et al. 2021 &mdash; ESResNe(X)t-fbsp [10]</strong>
+    (IJCNN) &mdash; the audio encoder; direct predecessor by the same authors.</li>
+  <li><strong>Gemmeke et al. 2017 &mdash; AudioSet [7]</strong> (ICASSP) &mdash;
+    the tri-modal training dataset; the "glue" enabling the whole approach.</li>
+  <li><strong>Xie &amp; Virtanen 2019/2021 [32,33]</strong> &mdash; zero-shot
+    audio classification via class-label / semantic embeddings; the prior
+    zero-shot-audio line AudioCLIP compares against.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="clap_audio_concepts_language.html">CLAP</a> &mdash; the parallel
+    audio&harr;language contrastive model; closest peer (audio-text vs
+    AudioCLIP's audio-text-image), same cluster E.</li>
+  <li><a href="imagebind_one_embedding_space.html">ImageBind</a> &mdash;
+    generalizes AudioCLIP's "extend CLIP's contrastive loss to a new modality"
+    trick to six modalities bound through images; the natural successor.</li>
+  <li><a href="languagebind_language_anchored.html">LanguageBind</a> &mdash;
+    same binding idea but anchored on language rather than images; AudioCLIP is
+    a two-extra-loss-term special case.</li>
+  <li><a href="meta_transformer_unified_modalities.html">Meta-Transformer</a>
+    &mdash; unified-encoder alternative to per-modality heads; contrasts with
+    AudioCLIP's separate ESResNeXt/ResNet/Transformer design.</li>
+  <li><a href="the_sound_of_pixels.html">The Sound of Pixels</a>,
+    <a href="objects_that_sound.html">Objects that Sound</a>,
+    <a href="visually_indicated_sounds.html">Visually Indicated Sounds</a>
+    &mdash; the earlier audio-visual self-supervision line (cluster E) that
+    AudioCLIP's contrastive-binding approach supersedes for the
+    classification/querying use case.</li>
+</ul>
+
+</body>
+</html>

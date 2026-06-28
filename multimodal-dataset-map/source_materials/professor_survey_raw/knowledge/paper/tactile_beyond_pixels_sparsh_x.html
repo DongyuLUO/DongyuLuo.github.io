@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tactile Beyond Pixels: Multisensory Touch Representations for Robot Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Higuera, Sharma, Fan, Bodduluri, Boots, Kaess, Lambeta, Wu, Liu, Hogan, Mukadam">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2506.14754">
+<meta name="url" content="https://arxiv.org/abs/2506.14754">
+<meta name="pdf" content="../../raw/papers/tactile_beyond_pixels_sparsh_x.pdf">
+<meta name="tags" content="tactile-representation, multisensory, self-supervised-learning, contact-rich, vision-based-tactile, sensory-fusion, foundation-models, dexterous-manipulation, sim-to-real, representation-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Tactile Beyond Pixels: Multisensory Touch Representations for Robot Manipulation</h1>
+<p class="meta">
+  Carolina Higuera*, Akash Sharma*, Taosha Fan*, Chaithanya Krishna Bodduluri,
+  Byron Boots, Michael Kaess, Mike Lambeta, Tingfan Wu, Zixi Liu,
+  Francois Robert Hogan&dagger;, Mustafa Mukadam&dagger;
+  &middot; FAIR at Meta / UW / CMU
+  &middot; 2025
+  &middot; <a href="https://arxiv.org/abs/2506.14754">arXiv:2506.14754</a>
+  &middot; <a href="../../raw/papers/tactile_beyond_pixels_sparsh_x.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Sparsh-X is the first self-supervised touch
+backbone that fuses <em>four</em> tactile modalities &mdash; image, audio,
+motion (IMU), and pressure &mdash; from the Digit 360 fingertip into one shared
+embedding, and the paper shows that touch "beyond the camera image" is what lets
+a representation pick up contact properties (force, material, slip) that a
+tactile-<em>image</em>-only encoder simply cannot see.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Human dexterity leans on a wide spectrum of touch signals &mdash; skin
+deformation, vibration, motion, pressure &mdash; yet robot tactile sensing has
+been overwhelmingly unimodal, built around GelSight-style <em>tactile images</em>
+because that hardware was standardized and available. New compact sensors like
+the Digit 360 now expose images, contact microphones, IMU, and static pressure
+in one fingertip, but there is no unified, scalable method to actually exploit
+all of them together. Prior multimodal work either treats every signal as an RGB
+image and concatenates tokens (quadratic attention cost; MULSA [34]) or learns
+each modality independently (MimicTouch [5]). Sparsh-X argues that representation
+learning over fused heterogeneous touch is the missing ingredient: complementary
+contact cues (high-frequency audio + tactile image both flag make/break contact;
+IMU + pressure carry shear and slip) collapse into one latent that is more
+data-efficient and robust for downstream manipulation. This directly extends the
+unimodal vision-based <a href="sparsh_self_supervised_touch_representations.html">Sparsh</a>
+line to the multisensory regime.</p>
+
+<h2>Method</h2>
+<p>Sparsh-X is a transformer backbone (ViT-style [36]) over four Digit 360
+streams, fused through <strong>attention bottlenecks</strong> ([35], Nagrani et
+al.) rather than full cross-modal concatenation. Architecture and pipeline are in
+Fig 2.</p>
+
+<p><strong>Per-modality tokenization.</strong> Each stream is preprocessed to its
+own spatio-temporal scale before a linear projection to 768-dim tokens:</p>
+<ul>
+  <li><strong>Image</strong> &mdash; tactile images at 30fps, temporal stride 5,
+    two frames concatenated along channels, cropped/resized to 224&times;224&times;3,
+    patch size 16&times;16.</li>
+  <li><strong>Audio</strong> &mdash; two contact mics at 48kHz; a 0.55s window
+    converted to a log-mel spectrogram (128 channels, 5ms Hamming window, 2.5ms
+    hop), both mics concatenated into a 224&times;256 image, patch size 16.</li>
+  <li><strong>IMU</strong> &mdash; 3-axis accelerometer at 400Hz, 0.55s window
+    &rarr; 224&times;3 temporal signal, chunked + linearly projected.</li>
+  <li><strong>Pressure</strong> &mdash; static pressure at 200Hz, 1.1s window
+    &rarr; 224&times;1.</li>
+</ul>
+
+<p><strong>Bottleneck fusion.</strong> Each modality runs independently through
+<code>L_f = 8</code> unimodal self-attention layers, then cross-modal information
+is exchanged only through <code>B = 4</code> shared bottleneck tokens over
+<code>L_b = 4</code> fusion layers (total depth <code>L = L_f + L_b = 12</code>).
+After each fusion block the bottleneck tokens are averaged across modalities,
+forcing information to pass through a low-bandwidth summarizer &mdash; this is what
+keeps cost sub-quadratic versus naive token concatenation.</p>
+
+<p><strong>SSL objective.</strong> Training uses a teacher&ndash;student
+self-distillation scheme (DINO/iBOT-style [40, 11]): both branches are
+encoder + predictor. After tokenizing and adding sinusoidal positional
+embeddings plus a register token, sinusoidal masking is applied to the
+<em>student</em> input tokens per modality &mdash; retaining 10&ndash;50% of the
+signal for local masks and 50&ndash;100% for global masks. Register tokens from
+global and local masks are concatenated and passed through prediction heads. As
+in DINO, the prediction task is online clustering: teacher tokens are
+pseudo-labels (centroids adapt over time), and the cross-entropy between teacher
+and student softmax outputs is the loss.</p>
+
+<p><strong>Downstream usage.</strong> Sparsh-X is then <em>frozen</em>. For each
+downstream task a small task-specific attentive-pooling decoder ([41], context
+autoencoder) is trained on top, both for physical-property probes and for policy
+learning.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> ~1M unlabeled contact-interaction
+    samples (18.6 hours, Fig 8) collected with Digit 360 from two platforms &mdash;
+    an Allegro hand rummaging in a tray (4.5h, 8 sequences ~8.5min) and a
+    two-fingered manual picker doing tap/slide/place/drop on varied surfaces
+    (14.1h, 104 sequences ~3min, with object/action/surface annotations). Six
+    distinct Digit 360 sensors. Downstream probes: object-action-surface
+    classification (36 classes), material-quantity estimation (18 classes:
+    corn/lentils/pills/rice/water/oil &times; full/half/quarter), normal-force
+    regression (up to 3.5N).</li>
+  <li><strong>Hardware / simulator:</strong> Digit 360 multimodal fingertips on an
+    Allegro hand; Franka arm with Digit-360-equipped parallel gripper for
+    material/force tasks; Meca arm for force probe. Policy tasks: plug insertion
+    (Allegro + Digit 360) and in-hand rotation (Hora [51] on Allegro). Real-world
+    only &mdash; ROS2 deployment, ~20Hz inference for 4 fingers on an RTX 4090.</li>
+  <li><strong>Baselines:</strong> End-to-end (E2E) encoder-decoder models trained
+    from scratch on tactile images (and on modality subsets); for policies, a
+    vision-only (no-touch) baseline, E2E tactile-image policies, and for in-hand
+    rotation: Hora baseline (proprio only), Hora fine-tuned, a proprio-only
+    imitation-learning baseline, and Hora+ControlNet(E2E). Sparsh-X is also
+    ablated against its own modality subsets.</li>
+  <li><strong>Compute:</strong> 200 epochs on 16 A-100 GPUs, batch size 128,
+    AdamW with linear rampup + cosine schedule.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline claims (abstract + &sect;4&ndash;5): multisensory pretraining
+<strong>boosts plug-insertion policy success by 63%</strong> over an E2E
+tactile-image model, <strong>improves in-hand-rotation robustness by 90%</strong>
+(vertical-drift reduction vs. Hora) in recovering object state from touch, and
+improves physical-property characterization by <strong>48% on average</strong>
+over E2E approaches.</p>
+
+<p><strong>Physical-property probes (frozen Sparsh-X, Fig 4):</strong></p>
+<table>
+  <tr><th>Task</th><th>Finding</th></tr>
+  <tr><td>Object-Action-Surface (36-class)</td><td>Audio+IMU pairing gives +32% over tactile image alone; all modalities give +13% over image alone; pretraining adds up to a 10% margin in the lowest-data regime. At 50% data: E2E-image 68.8% vs. Sparsh-X-all 87.5% (Fig 12).</td></tr>
+  <tr><td>Material-Quantity (18-class)</td><td>Sparsh-X (all modalities) is highest across every data budget; +20.5% over E2E tactile-image. At 33% data: E2E-image 68.8% vs. Sparsh-X 87.5% (Fig 13).</td></tr>
+  <tr><td>Normal-Force regression (&le;3.5N)</td><td>Combining all modalities &rarr; average error 35mN, a 17% improvement over tactile-image only.</td></tr>
+</table>
+
+<p><strong>Plug insertion via imitation learning (Fig 5, 20 trials):</strong>
+multisensory touch reaches a <strong>90% success rate</strong> on the
+tight-tolerance task. Pretraining gives a 90% performance boost over training all
+modalities from scratch jointly with the policy. Sparsh-X (all modalities) is
++500% over external-vision-only and +63% over E2E tactile-vision-only.
+<em>Where it loses / nuance:</em> for the tactile-<em>image</em> modality alone,
+E2E training actually outperforms frozen pretrained representations &mdash; the
+authors attribute this to the tactile-image signal varying little across trials,
+so a task-specific encoder can specialize; multimodality is what closes the gap.</p>
+
+<p><strong>In-hand rotation, sim-to-real tactile adaptation (Figs 6&ndash;7,
+10 trials nominal / 5 trials dynamical):</strong> a ControlNet [52] tactile
+adaptation module with a zero-init convolution wraps frozen Sparsh-X onto the
+frozen Hora policy. This reduces vertical translation (drift) by 90% vs. Hora and
+outperforms fine-tuned Hora, the proprio-only IL baseline (which fails often from
+OOD states), and Hora+ControlNet(E2E). Under reduced friction, Hora+ControlNet
+(Sparsh-X) keeps the object stable without losing grasp, while
+Hora+ControlNet(image) struggles &mdash; the authors say contact-patch changes are
+too subtle for tactile images alone. Under +20g mass, both Sparsh-X and image
+variants let the base policy adapt finger gaiting.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>Author-stated:</em></p>
+<ul>
+  <li>The tactile-image pretraining modality has the lowest diversity (few distinct
+    Digit 360 devices, each with its own optical artifacts), potentially limiting
+    generalization; broader collaborative datasets needed.</li>
+  <li>Experiments use <em>frozen</em> Sparsh-X to isolate pretraining effects;
+    fine-tuning could further help and compensate for modality-specific data limits.</li>
+  <li>Force evaluation is limited to normal-force estimation under controlled
+    perpendicular contact; varying contact geometries and multiple simultaneous
+    contacts are open.</li>
+  <li>Shear-force estimation is not attempted &mdash; separating extrinsic forces
+    from the elastomer's internal deformation is a hard modeling problem (the
+    soft hemispherical dome deforms and moves on contact).</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>Nearly all evaluation is real-world with small trial counts (20 trials for
+    insertion; 10 and 5 trials for rotation). Several flagship numbers
+    ("90%", "63%", "500%") are derived from these low-N runs &mdash; success rates
+    rather than rates with confidence intervals &mdash; so the statistical strength
+    is modest relative to the bold percentages.</li>
+  <li>The "63% boost" and "48% improvement" are <em>relative</em> percentage gains
+    over particular E2E baselines; absolute success/accuracy deltas (e.g.,
+    insertion 90% vs ~55% E2E from Fig 5) are smaller and clearer than the framing.</li>
+  <li>The interesting negative result &mdash; E2E <em>beats</em> frozen pretrained
+    encoders on the image-only modality &mdash; is under-explored; it suggests the
+    SSL objective may be over-smoothing precisely the modality with the richest
+    spatial contact detail, and is only rescued by the other three modalities.</li>
+  <li>No sim evaluation and no public benchmark numbers means cross-paper
+    comparison (e.g., vs. <a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>
+    or <a href="t3_transferable_tactile_transformers.html">T3</a>) is impossible from
+    this paper alone &mdash; everything is Digit-360-specific.</li>
+  <li>It locks to one sensor (Digit 360). The whole pitch rests on hardware that
+    happens to expose 4 modalities; cross-sensor transfer (a strength of Sparsh and
+    T3) is explicitly out of scope.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This paper is close to the heart of a thesis I want to push from
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+<strong>many manipulation predicates are not visually evaluable.</strong>
+<code>is_inserted(plug, socket)</code>, <code>is_screwed_tight</code>,
+<code>surface_is_rough</code>, <code>is_slipping</code>, <code>is_full(bottle)</code> &mdash;
+these live in touch, force, vibration, and pressure, not pixels. BLADE learns
+visual classifiers <em>f<sub>&theta;</sub>(p): O &rarr; {T,F}</em> for predicates;
+Sparsh-X is precisely an argument that for a large family of contact predicates,
+the observation <em>O</em> must be multisensory tactile, not RGB. Its three
+property probes are essentially predicate-classifier benchmarks in disguise:
+material-quantity = <code>is_full</code>/<code>material_is(x)</code>,
+object-action-surface = <code>surface_is_rough</code>/<code>contact_made</code>,
+normal-force = a graded <code>force_applied</code> predicate. A frozen Sparsh-X
+embedding is a candidate <em>perceptual backbone</em> for grounding those
+non-visual predicates &mdash; the missing input channel that would let a
+BLADE-style abstraction layer cover contact-rich behaviors its gripper-state
+segmentation and visual classifiers currently can't (a limitation BLADE itself
+flagged for contact-rich tasks).</p>
+<p>The bottleneck-fusion + frozen-backbone + small-decoder recipe is also a clean
+template: pretrain a multisensory contact representation once, then attach a thin
+predicate head per symbol. That is a concrete path to multisensory predicate
+invention. The ControlNet tactile-adaptation trick (inject frozen touch features
+into a frozen privileged-information policy) is separately interesting as a way to
+bolt a touch representation onto an existing planner/policy without retraining.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We present Sparsh-X, the first multisensory touch representations across four
+  tactile modalities: image, audio, motion, and pressure.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  Sparsh-X boosts policy success rates by 63% over an end-to-end model using
+  tactile images, and improves robustness by 90% in recovering object states from
+  touch.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  Representations that encode these physical properties at the fingertip level are
+  especially valuable for dexterous manipulation, as they enable feedback of
+  object and contact state directly within latent space.
+  <span class="quote-cite">&mdash; &sect;1 / p.2</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[4] Lambeta et al. 2024 &mdash; Digit 360 / Digitizing touch with an
+    artificial multimodal fingertip</strong> &mdash; the sensor this entire paper is
+    built on; the multimodal hardware enabling all four streams.</li>
+  <li><strong>[34] Li et al. 2023 &mdash; See, Hear, and Feel (MULSA)</strong> &mdash;
+    the concatenate-all-tokens multimodal-transformer baseline Sparsh-X improves on.
+    Forward ref: <a href="../../raw/papers/see_hear_feel_sensory_fusion.pdf">see_hear_feel_sensory_fusion</a>.</li>
+  <li><strong>[35] Nagrani et al. 2021 &mdash; Attention Bottlenecks for Multimodal
+    Fusion</strong> &mdash; the bottleneck-fusion mechanism at the core of the architecture.</li>
+  <li><strong>[5] Yu et al. 2024 &mdash; MimicTouch</strong> &mdash; unimodal SSL on
+    tactile image + audio separately; the no-explicit-fusion contrast.
+    Forward ref: <a href="../../raw/papers/mimictouch_human_tactile_demos.pdf">mimictouch_human_tactile_demos</a>.</li>
+  <li><strong>[6] Mejia et al. 2024 &mdash; Hearing Touch</strong> &mdash; audio-visual
+    pretraining for contact-rich manipulation.
+    Forward ref: <a href="../../raw/papers/hearing_touch_audio_visual_pretraining.pdf">hearing_touch_audio_visual_pretraining</a>.</li>
+  <li><strong>[28] Thankaraj &amp; Pinto 2023 &mdash; That Sounds Right</strong> &mdash;
+    auditory self-supervision for dynamic manipulation.
+    Forward ref: <a href="../../raw/papers/that_sounds_right_auditory_self_supervision.pdf">that_sounds_right_auditory_self_supervision</a>.</li>
+  <li><strong>[29] Liu et al. 2024 &mdash; ManiWAV</strong> &mdash; in-the-wild
+    audio-visual manipulation.
+    Forward ref: <a href="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">maniwav_in_the_wild_audio_visual</a>.</li>
+  <li><strong>[51] Qi et al. 2022 &mdash; Hora (In-Hand Object Rotation via RMA)</strong>
+    &mdash; the base privileged policy adapted in the in-hand-rotation experiment.</li>
+  <li><strong>[52] Zhang et al. 2023 &mdash; ControlNet</strong> &mdash; the adaptation
+    mechanism reused for tactile sim-to-real injection.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a> &mdash;
+    the direct unimodal (vision-based) predecessor; Sparsh-X is its multisensory
+    extension. The single most important sibling.</li>
+  <li><a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a> &mdash;
+    unified static-dynamic visuo-tactile representation across sensors; the
+    cross-sensor counterpoint to Sparsh-X's single-sensor multimodal stance.</li>
+  <li><a href="t3_transferable_tactile_transformers.html">Transferable Tactile
+    Transformers (T3)</a> &mdash; cross-sensor/task tactile representation; same
+    foundation-model-for-touch goal, different (transfer-first) axis.</li>
+  <li><a href="unit_data_efficient_tactile_representation.html">UniT</a> and
+    <a href="mvitac_visuotactile_contrastive_pretraining.html">MViTac</a> &mdash;
+    other tactile representation-learning backbones in cluster B; SSL/contrastive
+    alternatives to Sparsh-X's self-distillation.</li>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a> and
+    <a href="hearing_touch_audio_visual_pretraining.html">Hearing Touch</a> &mdash;
+    the multisensory-fusion baselines/ancestors Sparsh-X positions against
+    (treat-as-image vs. bottleneck fusion).</li>
+  <li><a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive
+    Diffusion Policy</a> &mdash; consumes visuo-tactile signals in a contact-rich
+    policy; a downstream policy that a Sparsh-X-style backbone could feed.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful
+    Robotic Foundation Models (survey)</a> &mdash; situates Sparsh-X within the
+    "touch/force foundation model" research program.</li>
+</ul>
+
+</body>
+</html>

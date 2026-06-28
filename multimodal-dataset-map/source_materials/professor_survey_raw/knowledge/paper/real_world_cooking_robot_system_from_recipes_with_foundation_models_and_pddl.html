@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Real-World Cooking Robot System from Recipes Based on Food State Recognition Using Foundation Models and PDDL</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Naoaki Kanazawa, Kento Kawaharazuka, Yoshiki Obinata, Kei Okada, Masayuki Inaba">
+<meta name="year" content="2024">
+<meta name="venue" content="Advanced Robotics 2024">
+<meta name="arxiv_id" content="2410.02874">
+<meta name="url" content="https://arxiv.org/abs/2410.02874">
+<meta name="pdf" content="../../raw/papers/real_world_cooking_robot_system_from_recipes_with_foundation_models_and_pddl.pdf">
+<meta name="tags" content="applied, llm-pddl, vlm, manipulation, food-state, foundation-models, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-05-28">
+<meta name="source_prompt" content="user batch ingest 2026-05-28 targeted search">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1>Real-World Cooking Robot System from Recipes Based on Food State Recognition Using Foundation Models and PDDL</h1>
+<p class="meta">
+  Naoaki Kanazawa, Kento Kawaharazuka, Yoshiki Obinata, Kei Okada, Masayuki Inaba
+  &middot; University of Tokyo (JSK Lab)
+  &middot; Advanced Robotics 2024
+  &middot; <a href="https://arxiv.org/abs/2410.02874">arXiv:2410.02874</a>
+  &middot; <a href="../../raw/papers/real_world_cooking_robot_system_from_recipes_with_foundation_models_and_pddl.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> An end-to-end PR2 cooking system that takes a
+natural-language recipe, converts it to a sequence of robot-interpretable
+cooking functions via few-shot GPT-4 prompting, complements the omitted
+preparatory actions through classical PDDL planning over 17 hand-defined
+operators, and uses a CLIP-linear-probe food-state classifier trained from 3
+demonstrations to time heat-driven state transitions &mdash; demonstrated on
+two arranged (unseen) recipes (butter sunny-side-up, boiled-and-saut&eacute;ed
+broccoli) executed in a real kitchen with predefined motion trajectories.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Cooking is a canonical long-horizon manipulation domain that the field has
+chipped at for years (Beetz, Bollini, Paulius and collaborators are all cited).
+Two specific gaps motivate this work:</p>
+<ul>
+  <li><strong>Real-world executable action planning.</strong> Recipes written
+    for humans omit the preparatory steps people do unconsciously &mdash;
+    holding the bowl before pouring, walking to the tap to fetch water,
+    placing a pan on the stove before igniting it. A robot needs those steps
+    filled in, conditioned on its current state and the kitchen layout.</li>
+  <li><strong>Foodstuff state-change recognition.</strong> Recipes are
+    riddled with state-conditioned instructions ("heat until it boils",
+    "pour the eggs when the butter is melted"). Prior CNN-based state
+    classifiers need large dedicated datasets and target identification
+    after-the-fact; the authors want real-time recognition with very little
+    training data per state.</li>
+</ul>
+<p>The contribution is the integrated system: LLM (GPT-4) converts recipe
+&rarr; function sequence; PDDL planner fills gaps; CLIP linear-probe handles
+state timing; PR2 executes on real hardware with predefined motion
+trajectories.</p>
+
+<h2>Method</h2>
+
+<p><strong>Cooking function vocabulary (Section 2).</strong> 10 typed cooking
+functions are defined as the LLM's target representation:
+<code>pour</code>, <code>mix</code>, <code>turn-on-stove</code>,
+<code>set-stove</code>, <code>turn-off-stove</code>, <code>stir</code>,
+<code>heat</code>, <code>cook</code>, <code>boil</code>,
+<code>stir-fry</code>. Arguments are typed (<code>ingredient</code>,
+<code>vessel</code>, <code>tool</code>, <code>mixture</code>,
+<code>state</code>).</p>
+
+<p><strong>Stage 1 &mdash; LLM recipe parsing (Section 3.1).</strong>
+GPT-4-0613 is few-shot prompted with three known recipe&harr;function-sequence
+pairs (sunny-side-up, poached egg, scrambled egg, all hand-annotated). It
+converts a new natural-language recipe into a cooking-function sequence. No
+fine-tuning; the prompt is the entire interface.</p>
+
+<p><strong>Stage 2 &mdash; PDDL planning to fill omitted actions (Section
+3.2).</strong> The PDDL domain extends the 10 cooking functions with 7 basic
+actions for a total of 17 PDDL operators: <code>hold</code>,
+<code>place</code>, <code>move-to</code>, <code>open-tap</code>,
+<code>close-tap</code>, <code>transfer</code>, <code>fetch-water</code>.
+Types include <code>object</code> (ingredient/vessel/tool/mixture),
+<code>spot</code> (a location &mdash; "stove", "kitchen", "sink"),
+<code>arm</code> ("arm1"/"arm2", abstract rather than left/right). Each
+function is rule-based-translated into a target predicate state with default
+conditions (e.g., the robot's hands are empty before/after). Classical
+planning runs step-by-step across the sequence, with the final state of step
+<em>k</em> becoming the start state of step <em>k+1</em>, generating the
+fully-elaborated action procedure.</p>
+
+<p><strong>Stage 3 &mdash; Food state recognition via linear-probe CLIP
+(Section 4).</strong> For each heat-driven state transition (butter melting,
+water boiling, egg cooking), a human annotator marks the time of change in a
+short time-series; frames before the annotation are labeled 0 (pre-change),
+frames after are labeled 1 (post-change). A linear probe is trained on
+CLIP's image-encoder features. At inference time the model runs at 10 Hz on a
+cropped "gazing area" (only the pan/pot contents, not the whole pan) and the
+first frame labeled 1 marks the state change. Crucially: only 3 time-series
+per state are used for training.</p>
+
+<p><strong>Hardware.</strong> PR2 dual-arm wheeled robot, IH stove + water
+tap real kitchen. Motion execution is predefined trajectories created by
+direct teach (not learned). Cooking functions and basic actions are tied to
+hand-coded motion templates.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Known recipes (in-distribution):</strong> sunny-side-up,
+    poached egg, scrambled egg &mdash; each hand-annotated with a target
+    cooking-function sequence; used as the few-shot examples.</li>
+  <li><strong>Unknown recipes (out-of-distribution test):</strong>
+    butter-arranged sunny-side-up (uses only known ingredients but a
+    new cooking flow), and boiled-and-saut&eacute;ed broccoli (introduces a
+    new ingredient, broccoli, while staying within the cooking-function
+    vocabulary).</li>
+  <li><strong>LLMs compared (Stage 1 ablation):</strong> GPT-4-0613,
+    GPT-4o-2024-05-13, GPT-4o-mini-2024-07-18, Claude 3.5 Sonnet,
+    Gemini 1.5 Flash. GPT-4-0613 is used for the main system.</li>
+  <li><strong>State recognition data:</strong> 4 time-series per state
+    (butter melting, water boiling, egg cooking), at 10 Hz; 3 for training,
+    1 for validation. Compared 1-data vs. 3-data training, and "gazing area
+    = contents only" vs. "gazing area = entire pan".</li>
+  <li><strong>Hardware / simulator:</strong> Real PR2 robot in a real
+    kitchen environment with IH stove, water tap, frying pan, pot,
+    small bowl, measuring cup, wooden spatula, spoon, whisk.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+
+<p><strong>LLM recipe-to-function conversion (Fig. 7&ndash;8).</strong> All
+five LLMs produced the cooking-function sequence for boiled-and-saut&eacute;ed
+broccoli; differences were in state-argument wording ("broccoli" vs.
+"broccoli-cooked") and minor missing/extra parts, not fatal planning
+failures. A separate ablation on prompt partitioning (Fig. 8) showed that
+fewer partitions of the recipe degrade LLM interpretation: with one fewer
+partition (b), the tool argument of the final stir-fry was wrong; with two
+fewer (c), <code>pour(broccoli, pot)</code> dropped entirely and the next
+function was misinterpreted as <code>cook</code>.</p>
+
+<p><strong>PDDL action procedure planning (Fig. 9&ndash;12).</strong> For all
+three known recipes, classical planning successfully complemented the basic
+actions (moving, holding/placing, fetching water, igniting and extinguishing
+stove) from a "no-ingredient-placed" start state. With ingredients pre-placed
+in the kitchen "spot" the plans were as expected, with appropriate extra
+movement steps. <em>No quantitative success rate is reported &mdash; the
+evaluation is qualitative figure-by-figure inspection of the generated
+plans.</em></p>
+
+<p><strong>Food state recognition (Table 1, Table 2, Fig. 17).</strong></p>
+
+<p><em>Gazing area (Table 1, time difference vs. human annotation, smaller
+is better):</em></p>
+<table>
+  <tr><th>State</th><th>Contents-only</th><th>Entire pan/pot</th></tr>
+  <tr><td>Butter melting</td><td><strong>-7.98 s</strong></td><td>8.86 s</td></tr>
+  <tr><td>Water boiling</td><td><strong>-2.48 s</strong></td><td><strong>-2.48 s</strong></td></tr>
+  <tr><td>Egg cooking</td><td><strong>19.51 s</strong></td><td>-66.28 s</td></tr>
+</table>
+<p>Contents-only wins on butter and egg; tied on water. Authors adopt
+contents-only for the system.</p>
+
+<p><em>Training-data scaling (Table 2, time difference vs. annotation):</em></p>
+<table>
+  <tr><th>State</th><th>1-data</th><th>3-data</th></tr>
+  <tr><td>Butter melting</td><td>-10.45 s</td><td><strong>3.84 s</strong></td></tr>
+  <tr><td>Water boiling</td><td><strong>0.22 s</strong></td><td>-1.10 s</td></tr>
+  <tr><td>Egg cooking</td><td>-6.70 s</td><td>-6.70 s</td></tr>
+</table>
+<p>Mixed numerical results &mdash; but the authors note that 1-data butter
+melting was visually wrong (butter not yet melted at the predicted time),
+while 3-data water boiling was hard to tell from the image. They conclude
+3-data is qualitatively better and use it for the real-robot runs.</p>
+
+<p><strong>Real-robot cooking (Section 5.4, Figs. 19&ndash;22).</strong> PR2
+autonomously executed both unknown recipes end-to-end: butter-arranged
+sunny-side-up (11 action steps shown in Fig. 19) and boiled-and-saut&eacute;ed
+broccoli (20 action steps in Fig. 21). For sunny-side-up, the state
+classifier mis-detected the egg as cooked immediately because the pan was hot
+when the eggs were poured &mdash; but after the eggs were transferred to a
+plate the dish was visually well-cooked. For broccoli the butter melting
+recognition was a bit early ("butter was not yet completely melted when the
+robot judged"). The dishes were <em>"tasty and human-eatable by eating
+them"</em> (Fig. 22 shows the plated dishes). Success is reported as a
+qualitative N-of-1 demonstration per recipe, not as a multi-trial success
+rate.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Recipe coverage is limited by the 10-function vocabulary and 17 PDDL
+    actions; more recipes require more functions, and they suggest using
+    LLM error-feedback re-planning (citing
+    <a href="llm_plus_p_empowering_llms_with_optimal_planning_proficiency.html">LLM+P</a>-style
+    work) to scale.</li>
+  <li>Maintaining object-argument continuity across long recipe steps is
+    fragile &mdash; they propose expressing arguments as indexed variables
+    and graph-checking the function expression for validity.</li>
+  <li>State recognition is brittle when the same state has no training data;
+    generalization-of-state-change research (their own follow-up
+    <a href="#">Kawaharazuka et al. 2024</a>; not yet ingested) is flagged
+    as the fix.</li>
+  <li>Beyond visual state, future cooking robots will need tactile (texture,
+    burning), olfactory (smell), and gustatory (taste) sensing.</li>
+  <li>Motion execution is predefined trajectories &mdash; they call out
+    imitation learning (Diffusion Policy [34]) plus VLM-based perception as
+    the next step toward adaptive motion.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>No quantitative system-level success metric.</strong> The
+    real-robot evaluation is two completed cooks, not a 20-trial success
+    rate. Subsystem ablations (LLM, gazing area, training-data size) are
+    quantified, but the integrated system is shown by figure-and-narrative.
+    Honest for a systems paper, but a sharp contrast with
+    <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+    20 initial states &times; 3 seeds protocol.</li>
+  <li><strong>The state classifier had clear miscalls in the real run</strong>
+    (egg "cooked" immediately, butter melted prematurely) but the dish was
+    still edible &mdash; suggesting the recipe's downstream tolerance, not
+    the classifier's accuracy, is what made it work. This is exactly the
+    kind of system-level robustness that pure-benchmark numbers miss.</li>
+  <li><strong>Vocabulary is closed and hand-engineered.</strong> The 10
+    cooking functions, 7 basic actions, type system, and PDDL operator
+    schemas are all hand-written. The LLM only fills in the recipe parse
+    &mdash; it doesn't propose new operators, unlike
+    <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    or
+    <a href="interpret_interactive_predicate_learning_from_language_feedback.html">InterPreT</a>.
+    The price of "applied and shipping" is "everything must be specified up
+    front".</li>
+  <li><strong>Motion is hand-taught.</strong> Direct-teach predefined
+    trajectories per action; no learned low-level policies. The entire
+    foundation-model layer sits above motion, not within it &mdash; an
+    interesting decoupling.</li>
+  <li><strong>Single-LLM choice for the system.</strong> GPT-4-0613 is used
+    despite the prompt-only ablation showing other LLMs also work; no
+    sensitivity analysis is run on the deployed system to LLM variance.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is the <strong>"what does the LLM+VLM+PDDL stack look like when it
+actually has to ship?"</strong> counterpoint to research-prototype work like
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>.
+The contrast is illuminating in both directions:</p>
+<ul>
+  <li><strong>What an applied system gives up.</strong> Closed vocabulary,
+    hand-engineered PDDL operators, predefined motion, qualitative
+    evaluation. No predicate invention, no operator learning, no learned
+    low-level controllers. The cost of robustness is generality.</li>
+  <li><strong>What an applied system buys.</strong> A real PR2 cooking real
+    eggs and broccoli in a real kitchen from a recipe the system has never
+    seen. Few-shot LLM prompting, 3-shot CLIP linear probe, hand-written
+    PDDL &mdash; minimal data, maximal engineering, ships.</li>
+  <li><strong>The eval-protocol gap is the most useful finding.</strong>
+    BLADE evaluates a research prototype on 20 initial states &times; 3 seeds
+    in CALVIN and reports mean &plusmn; std. This paper cooks two dishes
+    once and shows the photos. Both are honest; they're measuring different
+    things. The question is whether BLADE-style abstraction learning could
+    survive the constraints (closed vocabulary, predefined motion, real
+    kitchen) that this system accepts as given.</li>
+  <li><strong>Bridge to predecessor work.</strong> Sits in the same lineage
+    as <a href="from_cooking_recipes_to_robot_task_trees.html">Paulius et
+    al.'s recipe-to-task-tree</a> work but adds the LLM front-end and PDDL
+    back-end &mdash; worth comparing on coverage vs. brittleness.</li>
+  <li><strong>State recognition as the bottleneck.</strong> The real-run
+    miscalls suggest the visual-only state classifier is the system's
+    weakest link &mdash; an opportunity for tactile/olfactory multimodal
+    state estimation, possibly with the kind of foundation-model-based
+    perception that the BLADE line of work could extend into.</li>
+</ul>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  We succeeded in experiments in which PR2, a dual-armed wheeled robot,
+  performed cooking from arranged new recipes in a real-world environment,
+  and confirmed the effectiveness of the proposed system.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  Behaviors that need to be complemented include actions that are not
+  described in the recipe because people do them unconsciously, but are
+  actually necessary. For example, in order to "pour the eggs in the bowl
+  into the pan," it is necessary to hold the bowl before doing that.
+  <span class="quote-cite">&mdash; &sect;1, Introduction</span>
+</blockquote>
+
+<blockquote>
+  Although there are some points to be improved, such as the fact that the
+  robot uses a net ladle for the experimental circumstance, and the time
+  until the robot judges that the butter is melted is short, and it seems
+  that the butter was not yet completely melted when the robot judged.
+  However, we were able to actually cook broccoli.
+  <span class="quote-cite">&mdash; &sect;5.4, Real-World Experiments</span>
+</blockquote>
+
+<blockquote>
+  We confirmed that the finished dishes were tasty and human-eatable by
+  eating them.
+  <span class="quote-cite">&mdash; &sect;5.4, caption of Fig. 22</span>
+</blockquote>
+
+<h2>Related</h2>
+<ul>
+  <li><a href="from_cooking_recipes_to_robot_task_trees.html">From Cooking
+    Recipes to Robot Task Trees</a> &mdash; predecessor in the recipe-to-robot
+    line; uses a Functional Object-Oriented Network rather than LLM+PDDL.
+    This paper updates the front-end to a foundation model.</li>
+  <li><a href="llm_plus_p_empowering_llms_with_optimal_planning_proficiency.html">LLM+P</a>
+    &mdash; same LLM-translates-to-PDDL pattern but for general
+    planning domains; the authors explicitly cite LLM+P-style error-feedback
+    re-planning as their proposed fix for recipe-complexity scaling.</li>
+  <li><a href="llms_as_planning_formalizers_survey.html">LLMs as Planning
+    Formalizers (survey)</a> &mdash; surveys the LLM-to-PDDL-translation
+    landscape this paper sits in; useful for situating the design choice
+    of "LLM parses recipe, classical planner does the planning".</li>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; the research-prototype counterpoint: learns PDDL operators
+    automatically from demos rather than hand-defining them, learns
+    predicate classifiers and diffusion-policy controllers end-to-end,
+    evaluates on 20 initial states &times; 3 seeds. Same overall stack
+    (LLM + PDDL + VLM/classifier), opposite trade-off.</li>
+  <li><a href="interpret_interactive_predicate_learning_from_language_feedback.html">InterPreT</a>
+    &mdash; learns the predicates themselves from language feedback;
+    addresses the "closed vocabulary" weakness this paper accepts.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sparsh: Self-supervised touch representations for vision-based tactile sensing</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Higuera, Sharma, Bodduluri, Fan, Lancaster, Kalakrishnan, Kaess, Boots, Lambeta, Wu, Mukadam">
+<meta name="year" content="2024">
+<meta name="venue" content="CoRL 2024">
+<meta name="arxiv_id" content="2410.24090">
+<meta name="url" content="https://arxiv.org/abs/2410.24090">
+<meta name="pdf" content="../../raw/papers/sparsh_self_supervised_touch_representations.pdf">
+<meta name="tags" content="tactile-representation, self-supervised-learning, vision-based-tactile, foundation-models, gelsight, digit, representation-learning, multimodal-dataset">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Sparsh: Self-supervised touch representations for vision-based tactile sensing</h1>
+<p class="meta">
+  Carolina Higuera*, Akash Sharma*, Chaithanya Krishna Bodduluri, Taosha Fan,
+  Patrick Lancaster, Mrinal Kalakrishnan, Michael Kaess, Byron Boots,
+  Mike Lambeta, Tingfan Wu, Mustafa Mukadam
+  &middot; FAIR at Meta / U. Washington / CMU
+  &middot; CoRL 2024
+  &middot; <a href="https://arxiv.org/abs/2410.24090">arXiv:2410.24090</a>
+  &middot; <a href="../../raw/papers/sparsh_self_supervised_touch_representations.pdf">PDF</a>
+  &middot; <a href="https://sparsh-ssl.github.io/">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> Sparsh is a family of self-supervised touch
+encoders (MAE / DINO / DINOv2 / I-JEPA / V-JEPA) pre-trained on 460k+ unlabeled
+vision-based tactile images that generalize across DIGIT, GelSight 2017, and
+GelSight Mini sensors and across six touch-centric tasks &mdash; the
+"foundation-model-for-touch" move, replacing per-sensor, per-task handcrafted
+encoders, and shipped with TacBench to standardize the benchmark.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Vision-based tactile sensors (GelSight, DIGIT) capture contact geometry,
+texture, and force at the sensor-object interface, but the field's prevailing
+practice is to train a <em>custom</em> model with task-specific labeled data
+for each sensor. That fragments effort: a feature extractor tuned for GelSight
+with markers may not transfer to markerless DIGIT, and an encoder optimized for
+texture recognition may be useless for slip reasoning. Worse, the labels that
+would let you build a general model &mdash; ground-truth contact forces, slip,
+deformation tracking, extrinsic contact &mdash; are exactly the quantities that
+are expensive or infeasible to instrument at scale. Sparsh borrows the
+self-supervised-learning (SSL) recipe that reshaped NLP and vision: learn
+data-agnostic objectives from cheap unlabeled tactile images, then probe the
+frozen representation on downstream tasks. It also fills a missing-benchmark
+gap with TacBench, so progress is measurable across sensors and models.</p>
+
+<h2>Method</h2>
+<p>Two deliverables: the <strong>Sparsh</strong> encoder family and the
+<strong>TacBench</strong> benchmark (Fig 1, Fig 2).</p>
+
+<p><strong>SSL pre-training (the encoders).</strong> All encoders are ViT-B/14
+(Table 1), pre-trained without labels on ~460k tactile images (70% / 462.7k of
+a ~661k-image pool; the rest held out for online probes). Five SSL paradigms
+are adapted from their official vision codebases:</p>
+<ul>
+  <li><strong>Sparsh (MAE)</strong> &mdash; masked image modeling; ViT encoder +
+    lightweight ViT decoder, L2 pixel reconstruction
+    <code>&#8214;I<sub>target</sub> &minus; I<sub>recon</sub>&#8214;<sup>2</sup></code>.
+    Pixel-space objective.</li>
+  <li><strong>Sparsh (DINO / DINOv2)</strong> &mdash; self-distillation; a student
+    ViT predicts an EMA teacher's softmax-normalized outputs over different crops
+    (cross-entropy). Latent-space objective.</li>
+  <li><strong>Sparsh (I-JEPA / V-JEPA)</strong> &mdash; joint-embedding predictive;
+    a context encoder predicts an EMA target encoder's <em>features</em> for masked
+    local regions through a small predictor (L2 in feature space). I-JEPA uses
+    spatial block masking on images; V-JEPA uses tube masking on 4-frame clips.</li>
+</ul>
+
+<p><strong>Tactile-specific design moves.</strong> (i) <strong>Background
+subtraction</strong> for markerless DIGIT and GelSight Mini, giving the model a
+no-contact reference so static shear from a perpendicular force is legible;
+empirically improves same-sensor generalization. (ii) <strong>Temporal
+tokenization</strong> &mdash; for image SSL methods two frames at stride 5 are
+concatenated channel-wise,
+<code>I<sub>t</sub> &oplus; I<sub>t&minus;5</sub> &rarr; x &isin; &#8477;<sup>h&times;w&times;6</sup></code>,
+an ~80 ms window matching the human partial-slip reaction time; for V-JEPA, 4-frame
+clips at <code>[t, t&minus;2, t&minus;4, t&minus;6]</code> (~100 ms). All inputs
+reshaped to 224&times;224.</p>
+
+<p><strong>TacBench (the benchmark) &amp; evaluation protocol.</strong> Six tasks
+under three questions: <em>comprehend properties</em> &mdash; T1 force estimation,
+T1A force-field visualization, T2 slip detection; <em>enable perception</em> &mdash;
+T3 SE(2) pose estimation, T4 grasp stability, T5 textile recognition; <em>enable
+planning</em> &mdash; T6 bead-maze tactile policy. Standard evaluation
+<strong>freezes</strong> the Sparsh encoder and trains an attentive decoder
+(cross-attention + 2-layer MLP) on the labeled set; dense tasks (force fields)
+use a DPT decoder (Fig 7). The headline comparison is against an
+<strong>E2E baseline</strong> of identical capacity trained from scratch, swept
+across labeled-data budgets (1% / 10% / 33% / 50% / 100%).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> SSL pre-training pools YCB-Slide
+    (DIGIT, 180k), the authors' new <em>Touch-Slide</em> (DIGIT, 180k),
+    Touch-and-Go (GelSight, 220k), and ObjectFolder (GelSight Mini, 81k) &mdash;
+    ~661k total, 462.7k used for pre-training. TacBench labeled sets (Table 3):
+    T1 75k (DIGIT) + 75k (GelSight Mini); T2 125k DIGIT, 13% slip; T3 49k DIGIT;
+    T4 Feeling-of-Success 9.3k GelSight 2017; T5 Clothing/Clothing-Dataset 120k
+    GelSight 2017, 20 classes; T6 bead-maze ~34k DIGIT.</li>
+  <li><strong>Hardware / simulator:</strong> Three real vision-based tactile
+    sensors &mdash; DIGIT, GelSight 2017 (markers), GelSight Mini (markerless).
+    Downstream tasks use real robot arms sliding/grasping (Franka-class setups,
+    Fig 3) and a hexapod-mounted force sensor for force/slip data collection.
+    Bead-maze uses a real arm with DIGIT and VR/kinesthetic teleop demos.</li>
+  <li><strong>Baselines:</strong> task- and sensor-specific <strong>E2E</strong>
+    models of identical capacity trained from scratch (encoder + probe both
+    trained); the five Sparsh SSL variants compared against each other; on T4,
+    comparison to Calandra et al. 2017 (which combined tactile + vision).</li>
+  <li><strong>Compute:</strong> 8&times; Nvidia A-100 (80G) GPUs; 150 epochs,
+    AdamW, cosine weight-decay 0.04&rarr;0.4, 30-epoch LR warmup (Table 1).
+    ~86.3M parameters per backbone; inference up to 112 FPS on RTX 3080
+    (V-JEPA 60 FPS) (Table 2).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: SSL pre-training + frozen probe beats from-scratch E2E by an average
+of <strong>95.1%</strong> across TacBench under limited (33&ndash;50%) labeled
+budgets. <strong>Sparsh (DINO)</strong> and <strong>Sparsh (I-JEPA)</strong> are
+the most competitive overall, with DINO outperforming I-JEPA by ~5.6% on average
+&mdash; evidence that <em>latent-space</em> SSL beats pixel-space (MAE) for
+tactile images. Task-level character (Fig 4):</p>
+
+<table>
+  <tr><th>Task</th><th>Best Sparsh variant</th><th>Headline finding</th></tr>
+  <tr><td>T1 Force estimation</td><td>Sparsh (DINO)</td><td>Low force error even with sparse labels; markerless GelSight Mini where E2E fails</td></tr>
+  <tr><td>T2 Slip detection</td><td>Sparsh (V-JEPA)</td><td>Highest F1; 4-frame temporal window helps; strong even at 1% data</td></tr>
+  <tr><td>T3 Pose estimation</td><td>pre-trained (DINO)</td><td>Holds accuracy in low-data; E2E degrades sharply</td></tr>
+  <tr><td>T4 Grasp stability</td><td>Sparsh (I-JEPA)/(V-JEPA)</td><td>~80% acc from a single finger&rsquo;s touch, surpassing Calandra et al. (tactile+vision)</td></tr>
+  <tr><td>T5 Textile recognition</td><td>Sparsh (MAE)</td><td>MAE&rsquo;s pixel features shine; big gain at 10% data over hard-to-train E2E</td></tr>
+  <tr><td>T6 Bead maze (policy)</td><td>Sparsh (DINO)/(I-JEPA)</td><td>~20&ndash;53% lower trajectory error vs E2E; but no model finishes the real maze</td></tr>
+</table>
+
+<p>Where it loses / is honest: on T6 the lower BC trajectory error did
+<em>not</em> translate to real-robot success &mdash; <strong>none</strong> of the
+models completes the full maze on hardware (lack of force control, no error
+recovery after losing grip, drift from local decision-making). Specialist
+from-scratch models can show better <em>real rollout</em> performance because
+the narrow task domain overfits favorably &mdash; a known pre-trained-vision
+phenomenon the authors cite. MAE generally lags the latent-space methods except
+on the texture-heavy T5.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors (&sect;8):</em></p>
+<ul>
+  <li>Open-source tactile datasets used here are predominantly <em>discrete
+    contact</em> interactions; data rich in <strong>shear</strong> would likely
+    improve representations.</li>
+  <li>They do <strong>not ablate the length of tactile-image history</strong>
+    used for learning (the stride-5 / 2-frame choice); doing so could guide
+    downstream gains.</li>
+  <li>Bead-maze policies on the real robot only <em>partially</em> complete the
+    maze before compounding error drops the bead; how to effectively leverage
+    pre-trained touch reps in behavioral cloning is open.</li>
+  <li>Currently limited by data streaming rates, not inference, at deployment.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>"95.1% improvement" is an <em>average relative</em> gain over a
+    from-scratch E2E baseline at restricted budgets &mdash; an impressive but
+    soft framing; the absolute numbers per task (Fig 4) tell a more mixed story,
+    and at 100% labels the gap narrows on several tasks.</li>
+  <li>No external SOTA baselines on most tasks &mdash; the comparison is Sparsh
+    variants vs. a same-capacity scratch model. The closest concurrent works
+    (<a href="../../raw/papers/t3_transferable_tactile_transformers.pdf">T3</a>,
+    <a href="../../raw/papers/unit_data_efficient_tactile_representation.pdf">UniT</a>)
+    are discussed but not benchmarked head-to-head, so "best general touch rep"
+    is asserted relative to its own family.</li>
+  <li>The "generalize across sensors" claim rests on pre-training on three sensor
+    families and testing on real instances unseen during SSL, but per-task
+    decoders are still trained per-sensor &mdash; cross-sensor <em>zero-shot</em>
+    transfer is only an appendix few-shot (10-shot) result, not the headline.</li>
+  <li>Grasp-stability and slip datasets are class-imbalanced (36% fail / 13%
+    slip); F1 is reported, but the small eval splits (1.3k grasps) make the
+    ~80% numbers statistically thin.</li>
+  <li>The whole benchmark is about <em>reading out</em> properties from a frozen
+    representation &mdash; it shows touch reps <em>encode</em> force/slip/pose,
+    not that a downstream planner can <em>act</em> on those predicates reliably
+    (T6 is the one action test, and it fails on hardware).</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely on the thesis behind this batch:
+<strong>many manipulation predicates are not visually evaluable</strong> &mdash;
+<code>is_grasped</code>, <code>is_inserted</code>, <code>surface_is_rough</code>,
+<code>is_slipping</code>, <code>is_screwed_tight</code> live in touch and force,
+not pixels. <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+learns <em>visual</em> classifiers for its predicates and explicitly flags
+contact-rich tasks as a segmentation/observation weakness. Sparsh is the
+infrastructure that could supply the missing modality: a frozen, sensor-agnostic
+touch encoder whose features TacBench shows already linearly encode force, slip
+state, SE(2) pose, and grasp success. Concretely, a BLADE-style predicate
+classifier <code>f<sub>&theta;</sub>(p): O &rarr; {T,F}</code> could take a Sparsh
+embedding instead of (or alongside) a cropped RGB region, making
+touch-dependent preconditions/effects learnable from the same auto-labeled-demo
+pipeline. The bead-maze result is also a cautionary note for the BLADE thesis:
+good representation-level read-out does not guarantee closed-loop control without
+force-aware action &mdash; the symbolic layer can name <code>is_slipping</code>,
+but the controller still needs force modulation, which BLADE's purely categorical
+abstraction punts to the diffusion policy. Cluster B (representation/foundation
+models) is the natural feeder; the policy clusters (C/F) are where these reps
+would actually plug into manipulation.</p>
+<p>Directly related newly-ingested batch papers: see Related below.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We find that SSL pre-training for touch representation and sensor-specific
+  end-to-end training by 95.1% on average over TacBench, and Sparsh (DINO) and
+  Sparsh (IJEPA) are the most competitive, indicating the merits of learning in
+  latent space for tactile images.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  However, current approaches primarily focus on texture and visual properties
+  and overlook physical contact properties, such as forces, slippage, and poses,
+  which are essential for dexterous manipulation.
+  <span class="quote-cite">&mdash; &sect;2 Related work / p.3</span>
+</blockquote>
+<blockquote>
+  Touch comes before sight, before speech.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.1 (Margaret Atwood, via the authors)</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[45] Zhao et al. 2024 &mdash; Transferable Tactile Transformers (T3)</strong>
+    &mdash; the closest concurrent work; shared-trunk sensor-specific encoders with
+    MAE + labeled supervision.
+    <a href="../../raw/papers/t3_transferable_tactile_transformers.pdf">PDF (forward-ref)</a></li>
+  <li><strong>[46] Xu et al. 2024 &mdash; UniT</strong> &mdash; VQGAN-based tactile
+    representation for GelSight Mini; the other concurrent baseline.
+    <a href="../../raw/papers/unit_data_efficient_tactile_representation.pdf">PDF (forward-ref)</a></li>
+  <li><strong>[39] Fu et al. 2024 &mdash; A Touch, Vision, and Language Dataset (TVL)</strong>
+    &mdash; same Meta/Goldberg orbit; touch-vision-language alignment.
+    <a href="../../raw/papers/touch_vision_language_dataset_multimodal_alignment.pdf">PDF (forward-ref)</a></li>
+  <li><strong>[40] Yang et al. 2024 &mdash; Binding touch to everything (UniTouch)</strong>
+    &mdash; unified multimodal tactile reps via cross-sensory binding.
+    <a href="../../raw/papers/binding_touch_to_everything_unitouch.pdf">PDF (forward-ref)</a></li>
+  <li><strong>[20] Yang et al. 2022 &mdash; Touch and Go</strong> &mdash; a core SSL
+    pre-training dataset here.
+    <a href="../../raw/papers/touch_and_go_human_collected_vision_touch.pdf">PDF (forward-ref)</a></li>
+  <li><strong>[37/38] Gao et al. &mdash; ObjectFolder / ObjectFolder 2.0</strong>
+    &mdash; multisensory datasets feeding SSL.
+    <a href="../../raw/papers/objectfolder_dataset_implicit_representations.pdf">PDF (forward-ref)</a></li>
+  <li><strong>[1] Yuan et al. 2017 &mdash; GelSight</strong> and
+    <strong>[3] Lambeta et al. 2020 &mdash; DIGIT</strong> &mdash; the foundational
+    sensor papers Sparsh trains on.
+    <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">GelSight PDF</a> ·
+    <a href="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">DIGIT PDF</a></li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="tactile_beyond_pixels_sparsh_x.html">Tactile Beyond Pixels (Sparsh-X)</a>
+    &mdash; the direct successor from the same line; extends Sparsh beyond a single
+    image stream to multi-modal tactile signals.</li>
+  <li><a href="t3_transferable_tactile_transformers.html">Transferable Tactile Transformers (T3)</a>
+    and <a href="unit_data_efficient_tactile_representation.html">UniT</a>
+    &mdash; the two concurrent tactile-representation works Sparsh names as closest;
+    cross-sensor / data-efficient counterpoints.</li>
+  <li><a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>
+    and <a href="mvitac_visuotactile_contrastive_pretraining.html">MViTac</a>
+    &mdash; unified static/dynamic and contrastive visuo-tactile pre-training; same
+    Cluster-B representation-learning family.</li>
+  <li><a href="dexterity_from_touch_self_supervised_pretraining.html">Dexterity from Touch (T-DEX)</a>
+    and <a href="see_to_touch_tactile_dexterity_visual_incentives.html">See to Touch</a>
+    &mdash; SSL tactile pre-training aimed at dexterity/policy, the action-side use of
+    such representations.</li>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a> and
+    <a href="touch_vision_language_dataset_multimodal_alignment.html">TVL</a>
+    &mdash; touch&ndash;language/vision binding; where Sparsh-style encoders meet the
+    language-grounding thesis BLADE cares about.</li>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">Beyond Sight (FuSe)</a>
+    and <a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>
+    &mdash; multisensory VLA policies; the downstream consumers a frozen Sparsh
+    encoder could feed.</li>
+  <li><a href="objectfolder_dataset_implicit_representations.html">ObjectFolder</a>,
+    <a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a>
+    &mdash; pre-training datasets Sparsh actually uses.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+    &mdash; situates Sparsh in the force/touch foundation-model landscape.</li>
+</ul>
+
+</body>
+</html>

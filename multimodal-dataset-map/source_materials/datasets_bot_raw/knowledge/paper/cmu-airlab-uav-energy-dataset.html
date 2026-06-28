@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>In-flight Positional and Energy-Use Dataset of Package-Delivery Quadcopter UAVs</title>
+<meta name="type" content="paper">
+<meta name="authors" content="">
+<meta name="year" content="2021">
+<meta name="venue" content="datasets.bot public catalog">
+<meta name="arxiv_id" content="">
+<meta name="url" content="https://www.nature.com/articles/s41597-021-00930-x">
+<meta name="pdf" content="https://www.nature.com/articles/s41597-021-00930-x">
+<meta name="tags" content="datasets-bot,open-data,mobile,physical,proprioception,custom">
+<meta name="status" content="datasets-bot-crosscheck">
+<meta name="ingested" content="2026-06-28">
+<meta name="source_prompt" content="datasets.bot public catalog cross-check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .meta { color: #777; font-size: 0.9em; }
+  a { color: #2962ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>In-flight Positional and Energy-Use Dataset of Package-Delivery Quadcopter UAVs</h1>
+<p class="meta">CMU AirLab &middot; 2021 &middot; datasets.bot &middot; <a href="https://datasets.bot/datasets/cmu-airlab-uav-energy-dataset">datasets.bot page</a></p>
+<p><strong>One-liner.</strong> 209 autonomous DJI Matrice 100 quadcopter package-delivery flights (10h45m, ~65 km) with GPS/IMU, voltage/current, and ultrasonic anemometer telemetry for UAV energy-consumption modeling.</p>
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> An empirical UAV energy-use dataset collected by CMU AirLab to measure how small electric delivery drones consume power under varied operating conditions. A DJI Matrice 100 (M100) quadcopter was autonomously flown on a triangular take-off/cruise/land pattern while sweeping payload (0 g, 250 g, 500 g), cruise altitude (25, 50, 75, 100 m), and cruise speed (4, 6, 8, 10, 12 m/s). The dataset contains 209 flights (195 parameter-varied plus 14 ancillary power/hover recordings), totaling 10 hours 45 minutes of flight over roughly 65 km, gathered between April and October 2019. The aircraft carried GPS (LORD MicroStrain 3DM-GX5-45 GNSS/INS), an IMU, a Mauch PL-200 voltage/current sensor, and an FT Technologies FT-205 ultrasonic anemometer, capturing inertial state, wind speed/direction, and power consumption. Data are provided as CSV files with fields including flight ID, programmed speed, payload mass, altitude, timestamp, wind speed/direction, battery voltage/current, position (lat/lon/alt), orientation (quaternion), velocity, angular rates, and linear acceleration. The data are intended to help improve UAV design, safety, and energy efficiency. Hosted on CMU's KiltHub (figshare) repository under CC BY 4.0; processing code is available on Bitbucket (castacks/DOE) under a BSD license. Funded by the U.S. DOE Vehicle Technologies Office (Award DE-EE0008463). License: CC-BY-4.0. Download: https://doi.org/10.1184/R1/12683453.</li>
+  <li><strong>Hardware / simulator:</strong> Embodiment: drone. Environment: outdoor. Realness: physical.</li>
+</ul>
+<h2>Schema</h2>
+<p>CSV files per flight with fields: flight ID, programmed cruise speed, payload mass, cruise altitude, timestamp, wind speed/direction, battery voltage/current, position (lat/lon/alt), orientation (quaternion), velocity, angular rates, linear acceleration.</p>
+<h2>Links</h2>
+<ul>
+  <li><a href="https://datasets.bot/datasets/cmu-airlab-uav-energy-dataset">datasets.bot page</a></li>
+  <li><a href="https://theairlab.org/energy-dataset/">Homepage</a></li>
+  <li><a href="https://www.nature.com/articles/s41597-021-00930-x">Paper</a></li>
+  <li><a href="https://doi.org/10.1184/R1/12683453">Download</a></li>
+</ul>
+</body>
+</html>

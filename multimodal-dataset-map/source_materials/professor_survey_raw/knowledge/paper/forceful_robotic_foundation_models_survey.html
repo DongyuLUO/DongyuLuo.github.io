@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Towards Forceful Robotic Foundation Models: a Literature Survey</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Xie, Correll">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2504.11827">
+<meta name="url" content="https://arxiv.org/abs/2504.11827">
+<meta name="pdf" content="../../raw/papers/forceful_robotic_foundation_models_survey.pdf">
+<meta name="tags" content="survey, force-control, foundation-models, contact-rich, vision-language-action, tactile-sensing, force-torque, proprioception, diffusion-policy, imitation-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- SURVEY format variant: Method renamed to "Survey scope / taxonomy",
+     Setup renamed to "Coverage", Results renamed to "Key insights / classifications". -->
+
+<h1>Towards Forceful Robotic Foundation Models: a Literature Survey</h1>
+<p class="meta">
+  William Xie, Nikolaus Correll
+  &middot; University of Colorado at Boulder
+  &middot; arXiv preprint, Apr 2025
+  &middot; <a href="https://arxiv.org/abs/2504.11827">arXiv:2504.11827</a>
+  &middot; <a href="../../raw/papers/forceful_robotic_foundation_models_survey.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A comparative survey of 25 transformer-/diffusion-based
+end-to-end tactile manipulation policies, organized around three axes &mdash; how force/touch
+data is <em>collected</em>, how force-conditioned <em>actions</em> are expressed, and how force
+data is <em>represented</em> &mdash; arguing that the next generation of robot foundation models
+will need force and torque as first-class input <em>and</em> output, not just position and vision.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Current "robot foundation models" (RT-2, Octo, OpenVLA, Gemini Robotics, &pi;<sub>0</sub>)
+condition almost exclusively on visual input and output position control. But force is the
+second derivative of position (<code>F = m&middot;&xuml;</code>), a richer, higher-frequency
+representation of motion: small position errors cause large force errors in stiff systems, so
+position-only control is neither sample-efficient nor sufficient for contact-rich tasks like
+pouring, peg-in-hole insertion, and handling delicate objects. The survey asks <em>when and why</em>
+forces are needed and how to fold them into generalist policies. A recurring tension it sets up:
+force and touch are "abstract quantities that can be inferred through a wide range of modalities
+and are often measured and controlled implicitly" &mdash; e.g., impedance control bakes compliance
+in without ever sensing force &mdash; so it is genuinely unclear whether <em>explicit</em> force
+representations are needed at all. The survey scopes itself to transformer [10] and diffusion [11]
+end-to-end methods precisely because their scaling properties make them candidates for foundation models.</p>
+
+<h2>Survey scope / taxonomy</h2>
+<p>The survey first lays a <strong>background</strong> (Sec. 2) covering: human tactile sensing
+(FA-I/FA-II/SA-I/SA-II mechanoreceptors, 20&ndash;1500 Hz bandwidths) and proprioception (muscle
+spindles, Golgi tendon organs, joint receptors); robotic <strong>force control</strong> &mdash; the
+Jacobian relations <code>&xdot; = J&qdot;</code> and <code>&tau; = J<sup>T</sup>F</code>, impedance
+control as a virtual mass-spring-damper <code>F = M&xuml; + D&xdot; + K(x &minus; x<sub>d</sub>)</code>,
+compliance control (<code>M=0,D=0</code>), admittance control, and hybrid position/force control;
+and <strong>policy learning</strong> (imitation learning vs RL, behavior cloning, Decision/Trajectory
+Transformer, diffusion policy as a special case of flow-matching, VLAs).</p>
+
+<p>It then reviews <strong>25 works</strong> implementing tactile robot policies, which collectively
+yield <strong>64 manipulation experiments / 59 distinct policies / 53 unique tasks</strong>. The core
+analytic device (Figs 3&ndash;4) plots each task on log-axes of <strong>force magnitude (0.1&ndash;10N+)</strong>
+vs <strong>task length / "makespan" (0.1&ndash;20s)</strong>, binning force into delicate (0.1&ndash;1N),
+typical (1&ndash;10N), and high (&gt;10N). The survey body is then organized into three lenses, each its own section:</p>
+<ul>
+  <li><strong>Data collection (Sec. 4)</strong> &mdash; five methods: human video demonstration,
+    kinesthetic teaching, reinforcement learning, augmented/bilateral teleoperation (haptics, handheld
+    grippers, force-matching leader-follower), and plain teleoperation.</li>
+  <li><strong>Action space (Sec. 5)</strong> &mdash; Cartesian position control vs joint-space control
+    vs explicit force control (impedance/admittance/compliance, wrench targets).</li>
+  <li><strong>Representation learning (Sec. 6)</strong> &mdash; behavior-cloning architecture choice,
+    plus visuotactile vs force representation learning, and "scaling multimodal reasoning."</li>
+</ul>
+
+<h2>Coverage</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> 25 reviewed papers, 64 tasks (53 unique). No consistent
+    benchmark across papers &mdash; "peg-in-hole" is the only task with as many as five papers providing
+    benchmarks. Tasks span door open/close, peg/plug/USB/key insertion, pouring, wiping/erasing, nut
+    threading, grasping (fragile/delicate/deformable), zucchini peeling, dough rolling, chip/card swiping,
+    book tipping, etc. A full per-paper/per-task reference table is hosted in an external online spreadsheet.</li>
+  <li><strong>Hardware / simulator:</strong> 14 unique tactile sensor products. Sensor-type distribution
+    (Fig 5): finger optical/visuotactile (GelSight-family) 36% &mdash; the plurality; finger force 16%;
+    whole-arm joint-torque 16%; wrist F/T 16%; finger audio 8%; whole-arm+finger 8%. Arms include Franka
+    Panda, Flexiv Rizon, UR5E, Widow X; wrist sensors include ATI Mini 45, OptoForce; novel sensors include
+    AnySkin (magnetometer), CoinFT, contact microphones. Simulation is rare &mdash; one outlier trains in
+    Drake on 50,000 simulated GelSight contact-rich skills.</li>
+  <li><strong>Baselines:</strong> <em>not reported</em> as such &mdash; this is a survey, not an empirical
+    paper; "baselines" within reviewed works are force-ablated versions of each policy (e.g., position-only
+    or uniform-stiffness controllers), which consistently underperform their force-aware counterparts.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Key insights / classifications</h2>
+<p>Distributions extracted across the 25 unique papers (Figs 5&ndash;9):</p>
+<table>
+  <tr><th>Lens</th><th>Dominant category</th><th>Share</th><th>Notable runners-up</th></tr>
+  <tr><td>Touch sensor type</td><td>Finger optical (GelSight-family)</td><td>36%</td><td>finger-force / whole-arm / wrist-F/T at 16% each</td></tr>
+  <tr><td>Data collection</td><td>Teleoperation</td><td>36%</td><td>augmented/bilateral teleop 32%; kinesthetic 16%</td></tr>
+  <tr><td>Dataset size</td><td>&lt;200 demos</td><td>76%</td><td>200&ndash;2000 at 16%; only two papers &gt;2000</td></tr>
+  <tr><td>Action space</td><td>Cartesian position control</td><td>64%</td><td>wrench/force/compliance 28%; joint-space 8%</td></tr>
+  <tr><td>Policy architecture</td><td>Diffusion policy</td><td>52%</td><td>transformer 20% (3 of them ACT); MLP 16%</td></tr>
+</table>
+
+<p>Higher-level takeaways:</p>
+<ul>
+  <li><strong>Force "barely matters" empirically so far.</strong> Only a few tasks (pouring, peg-in-hole,
+    delicate-object handling) demonstrably need force; the authors find imitation-learning performance is
+    "not at a level of dynamics where force truly matters." Force magnitudes are reported in only 7/25 (28%)
+    of works, so most are estimated by the authors.</li>
+  <li><strong>Explicit force control yields concrete wins when used.</strong> Reviewed force-aware policies
+    report large gains over force-ablated versions: Hou et al.'s variable-compliance policy drops 81% in
+    absolute success when force is removed; Zhou et al. cut task time 17% vs no-force and 26% vs teleop;
+    Liu et al. / Noseworthy et al. reach 1.3&times;&ndash;4.5&times; speedups; Wu et al. (TacDiffusion) hit
+    &lt;0.5mm peg insertion in under 2s at &gt;90% success.</li>
+  <li><strong>Kinesthetic teaching and handheld grippers reduce the human&ndash;robot embodiment gap</strong>
+    by letting demonstrators impart real forces; teleoperation is most popular but force-blind.</li>
+  <li><strong>Force representation is "easy" but underexplored.</strong> Force data is low-dimensional and
+    directly interpretable (raw, with minor gravity compensation, FFT-to-spectrogram, or a small MLP),
+    whereas visuotactile (GelSight) representation learning gets the most attention, e.g. TVL encoder
+    fine-tuned on 44k vision-touch-language samples.</li>
+  <li><strong>No tactile foundation model exists yet that does both high-level reasoning and low-level
+    reactive control.</strong> FuSe (the one paper fine-tuning a foundation backbone, Octo, on 26,866
+    tactile trajectories) reasons multimodally but is largely limited to grasping/button-pressing; "no
+    work has fully explored first-class large force pretraining."</li>
+  <li><strong>Compositional vs end-to-end.</strong> &pi;<sub>0</sub>, Helix, and Gemini Robotics all use
+    compositional control (low-frequency model decomposes instructions into atomic skills for a high-frequency
+    low-level controller), suggesting foundation models can be "functionally equivalent to several smaller,
+    specialized policies."</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Scope is deliberately narrow: only transformer/diffusion end-to-end methods; classical force-control
+    RL and analytic-controller literature are largely set aside.</li>
+  <li>Force magnitudes and task times are <em>estimated</em> for the 72% of works that don't report them
+    (from videos/presentations), so Figs 3&ndash;4 carry measurement uncertainty.</li>
+  <li>The central question &mdash; whether <em>explicit</em> force representations are needed, given that
+    impedance/compliance can absorb force implicitly &mdash; is left genuinely open; they argue physiology's
+    redundancy (touch can be functionally replaced by vision+proprioception) should not be read as "vision
+    is sufficient."</li>
+  <li>Simulation of dynamic, frictional, large-magnitude forces remains an unsolved bottleneck for scaling
+    tactile data.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>Sample is small and heterogeneous: <strong>25 papers, no shared benchmark, no shared metric.</strong>
+    The percentage breakdowns (36%, 76%, 64%, &hellip;) are over n=25 unique papers, so each bar is a handful
+    of works &mdash; the distributions are suggestive, not statistically robust. Several percentages are exact
+    multiples of 4% (=1/25), underscoring how few papers populate each cell.</li>
+  <li>The headline force-vs-makespan scatter (Figs 3&ndash;4) is the survey's signature visual but rests on
+    author-estimated force magnitudes for ~72% of tasks &mdash; the axis with the strongest narrative claim is
+    the least directly measured.</li>
+  <li>No quantitative cross-paper comparison of <em>success rates</em> is possible because tasks/benchmarks
+    don't align; all reported gains are within-paper force-ablation deltas, which can't be pooled.</li>
+  <li>The taxonomy is engineering-centric (sensor type, data-collection method, action space). It largely
+    sidesteps the <em>symbolic / planning</em> question of which task-relevant predicates force sensing makes
+    decidable &mdash; exactly the gap that matters for my work (see below).</li>
+  <li>"Foundation model" is used loosely: of the 25, only FuSe actually fine-tunes a pretrained generalist
+    backbone; the rest are task-specific policies. The title's aspiration outruns the corpus.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This survey is the cleanest external statement of the thesis underlying this whole 2026-06-24 batch:
+<strong>many manipulation predicates are not visually evaluable &mdash; they live in touch and force.</strong>
+<code>is_inserted</code> (peg-in-hole), <code>is_screwed_tight</code> (nut threading), <code>is_grasped</code>
+(grasp event detection in Fig 1), and delicate-object compliance are precisely the survey's contact-rich
+exemplars, and it documents that vision/position-only policies fail on them while force-conditioned policies
+succeed. For <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>, this
+is directly load-bearing: BLADE's "What I noticed" flagged that <em>continuous parameters (pour amount, grasp
+pose, force) sit entirely inside the diffusion policy &mdash; the abstraction layer is purely categorical,
+which may be a limitation for force-modulated tasks.</em> This survey is the empirical map of exactly that
+gap. A force-aware predicate classifier (<code>turned_tight(bolt)</code>, <code>seated(peg)</code>) grounded
+in wrist-F/T or fingertip signals &mdash; rather than pixels &mdash; is the natural extension of BLADE's
+every-frame predicate-labeling recipe into the tactile regime. The survey also sharpens the structure-vs-scale
+debate BLADE sits inside: it observes that &pi;<sub>0</sub>/Helix/Gemini are <em>compositional</em> (slow planner
++ fast controller), which is structurally BLADE-shaped, and notes "no work has fully explored first-class force
+pretraining" &mdash; an open lane for symbolic-abstraction-over-force-skills work.</p>
+<p>On-theme and central, not tangential. It is a survey rather than a method, so it anchors the cluster rather
+than competing with BLADE methodologically.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We generally find that while there are few tasks such as pouring, peg-in-hole insertion, and handling
+  delicate objects, the performance of imitation learning models is not at a level of dynamics where force
+  truly matters.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  Force and touch are abstract quantities that can be inferred through a wide range of modalities and are
+  often measured and controlled implicitly.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  No work has fully explored first-class large force pretraining for a tactile robot foundation model which
+  can perform high-level (semantic reasoning) and low-level (reactive control) decision making for
+  contact-rich, forceful tasks.
+  <span class="quote-cite">&mdash; &sect;6.4 / p.17</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited here that should likely be ingested next:</p>
+<ul>
+  <li><strong>FuSe / Jones et al.</strong> &mdash; the one foundation-backbone (Octo) fine-tune in the
+    survey; 26,866 tactile trajectories, multimodal contrastive+generative losses.
+    <a href="../../raw/papers/beyond_sight_fuse_heterogeneous_sensors_language.pdf">queued in this batch</a>.</li>
+  <li><strong>RT-2 / Octo / Gemini Robotics / &pi;<sub>0</sub></strong> &mdash; the position-only generalist
+    backbones the survey argues should gain force I/O.</li>
+  <li><strong>Diffusion Policy (Chi et al.)</strong> and <strong>ACT (Zhao et al.)</strong> &mdash; the two
+    dominant policy-learning architectures (52% / part of 20%) in the reviewed corpus.</li>
+  <li><strong>TVL encoder (Fu et al.)</strong> &mdash; vision-touch-language pretraining, the visuotactile
+    representation exemplar.
+    <a href="../../raw/papers/touch_vision_language_dataset_multimodal_alignment.pdf">queued in this batch (TVL)</a>.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; Weiyu's anchor paper; this survey is the empirical map of the force-modulated-task gap BLADE's
+    categorical abstraction layer explicitly flagged.</li>
+  <li><a href="../../raw/papers/beyond_sight_fuse_heterogeneous_sensors_language.pdf">FuSe (Beyond Sight)</a>
+    &mdash; the survey's sole foundation-model-fine-tune example (Cluster C); the closest existing thing to
+    a "forceful robotic foundation model."</li>
+  <li><a href="../../raw/papers/bridging_language_and_action_survey.pdf">Bridging Language and Action (survey)</a>,
+    <a href="../../raw/papers/what_foundation_models_robot_manipulation_survey.pdf">What Foundation Models can Bring (survey)</a>,
+    and <a href="../../raw/papers/variable_impedance_control_learning_review.pdf">Variable Impedance Control and Learning (review)</a>
+    &mdash; the three sibling Cluster-J surveys/reviews; impedance review directly elaborates this survey's
+    <code>F = M&xuml; + D&xdot; + K(x &minus; x<sub>d</sub>)</code> background.</li>
+  <li><a href="../../raw/papers/forcevla_force_aware_moe_contact_rich.pdf">ForceVLA</a>,
+    <a href="../../raw/papers/tactile_vla_physical_knowledge_generalization.pdf">Tactile-VLA</a>,
+    <a href="../../raw/papers/vla_touch_dual_level_tactile_feedback.pdf">VLA-Touch</a> (Cluster C)
+    &mdash; the force-/tactile-conditioned VLAs that are concrete attempts at the "forceful foundation model"
+    this survey calls for.</li>
+  <li><a href="../../raw/papers/foar_force_aware_reactive_policy.pdf">FoAR</a>,
+    <a href="../../raw/papers/reactive_diffusion_policy_slow_fast_visuotactile.pdf">Reactive Diffusion Policy</a>,
+    <a href="../../raw/papers/factr_force_attending_curriculum_training.pdf">FACTR</a> (Cluster F)
+    &mdash; explicit force/proprioception policies of the kind the survey's Sec. 5 (action space) catalogs.</li>
+  <li><a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">GelSight</a> and
+    <a href="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">DIGIT</a> (Cluster J)
+    &mdash; the optical/visuotactile finger sensors that make up the plurality (36%) of the surveyed corpus.</li>
+  <li><a href="../../raw/papers/hybrid_position_force_control_manipulators.pdf">Hybrid Position/Force Control (Raibert &amp; Craig 1981)</a>
+    &mdash; the classical control formalism the survey's force-control background descends from.</li>
+</ul>
+
+</body>
+</html>

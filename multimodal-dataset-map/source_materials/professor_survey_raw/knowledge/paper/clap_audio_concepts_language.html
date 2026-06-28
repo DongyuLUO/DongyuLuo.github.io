@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CLAP: Learning Audio Concepts From Natural Language Supervision</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Elizalde, Deshmukh, Al Ismail, Wang">
+<meta name="year" content="2022">
+<meta name="venue" content="arXiv 2022 (later ICASSP 2023)">
+<meta name="arxiv_id" content="2206.04769">
+<meta name="url" content="https://arxiv.org/abs/2206.04769">
+<meta name="pdf" content="../../raw/papers/clap_audio_concepts_language.pdf">
+<meta name="tags" content="audio-language, contrastive-learning, foundation-models, zero-shot, representation-learning, multimodal-binding, self-supervised-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- Off-genre: audio-language ML paper, no robot. Structure kept; "Why I care"
+     marks it as a method anchor / adjacent, not a manipulation paper. -->
+
+<h1>CLAP: Learning Audio Concepts From Natural Language Supervision</h1>
+<p class="meta">
+  Benjamin Elizalde, Soham Deshmukh, Mahmoud Al Ismail, Huaming Wang
+  &middot; Microsoft
+  &middot; arXiv 2022 (later ICASSP 2023)
+  &middot; <a href="https://arxiv.org/abs/2206.04769">arXiv:2206.04769</a>
+  &middot; <a href="../../raw/papers/clap_audio_concepts_language.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> CLAP is "CLIP for audio": train a paired
+audio encoder + text encoder with a symmetric contrastive loss on 128k
+audio&ndash;caption pairs to build a joint embedding space, which then does
+<em>zero-shot</em> audio classification for any user-typed class name and
+sets zero-shot SoTA on sound-event tasks &mdash; the canonical method anchor
+for grounding acoustic events in language.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Mainstream audio models follow the "one class label &rarr; many recordings,
+one task" supervised paradigm: they require labeled audio and can only predict
+a fixed, predefined set of categories. Self-supervised audio pretraining
+removes the label dependence but discards the semantic knowledge carried in
+natural language, and still bolts on a static, fixed-vocabulary classifier head
+downstream. Computer vision had already shown a third path &mdash; learn
+representations from natural-language supervision (CLIP, Florence, ALIGN) for
+flexible zero-shot prediction &mdash; but in audio the closest attempts
+(Wav2CLIP, AudioCLIP) <em>distilled from CLIP</em> and trained on audio + class
+labels from AudioSet rather than on audio + free-form language. CLAP asks
+whether learning directly from audio&ndash;text caption pairs buys the same
+open-vocabulary flexibility and generalization for sound.</p>
+
+<h2>Method</h2>
+<p>CLAP (Fig 1) is a two-tower contrastive model, structurally a direct audio
+analogue of CLIP.</p>
+
+<p><strong>Encoders.</strong> An audio encoder <code>f<sub>a</sub></code> maps
+a processed log-Mel spectrogram <code>X<sub>a</sub> &isin; R<sup>F&times;T</sup></code>
+(F Mel bins, T time bins) to an audio representation; a text encoder
+<code>f<sub>t</sub></code> maps the caption <code>X<sub>t</sub></code> to a text
+representation. Concretely the audio encoder is <strong>CNN14</strong> (from
+PANNs, 80.8M params, embedding size 2048, pretrained on 2M AudioSet clips) and
+the text encoder is <strong>BERT-base-uncased</strong> (110M params), using the
+[CLS] token of the final layer (size 768) as the text embedding.</p>
+
+<p><strong>Joint space + contrastive loss.</strong> Two learnable linear
+projections <code>L<sub>a</sub>, L<sub>t</sub></code> map both towers into a
+shared <code>d=1024</code>-dim multimodal space, giving embeddings
+<code>E<sub>a</sub>, E<sub>t</sub></code>. For a batch of N pairs the similarity
+matrix is <code>C = &tau; &middot; (E<sub>t</sub> &middot; E<sub>a</sub><sup>&#8868;</sup>)</code>
+with N correct pairs on the diagonal and N&sup2;&minus;N negatives off-diagonal.
+Training uses a <strong>symmetric cross-entropy loss</strong>
+<code>L = 0.5&middot;(&#8467;<sub>text</sub>(C) + &#8467;<sub>audio</sub>(C))</code>
+&mdash; softmax-over-rows and softmax-over-columns &mdash; jointly optimizing
+both encoders and both projections. The temperature <code>&tau;</code> is
+learnable (init 0.007), and &tau;-scaled logits are clipped at 100 for stability.</p>
+
+<p><strong>Zero-shot classification (&sect;2.2).</strong> At test time, embed the
+N test audios and the C class names through the frozen towers + projections;
+because both live in the same space, compute cosine similarity between each
+audio and every class name, then softmax (binary/multiclass) or sigmoid
+(multilabel) over the logits. No training, no fixed label set &mdash; classes
+are typed in at inference. Class names are wrapped in a <em>prompt template</em>
+&mdash; default <code>'This is a sound of [class label]'</code> &mdash; to close
+the gap between caption-style training text and bare-word labels (per-domain
+variants for emotion / keyword / speaker-counting).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> <em>Training</em> &mdash; 128,010
+    audio&ndash;text pairs assembled from four sources (Table 4): FSD50k (36,796),
+    ClothoV2 (29,646; 5 captions/clip), AudioCaps (44,292), MACS (17,276);
+    90,947 unique audios. <em>Evaluation</em> &mdash; 16 downstream datasets
+    across 8 domains (Table 5): sound-event classification (ESC50, FSD50K, US8K,
+    DCASE17 Task4, AudioSet), music (GTZAN Music/Speech, GTZAN Genres, Mridangam
+    Stroke/Tonic), instrument (Beijing Opera), acoustic scene (TUT2017), emotion
+    (CREMA-D, RAVDESS), keyword spotting (Speech Commands V2), vocal-sound
+    classification (Vocal Sound), speaker counting (LibriCount).</li>
+  <li><strong>Hardware / simulator:</strong> 16GB V100 GPUs, scaling 8&ndash;24
+    GPUs; no robot or simulator (this is a pure audio-ML paper). Audio
+    pre-processed to log-Mel (44.1 kHz, 64 Mel bins, 5-sec random-crop clips).</li>
+  <li><strong>Baselines:</strong> Zero-shot &mdash; AudioCLIP and Wav2CLIP
+    (the prior CLIP-distillation audio models), plus per-task literature
+    best (`Benchmark (ZS)` / `Benchmark (Best)`). Supervised feature-extraction
+    comparison (Table 6) against YAMNet, OpenL3, Wav2CLIP, PANN, Wav2Vec2.</li>
+  <li><strong>Compute:</strong> 40 training epochs, Adam, lr 10<sup>&minus;3</sup>
+    with plateau decay; batch sizes 32&ndash;768 across 4&ndash;24 GPUs (Fig 2
+    sweep). Exact GPU-hours <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: trained on ~128k pairs &mdash; the authors note this is at least
+~0.001% the pair count of comparable CV models &mdash; CLAP still sets
+<strong>zero-shot SoTA</strong> on the core sound-event benchmarks and achieves
+SoTA in 5 tasks under supervised finetuning.</p>
+
+<table>
+  <tr><th>Task (metric)</th><th>Prior ZS benchmark</th><th>CLAP (ZS)</th><th>Best in lit.</th><th>CLAP (Best)</th></tr>
+  <tr><td>ESC50 (acc)</td><td>0.694 (AudioCLIP)</td><td><strong>0.826</strong></td><td>0.9715</td><td>0.9670</td></tr>
+  <tr><td>US8K (acc)</td><td>0.6531 (AudioCLIP)</td><td><strong>0.7324</strong></td><td>0.90&ndash;7</td><td>0.8796</td></tr>
+  <tr><td>FSD50K (mAP)</td><td>0.0302 (Wav2CLIP)</td><td><strong>0.3024</strong></td><td>0.641</td><td>0.5859</td></tr>
+  <tr><td>GTZAN Music vs Speech (acc)</td><td>&mdash;</td><td><strong>1.00</strong></td><td>0.992</td><td>1.00</td></tr>
+</table>
+
+<p>Where it wins:</p>
+<ul>
+  <li>ESC50 zero-shot 82.6% beats AudioCLIP (69%) by an absolute 12% and
+    <em>beats reported human performance of 81%</em>; US8K 73% beats AudioCLIP
+    65% by 8%; FSD50K 30.2% mAP beats Wav2CLIP (3%) by 27% absolute.</li>
+  <li>On GTZAN Music-vs-Speech the zero-shot model hits 100% acc, edging
+    supervised models &mdash; a clean "no training at all" result.</li>
+  <li>Supervised finetune (CLAP-Best) sets SoTA on 5 tasks: GTZAN Music/Speech
+    (100%), GTZAN Genres (91.3%), Mridangam Stroke (97.94%), Mridangam Tonic
+    (95.34%), Vocal Sound (97.95%).</li>
+  <li>Ablation (Table 2): unfreezing both encoders gives the best average ZS
+    score; surprisingly, <strong>unfreezing the text encoder helps more than
+    unfreezing the audio encoder</strong> &mdash; suggesting you can keep a
+    chosen pretrained audio encoder largely fixed and still turn it into a
+    zero-shot classifier. Prompt choice matters (Table 3): the right template
+    lifts ESC50 by ~5% (0.786 &rarr; 0.826).</li>
+</ul>
+
+<p>Where it loses:</p>
+<ul>
+  <li>On <em>speech-content</em> tasks CLAP is weak: zero-shot emotion
+    recognition and keyword spotting only ~4% above random; finetuned RAVDESS
+    emotion 64% vs SoTA 81%. The authors attribute this to training captions
+    describing sound events / scenes / objects but rarely speech content.</li>
+  <li>Even finetuned, CLAP trails per-task SoTA by up to 7% on several tasks
+    (Table 1).</li>
+  <li>Naively adding ~1.7M AudioSet title/label pairs <em>hurt</em> zero-shot
+    (ESC50 82.6% &rarr; 67.15%), because AudioSet text describes the whole video,
+    not the clip &mdash; pair quality dominates pair quantity (App. C.2).</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Speech-content tasks (emotion, keyword spotting) underperform due to
+    caption-domain mismatch; they posit more speech-descriptive captions would
+    close the gap, but don't demonstrate it.</li>
+  <li>Sourcing good training pairs is hard: large noisy web pairs (AudioSet-style
+    title/description) degrade performance, so "relying on large-scale noisy
+    pairs is the only scalable approach" is stated as an open tension, not solved.</li>
+  <li>Batch-size scaling helps up to 256 but <em>drops</em> at 768 (Fig 2);
+    flagged as an anomaly left to future work.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The audio encoder (CNN14) is pretrained on 2M AudioSet clips, and several
+    downstream sound-event datasets overlap AudioSet's label space &mdash; some
+    "zero-shot" SoTA on SEC may partly reflect that the encoder already saw the
+    acoustic distribution, even if it never saw the paired captions. The paper
+    doesn't isolate this.</li>
+  <li>"Beats human performance of 81%" on ESC50 cites a single number; no
+    confidence interval or per-fold variance is given for the headline ZS
+    results, so the SoTA margins are point estimates.</li>
+  <li>The batch-size&ndash;vs&ndash;performance curve (Fig 2) and the
+    AudioSet-hurts result are both single-seed observations &mdash; thin evidence
+    for the "pair quality &gt; quantity" thesis, even though it's plausible.</li>
+  <li>Only the simplest design (CNN14 + BERT + linear projections) is tried; no
+    ablation on encoder choice or projection depth, so it's unclear how much of
+    the result is the contrastive recipe vs. the strong pretrained CNN14.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p><strong>Adjacent / method anchor, not a manipulation paper.</strong> CLAP has
+no robot, no policy, no contact &mdash; it's the "CLIP-for-audio" reference that
+the robotics audio-sensing literature builds on. I care about it as the
+<em>grounding recipe</em>, not as a result to chase.</p>
+<p>The connection to my thesis: many manipulation predicates I care about
+(<code>is_full</code>, <code>is_screwed_tight</code>, <code>surface_is_rough</code>,
+liquid pouring, contact onset) are <em>not visually evaluable</em> &mdash; they
+live in sound and touch. <a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+learns visual classifiers <code>f<sub>&theta;</sub>(p): O &rarr; {T,F}</code> for
+predicates; CLAP is the existence proof that you can instead learn a
+<em>language-grounded acoustic</em> classifier with no fixed label set, where a
+predicate name typed in natural language is scored against an audio embedding by
+cosine similarity. That's structurally exactly the open-vocabulary predicate
+grounding BLADE flags as future work &mdash; only in the acoustic modality. A
+CLAP-style audio tower is the natural drop-in when a precondition/effect is
+audible (the pour finished, the click happened, the drill bit caught) rather than
+visible. This is why CLAP keeps reappearing upstream of contact-audio
+manipulation work &mdash; it's the joint-embedding backbone those policies inherit.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  We propose to learn audio concepts from natural language supervision. We call
+  our approach Contrastive Language-Audio Pretraining (CLAP), which learns to
+  connect language and audio by using two encoders and a contrastive learning to
+  bring audio and text descriptions into a joint multimodal space.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  Zero-shot requires no training stage so there are no predefined categories. To
+  enable such flexibility and generalization, models need to learn the
+  relationships between the acoustic semantics and language semantics.
+  <span class="quote-cite">&mdash; &sect;1, Introduction</span>
+</blockquote>
+
+<blockquote>
+  The quality of audio-text pairs is key in training CLAP. ... In general, finding
+  helpful training data for CLAP based on public datasets is difficult, thus
+  relying on large-scale noisy pairs is the only scalable approach.
+  <span class="quote-cite">&mdash; App. C.2 / p.8</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[6] Radford et al. 2021 &mdash; CLIP</strong> (ICML) &mdash; the
+    image&ndash;language contrastive model CLAP is a direct audio port of. The
+    foundational template; not in this batch's cross-ref list.</li>
+  <li><strong>[9] Wu et al. 2022 &mdash; Wav2CLIP</strong> (ICASSP) &mdash;
+    CLIP-distillation audio baseline CLAP beats; the immediate prior.</li>
+  <li><strong>[10] Guzhov et al. 2022 &mdash; AudioCLIP</strong> (ICASSP) &mdash;
+    the other CLIP-distillation baseline; in this batch as
+    <a href="../../raw/papers/audioclip_extending_clip.pdf">audioclip_extending_clip</a>.</li>
+  <li><strong>[23] Kong et al. 2020 &mdash; PANNs / CNN14</strong> &mdash; the
+    pretrained audio encoder backbone. Foundational dependency.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="audioclip_extending_clip.html">AudioCLIP</a> &mdash; closest
+    sibling: the prior CLIP-distillation audio&ndash;language model and CLAP's
+    direct zero-shot baseline (CLAP beats it +12% on ESC50). Read the two
+    together as the "distill-from-CLIP vs. learn-from-captions" contrast.</li>
+  <li><a href="objects_that_sound.html">Objects that Sound</a> and
+    <a href="the_sound_of_pixels.html">The Sound of Pixels</a> and
+    <a href="visually_indicated_sounds.html">Visually Indicated Sounds</a>
+    &mdash; the audio-visual self-supervision line (same Cluster E); CLAP swaps
+    the visual anchor for a language anchor, so these frame what
+    "audio&ndash;X binding" looked like before language supervision.</li>
+  <li><a href="imagebind_one_embedding_space.html">ImageBind</a> and
+    <a href="languagebind_language_anchored.html">LanguageBind</a> &mdash;
+    multimodal-binding successors that fold an audio tower (CLAP-style) into a
+    single space with vision/touch/depth; CLAP is the audio leg those binding
+    models generalize.</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a> and
+    <a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a> and
+    <a href="making_sense_audio_vibration_pouring.html">Making Sense of Audio Vibration (pouring)</a>
+    &mdash; the robot-side payoff: contact/contact-audio manipulation that needs
+    exactly the audio&ndash;language grounding CLAP provides for audible
+    predicates (pour-done, contact onset, material). CLAP is the upstream
+    representation anchor for this cluster.</li>
+</ul>
+
+</body>
+</html>

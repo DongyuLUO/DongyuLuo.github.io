@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Variable Impedance Control and Learning -- A Review</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Abu-Dakka, Saveriano">
+<meta name="year" content="2020">
+<meta name="venue" content="Frontiers in Robotics and AI">
+<meta name="arxiv_id" content="2010.06246">
+<meta name="url" content="https://arxiv.org/abs/2010.06246">
+<meta name="pdf" content="../../raw/papers/variable_impedance_control_learning_review.pdf">
+<meta name="tags" content="survey, force-control, impedance-control, contact-rich, force-torque, learning-from-demonstration, reinforcement-learning, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- SURVEY format variant: Method renamed to "Survey scope / taxonomy",
+     Setup to "Coverage", Results to "Key insights / classifications" per brief. -->
+
+<h1>Variable Impedance Control and Learning &mdash; A Review</h1>
+<p class="meta">
+  Fares J. Abu-Dakka, Matteo Saveriano
+  &middot; Aalto University / University of Innsbruck
+  &middot; 2020
+  &middot; Frontiers in Robotics and AI
+  &middot; <a href="https://arxiv.org/abs/2010.06246">arXiv:2010.06246</a>
+  &middot; <a href="../../raw/papers/variable_impedance_control_learning_review.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> The first survey to treat <em>variable</em>
+impedance from both the control and the learning side jointly, proposing a
+clean taxonomy &mdash; Variable Impedance Control (VIC), Variable Impedance
+Learning (VIL), and the merged Variable Impedance Learning Control (VILC)
+&mdash; that gives you a vocabulary for "how should a robot modulate its
+stiffness/damping during contact, and where does that modulation policy come
+from?"</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Robots leaving the cage and into unstructured human spaces must exploit
+contact forces safely. Impedance control (Hogan 1985) makes the end-effector
+behave like a virtual spring&ndash;damper, trading off compliance vs. tracking
+to avoid large impact forces and absorb position uncertainty. But a
+<em>fixed</em> impedance is rarely right for a whole task: turning a valve,
+inserting a peg, opening a door, or co-lifting a table with a human each demand
+different stiffness at different phases. Hence <em>variable</em> impedance
+&mdash; modulating <code>K</code> (stiffness) and <code>D</code> (damping)
+online. The authors note prior surveys (Vanderborght et al. 2013, Calanca et
+al. 2015, Keemink et al. 2018, Song et al. 2019) cover impedance hardware,
+compliance, admittance, or general impedance control, but none focuses on the
+<em>control + learning</em> approaches to variability specifically (Table 1).
+This is positioned as the first such review.</p>
+
+<h2>Survey scope / taxonomy</h2>
+<p>The organizing contribution is the taxonomy in <strong>Fig 2</strong>.
+Mechanical impedance splits into <strong>Constant</strong> (standard impedance
+control, out of scope) and <strong>Variable</strong> impedance, which the
+survey divides into three branches:</p>
+
+<p><strong>VIC &mdash; Variable Impedance Control (Section 2).</strong> The
+control-theoretic branch: hand-designed laws that vary the gains. The standard
+interaction model (Eqs 3&ndash;4) is the spring&ndash;damper of Eqs 1&ndash;2
+with time-subscripted gains <code>K<sup>P</sup><sub>t</sub></code>,
+<code>D<sup>V</sup><sub>t</sub></code>. A representative online rule is
+<code>k<sub>t</sub> = k<sub>0</sub> + &alpha; e<sub>t</sub><sup>2</sup></code>
+(Eq 5): stiffen as tracking error grows. Two sub-themes: <strong>stability
+&amp; passivity</strong> (&sect;2.1 &mdash; Lyapunov- and passivity-based
+guarantees for time-varying gains; energy-tank / port-Hamiltonian methods,
+Ferraguti et al.; state-independent stability conditions, Kronander &amp;
+Billard) and <strong>human-in-the-loop</strong> (&sect;2.2 &mdash; tele-impedance,
+EMG-estimated human stiffness as an "intention" signal, multimodal HRI
+interfaces).</p>
+
+<p><strong>VIL &mdash; Variable Impedance Learning (Section 3).</strong> Treats
+finding the gains as a supervised-learning problem over human demonstrations,
+<em>decoupled</em> from the controller: learn a (nonlinear) mapping
+<code>K&#770;<sup>P</sup><sub>t</sub> = &phi;<sup>K</sup>(x<sub>t</sub>, x&#775;<sub>t</sub>, f<sup>e</sup><sub>t</sub>, &theta;<sup>K</sup>)</code>
+(Eqs 6&ndash;7) from demos, then feed it to a separate VIC at run time
+(<strong>Fig 4</strong>). Dominated by <strong>imitation learning / LfD</strong>:
+GMM/GMR encodings (Calinon, Kronander &amp; Billard), and crucially the
+<em>Riemannian / SPD-manifold</em> insight &mdash; stiffness and damping are
+Symmetric Positive Definite matrices, so naive vectorization discards geometric
+structure; tensor-based GMM/GMR and geometry-aware DMPs (Abu-Dakka et al. 2018;
+Abu-Dakka &amp; Kyrki 2020) learn directly on the manifold.</p>
+
+<p><strong>VILC &mdash; Variable Impedance Learning Control (Section 4).</strong>
+The branch where learning and control <em>cannot</em> be cleanly separated
+because data collection depends on the controller (<strong>Fig 5</strong>).
+Three sub-categories: <strong>imitation</strong> (&sect;4.1 &mdash; e.g.
+i-MOGIC, Khansari-Zadeh et al. 2014, with Lyapunov-proved stability),
+<strong>iterative learning</strong> (&sect;4.2 &mdash; ILC-based, Eq 9:
+<code>u<sub>r+1,t</sub> = u<sub>r,t</sub> + &gamma;<sub>r</sub> e<sub>r,t</sub></code>,
+modified to track an impedance target rather than a trajectory), and
+<strong>reinforcement learning</strong> (&sect;4.3 &mdash; VIC as a parameterized
+policy, Eq 10; PI<sup>2</sup> with DMP/SEDS parameterizations, Buchli et al.
+2011, Rey et al. 2018; Natural Actor-Critic; the "safe exploration" problem of
+keeping the robot in a Lyapunov-stable safe set during learning, Khader et al.
+2021).</p>
+
+<h2>Coverage</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> <em>not reported</em> &mdash; a
+    qualitative review, not an empirical benchmark; no standardized dataset.
+    Cited evaluation tasks across surveyed works include peg-in-hole / assembly
+    with sub-0.1mm tolerances, valve turning, pancake flipping, door opening,
+    surface wiping, ankle/exoskeleton rehabilitation, and human&ndash;robot
+    co-manipulation.</li>
+  <li><strong>Hardware / simulator:</strong> <em>not reported</em> (no
+    experiments of the authors' own). Surveyed works span torque-controlled
+    redundant manipulators (DLR LWR-class), planar 2-link arms, soft/elastic-joint
+    robots, and wearable exoskeletons; admittance variants are discussed for
+    position-controlled industrial arms.</li>
+  <li><strong>Baselines:</strong> the comparison axis is against the four prior
+    surveys (Table 1) and, internally, across the VIC / VIL / VILC categories;
+    a per-category advantages/disadvantages comparison is given in Table 2.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Key insights / classifications</h2>
+<p>The headline deliverables are the <strong>three-way taxonomy</strong>
+(Fig 2) and the <strong>advantages/disadvantages comparison</strong>
+(Table 2), reproduced in condensed form:</p>
+
+<table>
+  <tr><th>Approach</th><th>Advantages</th><th>Disadvantages</th></tr>
+  <tr><td>Stability &amp; passivity of VIC (control)</td><td>Efficient, accurate; provable stability/passivity for safe interaction</td><td>Rely on accurate system models, which are nontrivial to derive; less general</td></tr>
+  <tr><td>Human-in-the-loop</td><td>Human reacts where AI is unsure; human impedance is a good target</td><td>Needs anatomy priors, complex multi-sensor setup, calibration; human error / poor repeatability</td></tr>
+  <tr><td>Imitation learning (VIL)</td><td>User-friendly; humans naturally demonstrate good impedance</td><td>Quality bounded by teacher; some tasks hard to demonstrate; human&rarr;robot transfer imperfect</td></tr>
+  <tr><td>Iterative learning (VILC)</td><td>Compute- and data-efficient; analytic convergence proofs</td><td>Target impedance must be hand-defined; needs many same-condition repetitions; poor generalization</td></tr>
+  <tr><td>Reinforcement learning (VILC)</td><td>Can discover policies for complex, hard-to-model tasks; good transferability</td><td>Data-hungry (esp. model-free); safety constraints limit exploration &rarr; risk of suboptimal policies</td></tr>
+</table>
+
+<p>Cross-cutting takeaways the survey emphasizes:</p>
+<ul>
+  <li><strong>No single approach has all the desiderata.</strong> Control
+    approaches are stable/accurate but model- and prior-knowledge-heavy;
+    learning approaches need fewer priors but are data/compute-inefficient.
+    VILC is argued to be the route to an "omni-comprehensive" framework.</li>
+  <li><strong>Impedance gains are SPD matrices</strong> &mdash; a recurring
+    structural point. Vectorizing them for learning discards geometry; manifold
+    (Riemannian) learning is flagged as the most promising, still-underexplored
+    direction for generalization.</li>
+  <li><strong>Stability during learning</strong> is a distinct, hard problem:
+    stable-dynamical-system parameterizations (SEDS, i-MOGIC) buy Lyapunov
+    guarantees but may shrink the reachable optimal-policy set.</li>
+  <li><strong>The envisioned framework</strong> (Table 2, bottom): stable +
+    accurate + robust like control, yet data-efficient + generalizing like
+    learning, built on a manifold representation with safe RL on top &mdash;
+    explicitly stated as not yet existing.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Theoretical guarantees (stability, robustness) require simplifying
+    assumptions (e.g. passive environment) that restrict applicability;
+    "control alone cannot solve the problem."</li>
+  <li>Model-free RL is data-greedy and may produce unsafe behaviors during
+    learning; safe/model-based RL results are preliminary.</li>
+  <li>Manifold (SPD) learning is promising but its generalization is "too
+    preliminary to definitely assess."</li>
+  <li>Safe RL on top of a manifold representation is, to their knowledge, an
+    open topic with no available approach.</li>
+  <li>Admittance control, constant impedance, SEA hardware, and an exhaustive
+    RL treatment are explicitly out of scope.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>2020 cutoff is now load-bearing.</strong> The survey predates the
+    learning-from-language / VLA wave entirely. None of the contact-rich
+    force-aware policies in this very batch (ForceVLA, Tactile-VLA, FoAR,
+    Reactive Diffusion Policy, FACTR) exist in its world. As a map of the
+    <em>classical</em> VIC/VIL/VILC terrain it is excellent; as a map of "the
+    field today" it is a snapshot of the pre-foundation-model era.</li>
+  <li><strong>No quantitative cross-comparison.</strong> Table 2 is qualitative
+    prose. Because the surveyed works use incomparable tasks/hardware, the
+    review can't say "method X beats Y by Z%" anywhere &mdash; a real
+    benchmarking gap the authors don't claim to fill.</li>
+  <li>The taxonomy boundary between VIL and VILC is admittedly fuzzy ("defining
+    a clear boundary becomes impossible") &mdash; the categorization is a useful
+    lens, not a partition.</li>
+  <li>Perception is almost absent: impedance modulation here keys off
+    force/torque, EMG, and tracking error, not vision or touch sensing. The
+    survey treats "what should the stiffness be?" as a control/learning problem
+    over proprioceptive + force signals, never a <em>perceptual</em> one. That
+    gap is exactly what the multimodal-sensing batch around it is trying to
+    close.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is a <strong>classical-foundations anchor</strong>, not a manipulation
+result to build on directly &mdash; but it is the load-bearing reference for the
+control-theory half of the batch thesis. The big idea I'm chasing is that many
+manipulation predicates (<code>is_inserted</code>, <code>is_screwed_tight</code>,
+<code>surface_is_rough</code>) are <em>not visually evaluable</em> &mdash; they
+live in touch/force. Variable impedance is the classical machinery for
+<em>acting</em> on exactly those force-defined situations: when a peg
+<code>is_inserted</code>, you want low stiffness to comply; when it isn't yet,
+you want a search behavior with the right damping. Where
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+hides all continuous parameters (force, grasp pose, pour amount) inside a
+diffusion policy and keeps the abstraction layer purely categorical, this survey
+is the catalogue of how the field has historically <em>parameterized and learned
+the force-modulation policy</em> that such a body would need. The "Why I care"
+of the BLADE summary flags exactly this &mdash; force/continuous parameters as a
+new contribution area, marrying a symbolic body with continuous constraint specs
+&mdash; and VIC/VIL/VILC is the prior-art vocabulary for that body's controller.
+Concretely useful framings: (i) the SPD-manifold point (impedance gains have
+geometric structure a flat policy discards) generalizes beyond impedance to any
+learned continuous controller parameter; (ii) the VIL/VILC split mirrors the
+"learn the parameters separately vs. jointly with the controller" question that
+recurs in <a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive
+Diffusion Policy</a> and force-aware VLAs. It is firmly a control/learning
+survey with no language and no perception &mdash; I'm filing it as the classical
+counterweight that tells me what the modern force-aware-VLA papers are (often
+implicitly) re-deriving.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  In this context, variable impedance control arises as a powerful tool to
+  modulate the robot's behavior in response to variations in its surroundings.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  Approaches for Variable Impedance Learning (VIL) treat the problem of finding
+  variable impedance gains as a supervised learning problem &hellip; On the
+  contrary, Variable Impedance Learning Control (VILC) approaches attempt to
+  directly learn a variable impedance control law.
+  <span class="quote-cite">&mdash; &sect;1 / p.4 (taxonomy)</span>
+</blockquote>
+<blockquote>
+  At the current stage, none of the approaches has all the features that a
+  variable impedance behavior requires.
+  <span class="quote-cite">&mdash; &sect;6 Concluding remarks / p.19</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited here that should likely be ingested next (forward references):</p>
+<ul>
+  <li><strong>Abu-Dakka et al. 2018 &mdash; Force-based variable impedance
+    learning for robotic manipulation</strong> (Robotics and Autonomous Systems)
+    &mdash; the SPD-manifold LfD work the survey leans on; the authors' own
+    foundational VIL result. Not in this batch's cross-ref list; candidate for a
+    future force-control ingest.</li>
+  <li><strong>Hogan 1985 &mdash; Impedance Control</strong> &mdash; the
+    originating formalism; the spring&ndash;damper interaction model all
+    equations build on.</li>
+  <li><strong>Buchli et al. 2011 / Rey et al. 2018 &mdash; PI<sup>2</sup> /
+    SEDS-parameterized VIC</strong> &mdash; canonical RL-for-impedance entries
+    in the VILC branch.</li>
+</ul>
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a> &mdash;
+    modern force-aware VLA for contact-rich tasks; the foundation-model-era
+    successor to the control-side force modulation this survey catalogues.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>
+    &mdash; injects tactile/force into a VLA; what "variable impedance from
+    sensing" looks like once perception is in the loop (the gap this 2020 survey
+    leaves open).</li>
+  <li><a href="foar_force_aware_reactive_policy.html">FoAR</a> and
+    <a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive
+    Diffusion Policy</a> &mdash; force-aware reactive / slow-fast policies; the
+    VIL-vs-VILC "learn gains separately vs. jointly" question reincarnated in a
+    diffusion-policy setting.</li>
+  <li><a href="factr_force_attending_curriculum_training.html">FACTR</a> &mdash;
+    force-attending curriculum for policies; learning force-conditioned control,
+    a learning-side descendant of the VILC branch.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful
+    Robotic Foundation Models (survey)</a> &mdash; the direct modern companion
+    survey; read alongside as the 2020-vs-now bookends on force in manipulation.</li>
+</ul>
+
+</body>
+</html>

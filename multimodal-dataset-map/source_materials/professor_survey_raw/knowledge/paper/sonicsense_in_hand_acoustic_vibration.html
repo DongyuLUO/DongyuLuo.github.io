@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>SonicSense: Object Perception from In-Hand Acoustic Vibration</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Liu, Chen">
+<meta name="year" content="2024">
+<meta name="venue" content="CoRL 2024">
+<meta name="arxiv_id" content="2406.17932">
+<meta name="url" content="https://arxiv.org/abs/2406.17932">
+<meta name="pdf" content="../../raw/papers/sonicsense_in_hand_acoustic_vibration.pdf">
+<meta name="tags" content="acoustic-sensing, contact-audio, in-hand-manipulation, object-perception, multisensory, material-recognition, robot-learning, dexterous-manipulation">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>SonicSense: Object Perception from In-Hand Acoustic Vibration</h1>
+<p class="meta">
+  Jiaxun Liu, Boyuan Chen
+  &middot; Duke University
+  &middot; CoRL 2024
+  &middot; <a href="https://arxiv.org/abs/2406.17932">arXiv:2406.17932</a>
+  &middot; <a href="../../raw/papers/sonicsense_in_hand_acoustic_vibration.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A cheap (~$215) four-finger robot hand with a
+piezoelectric contact microphone in each fingertip taps, grasps, and shakes
+83 real-world objects, then learns end-to-end models that read the
+contact-borne vibration to do four tasks at once &mdash; container inventory
+differentiation, material classification, sparse-tapping 3D shape
+reconstruction, and object re-identification &mdash; showing that "what an
+object sounds like when you touch it" is a rich, noise-robust perception
+channel that scales past the small-N, single-finger acoustic-sensing setups
+that came before.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Acoustic vibration is an underused tactile channel: human skin captures
+high-frequency vibrations to read material and geometry, but robots rarely
+exploit this. Prior acoustic-sensing work is constrained on three axes: (1)
+small object sets (<code>N&lt;5</code>) of simple primitives with homogeneous
+materials; (2) single-finger sensing; (3) train/test on the <em>same</em>
+objects (different contacts, same instance), so generalization to unseen
+objects is unproven. Worse, much prior data is collected by a human manually
+moving the hand or by replaying fixed pre-defined poses, which doesn't scale.
+A second framing issue: <em>air</em> microphones near the robot pick up
+sound waves through air and are swamped by ambient noise, whereas
+<em>contact</em> microphones sense only vibrations transmitted through
+physical contact. SonicSense argues for a holistic hardware+software design
+built around contact microphones, autonomous heuristic exploration, and a
+large diverse real-world object set, so that one system generalizes across
+multiple object-perception tasks on unseen objects.</p>
+
+<h2>Method</h2>
+<p>The contribution is a co-designed sensing platform plus three task models
+and a self-supervised-ish data-collection policy.</p>
+
+<p><strong>Hardware (Fig 2).</strong> A four-finger hand, each finger one joint
+/ one DoF, enabling tapping, grasping, and shaking primitives. Each fingertip
+embeds a piezoelectric <em>contact</em> microphone inside the 3D-printed
+plastic shell; a round <em>counterweight</em> is mounted on the outer shell to
+increase finger momentum &mdash; the authors found the counterweight is
+important for producing large striking vibrations during tapping. The four
+microphones are synchronized and sample at <code>44,100 Hz</code>. Total build
+cost is <code>$215.26</code> from off-the-shelf parts and 3D printing.</p>
+
+<p><strong>Heuristic interaction policy (&sect;3.3).</strong> Rather than human
+teleop or fixed-pose replay, a simple but effective heuristic autonomously
+collects responses across variable sizes/geometries. The hand approaches from
+top-down and side directions, from high to low with a fixed step, until a
+first contact event is detected per direction (detected via motor
+<em>voltage-resistance feedback</em>, chosen for robustness/ease over acoustic
+change). From those contacts it estimates object height (top-down) and radius
+(side), then uses a grid-sampling schedule to tap-contact the surface and
+gather acoustic responses. Stated assumptions: max object height fits the
+hand, object size is graspable during tapping, and the object is fixed to the
+table (following prior work).</p>
+
+<p><strong>Material classification model (Fig 4A).</strong> Input is the
+Mel-spectrogram <code>A</code> of a single tapping position's vibration signal;
+three CNN layers + two MLP layers output a per-contact material label
+<code>m</code>, trained with cross-entropy (Eq. 1). At inference, an
+<em>iterative refinement</em> assumes material is locally uniform: filter
+low-occurrence predictions with threshold <code>M</code>, then re-assign each
+point by majority vote among its <code>K</code> nearest neighbors, repeated
+<code>N</code> steps (<code>M,K,N</code> chosen on validation).</p>
+
+<p><strong>Shape reconstruction model (Fig 4B).</strong> Sparse contact points
+<code>C</code> (rough, noisy fingertip-contact locations) are completed into a
+dense 2,024-point cloud <code>P</code> via a Point Completion Network: two
+stacked PointNet layers encode <code>C</code> to a 1&times;1024 global feature,
+then fully-connected decoder layers produce the cloud (no folding decoder).
+Trained with Chamfer Distance loss (Eqs. 2&ndash;3). Because real contact data
+is limited, the network is <em>pre-trained on synthetic contact interactions
+simulated in a sim environment</em> (Fig 5), then trained with a curriculum
+that gradually shifts from synthetic to real data.</p>
+
+<p><strong>Object re-identification model (Fig 4C).</strong> Hardest task: after
+interacting with an object, re-identify it from a <em>new, different</em> set
+of tapping interactions (different contact locations). Input fuses 15 channels
+of Mel-spectrograms (audio encoder of conv layers) and the corresponding 15
+contact positions (PCN contact-point encoder); fused MLP layers output the
+object label among 82 objects (Eq. 4). Ablations drop either branch to test the
+contribution of audio vs. contact geometry.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected real-world dataset
+    of <strong>83 objects</strong> (54 everyday + 29 3D-printed primitives with
+    various surface materials), spanning nine material categories (plastic,
+    glass, wood, metal, ceramic, paper, rubber, foam, fabric); 22.9% are
+    multi-material. Provides high-quality 3D-scanned meshes/point clouds plus
+    per-point material annotations. Material classification uses object-level
+    splits of 60/11/11 (train/val/test), 3 splits for mean&plusmn;std;
+    re-identification is over 82 objects.</li>
+  <li><strong>Hardware / simulator:</strong> Custom four-finger, 4-DoF hand
+    with one piezoelectric contact microphone + counterweight per fingertip,
+    44.1 kHz synchronized sampling, ~$215 build. A simulation environment
+    augments shape-reconstruction training with synthetic contact interactions
+    (Fig 5).</li>
+  <li><strong>Baselines:</strong> Random search and Nearest Neighbor baselines
+    across all three quantitative tasks; for re-identification also Ours
+    (contact-points only) and Ours (audio only) ablations. Also tested
+    pre-training material classifier on external acoustic-material datasets
+    (cited [6,45,54]).</li>
+  <li><strong>Compute:</strong> All models trained on a single NVIDIA GeForce
+    RTX 3090 GPU; each training run takes from under an hour to a few hours.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline numbers (means from Figs 8&ndash;11):</p>
+
+<table>
+  <tr><th>Task / metric</th><th>Random</th><th>Nearest Neighbor</th><th>SonicSense</th></tr>
+  <tr><td>Material classification (avg F1)</td><td>0.115</td><td>0.371</td><td><strong>0.763</strong> (0.523 before refinement)</td></tr>
+  <tr><td>Shape reconstruction (Chamfer-L1, m, lower better)</td><td>0.03653</td><td>0.01347</td><td><strong>0.00876</strong></td></tr>
+  <tr><td>Object re-identification (accuracy)</td><td>1.33%</td><td>43.45%</td><td><strong>92.52%</strong></td></tr>
+</table>
+
+<p>Key findings:</p>
+<ul>
+  <li><strong>Material:</strong> iterative refinement lifts F1 from 0.523 to
+    0.763 and beats both baselines, generalizing to unseen objects (Fig 8A).
+    Confusion matrix (Fig 8B): even soft materials (foam, fabric) that produce
+    weak striking signals are classified well via subtle stiffness cues;
+    ceramic&harr;glass are confused (similar properties), and plastic is hard
+    because the dataset's plastics vary widely in thickness/stiffness.</li>
+  <li><strong>Material pre-training failed:</strong> pre-training on external
+    acoustic-material datasets [6,45,54] <em>hurt</em> performance because those
+    signals were collected with air microphones in noise-controlled settings
+    &mdash; a large domain gap from in-hand contact microphones.</li>
+  <li><strong>Shape:</strong> Chamfer-L1 0.00876 m vs 0.03653 (random) and
+    0.01347 (NN); reconstructs concave geometries; the sim-augmentation likely
+    drives generalization (e.g., a single wine-glass instance is still
+    reconstructed). Failures: spray nozzle, bottle cap (complex shape in a
+    small region; few such objects in data).</li>
+  <li><strong>Re-identification:</strong> 92.52% with both branches; ablations
+    show audio-only 84.11% vs contact-points-only 48.89% &mdash; acoustic
+    vibration is the more informative branch, and fusing rough contact
+    positions adds a further boost. Smaller objects and similar-material pairs
+    (ceramic/glass) are harder.</li>
+  <li><strong>Noise robustness (Fig 6):</strong> as injected Gaussian white
+    noise rose from ~38 to ~80 dB, the external air microphone's amplitude rose
+    by thousands of units while the contact fingertip microphone changed by only
+    a few units &mdash; strong evidence the hardware isolates physical-contact
+    vibration from ambient air noise.</li>
+  <li><strong>Container inventory (Fig 7):</strong> qualitatively, vibration
+    signals from shaking a container of dice (varying count/shape) and from a
+    bottle with varying water amounts (0/100/200 mL static; 100/200/300 mL
+    shaking) form clear t-SNE clusters over 12 hand-crafted acoustic features
+    (RMS, spectral centroid, bandwidth, contrast, flatness, roll-off, ZCR,
+    tempogram, poly features, MFCC, chroma, tonnetz), distinguishing both solid
+    counts/geometries and subtle continuous liquid states.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The object is assumed <em>fixed to the table</em>; relaxing this needs
+    online object estimation and tactile-informed tracking during interaction.</li>
+  <li>The system does not consider <em>multiple objects</em>; in cluttered
+    scenes acoustic vibration could still help but isn't tested.</li>
+  <li>Hardware lacks complex manipulation skill (dexterous manipulation); a
+    more anthropomorphic, higher-DoF hand is needed to extend the findings.</li>
+  <li>Focus is acoustic-only; integrating multiple sensing modalities for
+    complementary information is left as future work.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>Container-inventory results are <em>only</em> qualitative t-SNE plots and
+    spectrogram visualizations &mdash; no classifier, no accuracy number, no
+    baseline. This is the headline "shake a container to read its inventory"
+    capability and it is the least quantified of the four tasks.</li>
+  <li>The dataset is small in instance count per material (60/11/11 object
+    split), and the test set is "unbalanced caused by different contact points
+    per object," which is why F1 (not accuracy) is reported &mdash; the absolute
+    object count per held-out split is tiny, so material F1 variance across the
+    3 splits matters more than the headline mean conveys.</li>
+  <li>Shape reconstruction leans heavily on synthetic pre-training; the
+    paper concedes the wine-glass result is "likely achieved through our
+    augmentation dataset," which raises the question of how much real acoustic
+    contact is actually doing the work vs. a learned 3D shape prior over a
+    limited primitive library.</li>
+  <li>The heuristic policy estimates only height + radius (a cylinder
+    bounding model), so contact sampling on genuinely complex geometries
+    (the failure cases) is under-served by the very exploration policy meant
+    to feed the shape model &mdash; a coupling the paper doesn't analyze.</li>
+  <li>All tasks are trained as separate networks; despite the "holistic"
+    framing there's no shared representation or multi-task model, so the claim
+    that one channel supports four tasks is a claim about the <em>sensor</em>,
+    not about a unified perception model.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This sits squarely on the batch thesis that many manipulation predicates are
+<strong>not visually evaluable</strong> &mdash; <code>is_full</code> (water in
+an occluded bottle), object material (<code>surface_is_rough</code> /
+<code>is_ceramic</code>), and even object identity under occlusion are read
+here purely from contact-borne sound, exactly the touch/force/sound channel
+that visual predicate classifiers in <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+cannot see. BLADE learns neural predicate classifiers from RGB-D and explicitly
+flags partial observability and force-modulated tasks as bottlenecks;
+SonicSense is a concrete demonstration that an <em>acoustic</em> classifier
+could ground predicates like <code>container_has_liquid(x)</code> or
+<code>material(x)=glass</code> that a camera-only classifier would mark
+unknowable. The container-inventory task is the cleanest example: differentiating
+0/100/200 mL of water in a closed bottle is a precondition/effect distinction
+(<code>is_full</code> before vs. after pouring) that lives entirely in sound.</p>
+<p>The caveat for my line of work: SonicSense is a <em>perception</em> paper, not
+a planning or abstraction paper &mdash; there is no symbolic layer, no language,
+no composition over skills. Its relevance is as a <strong>sensor/predicate-grounding
+substrate</strong> that a BLADE-style system could consume, not as a method I'd
+compare planning against. The honest open question it raises for me: if these
+properties are only legible through active interaction (tapping, shaking), then
+the abstraction layer needs <em>information-gathering actions</em> as
+first-class operators, which BLADE's purely categorical, perception-passive
+operator model does not yet have.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  By shaking a container, we can tell its inventory status from the generated
+  acoustic vibrations, such as the quantity and geometry of the objects inside.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  On the other hand, contact microphones only sense the acoustic vibrations
+  caused by physical contact.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  Our framework underscores the significance of in-hand acoustic vibration
+  sensing in advancing robot tactile perception.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[6] Gao et al. 2021 &mdash; ObjectFolder</strong> &mdash; the
+    implicit visual/auditory/tactile object dataset SonicSense tried to
+    pre-train on (domain gap with air-mic data).
+    &rarr; <a href="../../raw/papers/objectfolder_dataset_implicit_representations.pdf">objectfolder_dataset_implicit_representations</a></li>
+  <li><strong>[15] Chen, Chiquier, Lipson, Vondrick 2022 &mdash; The Boombox</strong>
+    (CoRL) &mdash; same lab lineage; visual reconstruction from acoustic
+    vibrations, the closest predecessor in spirit.</li>
+  <li><strong>[16] Wall, Z&ouml;ller, Brock 2023 &mdash; Passive and active
+    acoustic sensing for soft pneumatic actuators</strong> (IJRR) &mdash; key
+    prior acoustic-sensing baseline this paper positions against (single-finger,
+    same-object).</li>
+  <li><strong>[17] Lu &amp; Culbertson 2023 &mdash; Active Acoustic Sensing for
+    Robot Manipulation</strong> (IROS) &mdash; the active-acoustic counterpart;
+    direct comparison point.
+    &rarr; <a href="../../raw/papers/active_acoustic_sensing_manipulation.pdf">active_acoustic_sensing_manipulation</a></li>
+  <li><strong>[51] Yuan et al. &mdash; Point Completion Network (PCN)</strong>
+    &mdash; the shape-completion backbone reused here.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="active_acoustic_sensing_manipulation.html">Active Acoustic Sensing for Robot Manipulation</a>
+    &mdash; the active-acoustic sibling (cited [17]); SonicSense is the passive
+    contact-microphone analogue scaled to 83 objects.</li>
+  <li><a href="vibecheck_active_acoustic_tactile_sensing.html">VibeCheck</a>
+    &mdash; active acoustic tactile sensing; same "vibration as a tactile channel"
+    premise, different excitation strategy.</li>
+  <li><a href="making_sense_audio_vibration_pouring.html">Making Sense of Audio Vibration (pouring)</a>
+    &mdash; audio for liquid-amount estimation; the focused version of
+    SonicSense's container-water-level result.</li>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a>
+    and <a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a>
+    &mdash; audio fused into manipulation policies; the policy-learning
+    counterpart to SonicSense's perception-only models.</li>
+  <li><a href="that_sounds_right_auditory_self_supervision.html">That Sounds Right</a>
+    and <a href="hearing_touch_audio_visual_pretraining.html">Hearing Touch</a>
+    &mdash; self-supervised auditory / audio-tactile pretraining; relevant to
+    SonicSense's failed external-dataset pretraining and its domain-gap lesson.</li>
+  <li><a href="sound_of_simulation_generative_audio_sim2real.html">The Sound of Simulation</a>
+    &mdash; generative audio for sim2real; directly addresses the synthetic
+    contact-audio augmentation gap SonicSense leans on for shape reconstruction.</li>
+  <li><a href="objectfolder_dataset_implicit_representations.html">ObjectFolder</a>,
+    <a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a>, and
+    <a href="objectfolder_benchmark_neural_real.html">ObjectFolder Benchmark</a>
+    &mdash; the multisensory (incl. audio) object datasets SonicSense compared
+    against and found a domain gap with.</li>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; Weiyu's anchor; SonicSense supplies acoustic grounding for predicates
+    (material, container-fill) that BLADE's visual classifiers can't evaluate.</li>
+</ul>
+
+</body>
+</html>

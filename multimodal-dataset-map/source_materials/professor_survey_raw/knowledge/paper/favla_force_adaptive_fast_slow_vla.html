@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FAVLA: A Force-Adaptive Fast-Slow VLA model for Contact-Rich Robotic Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Li, Tang, Zhang, Zhu, Duan, Shi, Zhang, Yang, Ji, Zhang">
+<meta name="year" content="2026">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2602.23648">
+<meta name="url" content="https://arxiv.org/abs/2602.23648">
+<meta name="pdf" content="../../raw/papers/favla_force_adaptive_fast_slow_vla.pdf">
+<meta name="tags" content="vision-language-action, vla, force-torque, force-control, contact-rich, fast-slow, flow-matching, proprioception, multisensory">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>FAVLA: A Force-Adaptive Fast-Slow VLA model for Contact-Rich Robotic Manipulation</h1>
+<p class="meta">
+  Yao Li*, Peiyuan Tang*, Wuyang Zhang, Chengyang Zhu, Yifan Duan, Weikai Shi,
+  Xiaodong Zhang, Zijiang Yang, Jianmin Ji, Yanyong Zhang
+  &middot; USTC / Xi'an Jiaotong / Central South University
+  &middot; 2026 (arXiv preprint, Mar 2026)
+  &middot; <a href="https://arxiv.org/abs/2602.23648">arXiv:2602.23648</a>
+  &middot; <a href="../../raw/papers/favla_force_adaptive_fast_slow_vla.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> FAVLA fixes the frequency mismatch in force-aware
+VLAs by running a slow VLM for semantics at low frequency while a fast
+flow-matching action expert re-executes at a <em>force-adaptive</em> high
+frequency &mdash; with raw force injected into AE layers via cross-attention and
+the AE's update rate scheduled by the VLM's own prediction of near-future force
+volatility &mdash; cutting peak contact forces roughly in half on contact-rich
+industrial tasks.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Force/torque feedback helps VLAs on contact-rich manipulation (insertion,
+tight-tolerance assembly), but most force-aware VLAs concatenate force tokens
+with visual tokens and run <em>all</em> modalities at a single operating
+frequency. This causes two failures the paper centers on. (1) <strong>Sampling-rate
+mismatch:</strong> cameras run at ~15&nbsp;Hz while 6-axis force/torque sensors run at
+100&ndash;1000&nbsp;Hz; a unified-frequency pipeline downsamples the high-rate force
+to match the slowest modality, discarding exactly the reactive cues that signal
+impacts, stick&ndash;slip, and force spikes. (2) <strong>Open-loop chunk execution:</strong>
+mainstream VLM&ndash;action-expert (AE) pipelines run an expensive low-frequency
+VLM and then execute the predicted action chunk largely open-loop between VLM
+updates, so corrective responses to contact transitions arrive late &mdash;
+dangerous in high-precision industrial assembly where delayed adjustment causes
+excessive force and component damage. FAVLA argues semantic understanding is
+naturally "slow" while contact-corrective control should be "fast," and builds
+that asymmetry directly into the architecture.</p>
+
+<h2>Method</h2>
+<p>FAVLA is built on the <code>&pi;0</code> (Black et al. 2024) framework with a
+PaliGemma backbone: a larger slow VLM backbone plus a smaller fast action expert,
+shown in Fig 2. The key novelty is a <em>force-injected</em> fast&ndash;slow split
+plus a force-adaptive inference schedule.</p>
+
+<p><strong>Problem setup.</strong> At time <code>t</code> the observation is
+<code>O_t = {I_t} &cup; {s_t} &cup; {f_{t-&tau;+1:t}, f'_{t-&tau;+1:t}}</code>:
+RGB images (external + wrist), a 7-D proprioceptive TCP-pose+gripper state
+<code>s_t</code>, a history force window <code>f</code> of 6-axis measurements,
+and the latest force sequence <code>f'</code>. <code>s_t</code> and
+<code>f'</code> are updated at high frequency; images and history force at low
+frequency. The policy outputs an action chunk
+<code>A_t = {a_t, &hellip;, a_{t+H-1}}</code>.</p>
+
+<p><strong>Slow VLM backbone.</strong> SigLIP encodes the two camera views, Gemma
+embeds the instruction, and a lightweight <strong>Temporal Convolutional Network
+(TCN) tokenizer</strong> encodes the history force <code>f</code> into history
+force tokens <code>z_f</code> (a 1&times;1 temporal conv to project each per-step
+6-D force vector, then causal dilated temporal blocks with residuals, downsampled
+to <code>N_f</code> tokens). Vision, language, and <code>z_f</code> are
+concatenated as prefix tokens for full self-attention; the backbone emits
+Vision-Language-Force (VLF) prefix tokens and, crucially, <em>caches</em>
+intermediate-layer key/value states <code>{K, V}</code> as a reusable context (a
+KV cache) for the fast module.</p>
+
+<p><strong>Fast force-injected action expert.</strong> A small transformer that
+refines action chunks via flow matching, conditioned on the latest force sequence
+<code>f'</code> and state <code>s_t</code> in addition to the slow VLM KV cache.
+Rather than feeding the force sequence into the AE's input token stream (which
+dilutes sparse force cues), FAVLA <em>injects</em> it through a <strong>force
+adapter</strong>: the same TCN tokenizer encodes <code>f'</code> into latest force
+tokens <code>z'_f</code>; then in each AE transformer layer, after self-attention
+with the cached K/V, the noisy action token <code>z_a</code> cross-attends to
+<code>z'_f</code> and is updated additively,
+<code>z'_a = z_a + Attn(Q_a, K_f, V_f)</code> (Eq 2), where <code>K_f, V_f</code>
+project <code>z'_f</code> and <code>Q_a</code> are the noisy action queries. This
+lets the AE adjust chunks directly on high-frequency contact signals.</p>
+
+<p><strong>Force variance head.</strong> An auxiliary head predicts future
+volatility of the contact force. From the future force sequence it computes a
+weighted variance <code>&nu;_t = &Sigma;_j w_j Var(f_{t:t+W-1})</code> (Eq 3),
+EMA-smooths it (Eq 4), and <code>tanh</code>-normalizes it; a VLF token is fed to
+an MLP head regressed to this normalized target. Training jointly optimizes the
+slow VLM, fast AE, and variance head with
+<code>L = L_action + &lambda; L_var</code> (Eq 5, <code>&lambda;=0.1</code>).</p>
+
+<p><strong>Force-adaptive fast&ndash;slow inference (Fig 3).</strong> Per cycle the
+VLM does one forward pass to build the KV cache; the AE then runs <em>multiple</em>
+times on the latest force to generate closed-loop actions. Two designs fix naive
+multi-run inference: (a) <strong>Adaptive inference frequency</strong> &mdash;
+using predicted force variance <code>&nu;&tilde;_t &isin; [0,1]</code>, schedule AE
+executions as <code>n_t = max(1, &lceil;&nu;&tilde;_t &middot; N_max&rceil;)</code>
+(Eq 6): run the AE more when contact is imminent/ongoing, at 1&times; during free
+motion. (b) <strong>Consistent action ensemble</strong> &mdash; fix the sampled
+flow-matching noise <code>&epsilon;</code> across all AE calls within a visual
+cycle, and apply temporal ensembling (Zhao et al. 2023) across overlapping chunks
+to smooth jerky, inconsistent motion.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected real-world
+    demonstrations on four contact-rich tasks &mdash; USB Insertion, Gear
+    Assembly (both millimeter-precision), Box Flipping, Board Wiping (both
+    dynamic-contact). 80 teleoperated trajectories per high-precision task, 50 per
+    contact-rich task, collected via 3D SpaceMouse, synchronized and downsampled
+    to a uniform 30&nbsp;Hz frame rate. No public benchmark is used.</li>
+  <li><strong>Hardware / simulator:</strong> "Monte" dual-arm whole-body robot
+    with 7-DoF X-ARM arms; each arm has a wrist-mounted RGB-D camera and a
+    end-effector-flange 6-axis force/torque sensor; one wrist camera + one
+    external fixed camera. Real-robot only (no simulator).</li>
+  <li><strong>Baselines:</strong> <code>&pi;0</code> (vision-only flow-matching VLA),
+    <code>&pi;0</code>+Force (force tokens concatenated to input),
+    <a href="../../raw/papers/tactile_vla_physical_knowledge_generalization.pdf">TA-VLA</a>
+    (auxiliary future-force-prediction objective), and
+    <a href="../../raw/papers/forcevla_force_aware_moe_contact_rich.pdf">ForceVLA</a>
+    (MoE force-image fusion). All fine-tuned on FAVLA's dataset via LoRA for
+    fairness.</li>
+  <li><strong>Compute:</strong> <code>&pi;0</code> weights initialized, then LoRA
+    fine-tuning (VLM <code>r=16, &alpha;=16</code>; AE <code>r=32, &alpha;=32</code>);
+    30,000 iterations, batch size 8, lr 2.5e-5 cosine decay, single Nvidia A100
+    80&nbsp;GB GPU.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: FAVLA reaches <strong>80.8% average success</strong> across the four
+tasks, +38.0 points over vision-only <code>&pi;0</code> and +13.8 points over the
+strongest baseline (ForceVLA). Per-task success (Fig 6):</p>
+
+<table>
+  <tr><th>Method</th><th>USB Insert</th><th>Gear Asm</th><th>Box Flip</th><th>Board Wipe</th><th>Avg</th></tr>
+  <tr><td>&pi;0</td><td>48.0</td><td>63.3</td><td>50.0</td><td>10.0</td><td>42.8</td></tr>
+  <tr><td>&pi;0 + Force</td><td>76.0</td><td>80.0</td><td>50.0</td><td>60.0</td><td>66.5</td></tr>
+  <tr><td>TA-VLA</td><td>36.0</td><td>83.3</td><td>80.0</td><td>50.0</td><td>62.3</td></tr>
+  <tr><td>ForceVLA</td><td>68.0</td><td>70.0</td><td>80.0</td><td>50.0</td><td>67.0</td></tr>
+  <tr><td><strong>FAVLA (ours)</strong></td><td><strong>80.0</strong></td><td><strong>93.3</strong></td><td><strong>80.0</strong></td><td><strong>70.0</strong></td><td><strong>80.8</strong></td></tr>
+</table>
+
+<p><strong>Where it wins / ties / loses.</strong> Biggest gains on the
+force-sensitive Gear Assembly (93.3%) and Board Wiping (70.0%). On Box Flipping
+FAVLA <em>ties</em> TA-VLA and ForceVLA at 80.0% &mdash; no improvement there. On
+USB Insertion FAVLA (80.0%) only slightly edges <code>&pi;0</code>+Force (76.0%).</p>
+
+<p><strong>Force regulation (Table 1).</strong> Average peak contact force is the
+headline safety metric: FAVLA hits 7.7&nbsp;N on Gear Assembly and 9.9&nbsp;N on
+Box Flipping vs ForceVLA's 10.9&nbsp;N / 12.4&nbsp;N and <code>&pi;0</code>'s
+12.0&nbsp;N / 12.2&nbsp;N &mdash; roughly a 4&ndash;type N reduction (4.3&nbsp;N
+and 2.3&nbsp;N below vision-only). Notably <code>&pi;0</code>+Force has
+<em>higher</em> peak force (13.0/13.8&nbsp;N) than vision-only, suggesting naive
+force concatenation can worsen force control.</p>
+
+<p><strong>Ablations (Table 2, Fig 7).</strong> Stacking components on a
+vision-only baseline: Force-Injected AE 50&rarr;65% (Box Flip) and 10&rarr;60%
+(Board Wipe); +Force Variance Prediction &rarr;70%/60%; +Force-Adaptive Inference
+&rarr;80%/70%. On frequency ratio (Fig 7), fixed <code>n=1,2,4</code> improves
+monotonically with frequency, but the adaptive schedule beats all fixed settings
+(Gear Assembly 93%, USB 80%) while saving compute during free motion. Fig 8 shows
+the predicted frequency ratio rising just before contact-onset windows.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The model does not access future force data at inference; future force
+    variance (Fig 8b) is used only as a <em>post-hoc</em> validation metric, so the
+    variance head's reliability rests on training-time supervision generalizing.</li>
+  <li>Naive repeated AE inference produces jerky/unstable motion (the stated
+    motivation for the consistency designs) &mdash; a fragility of the multi-run
+    closed-loop scheme.</li>
+  <li>Scope is high-precision industrial contact tasks; no claim of generality
+    beyond the four evaluated tasks.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Small-N success counts, no variance.</strong> Evaluation is 25/30/20/10
+    trials per task (USB/Gear/Box/Wipe) reported as single success rates with no
+    seeds or error bars &mdash; Board Wiping's headline 70% is 7/10 trials. The
+    +13.8-point average edge over ForceVLA is not accompanied by any significance
+    test, and one of four tasks (Box Flipping) is a flat tie.</li>
+  <li><strong>arXiv id looks anomalous.</strong> The ID 2602.23648 / "Feb 2026"
+    with a "Preprint. March 2, 2026" footer is unusual; I recorded it verbatim as
+    given but flag it for the metadata-verification step before any forward-citation
+    use.</li>
+  <li><strong>Force adapter vs token concat is asserted, not isolated.</strong> The
+    claim that cross-attention injection beats concatenation ("dilutes sparse force
+    cues") is plausible but there is no ablation swapping <em>only</em> the
+    injection mechanism against <code>&pi;0</code>+Force under identical other
+    components &mdash; the comparison is confounded by the whole fast&ndash;slow stack.</li>
+  <li><strong>Adaptive frequency depends on a learned scalar.</strong> The entire
+    reactivity story hinges on one regressed variance scalar driving <code>n_t</code>;
+    failure modes when the variance head is wrong (over-triggering AE, or missing a
+    sudden impact) are not characterized.</li>
+  <li>No compute/latency numbers for the actual control loop &mdash; for an
+    industrial "fast" reactive claim, achieved AE Hz and end-to-end latency would
+    be the natural thing to report and are absent.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>FAVLA is squarely on the thesis that drives this batch: many manipulation
+predicates &mdash; <code>is_inserted</code>, <code>is_screwed_tight</code>,
+<code>is_aligned</code>, <code>surface_is_rough</code> &mdash; are <em>not</em>
+visually evaluable; they live in force/torque, and a vision-only policy is blind
+to the moment of contact transition. FAVLA's central insight is temporal:
+semantics is slow, contact correction is fast, and a unified-frequency stack
+literally throws away the signal. For my line of work this is a clean
+<em>continuous-control</em> counterpoint to
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+discrete abstraction layer. In BLADE I noted that continuous parameters (pour
+amount, grasp pose, <em>force</em>) sit entirely inside the diffusion policy and
+that the symbolic layer is purely categorical &mdash; a limitation for
+force-modulated tasks. FAVLA is what that "inside-the-controller" force handling
+looks like done seriously: force-conditioned flow matching with a
+contact-volatility-driven replan schedule. The architectural echo is striking:
+FAVLA's slow-VLM / fast-AE split with replan-on-contact mirrors BLADE's
+plan/controller split with replan-after-each-behavior, but FAVLA's trigger is a
+learned <em>force</em> signal rather than a symbolic precondition. A future BLADE
+extension could use a FAVLA-style force-variance predictor to decide <em>when</em>
+to re-evaluate a force-grounded precondition like <code>is_inserted</code> &mdash;
+marrying the symbolic body with continuous force-aware execution. This is
+on-theme, not tangential.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  This design ignores the mismatched sampling rates of real robot sensors,
+  forcing downsampling of the high-frequency contact cues needed for reactive
+  correction.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+
+<blockquote>
+  This paper argues that contact-rich VLA control should explicitly respect
+  fast-slow sensing and control: semantic scene understanding is naturally
+  "slow", while contact feedback and corrective control should be "fast".
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.2</span>
+</blockquote>
+
+<blockquote>
+  Rather than feeding the force sequence into the action expert's input sequence
+  (which can dilute sparse force cues), we inject it into different layers through
+  a force adapter.
+  <span class="quote-cite">&mdash; &sect;3.2 / p.4</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>Black et al. 2024 &mdash; &pi;0</strong> &mdash; the flow-matching
+    VLA backbone FAVLA is built on and its primary baseline. Foundational
+    dependency. (No batch slug; flag for ingest.)</li>
+  <li><strong>Beyer et al. 2024 &mdash; PaliGemma</strong> &mdash; the VLM backbone
+    inside &pi;0/FAVLA.</li>
+  <li><strong>Zhao et al. 2023 &mdash; ACT / temporal ensembling</strong> &mdash;
+    the action-chunking + temporal-ensemble technique FAVLA reuses for consistency.</li>
+  <li><strong>Shazeer et al. 2017 &mdash; MoE</strong> &mdash; the Mixture-of-Experts
+    machinery underlying the ForceVLA baseline.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>
+    &mdash; the strongest baseline FAVLA beats (+13.8 pts avg); both are
+    force-aware &pi;0 derivatives, but ForceVLA fuses via MoE at a single frequency
+    whereas FAVLA decouples frequencies. Closest competitor.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA / TA-VLA</a>
+    &mdash; baseline using an auxiliary future-force-prediction objective; FAVLA's
+    force-variance head is a sibling idea but drives an adaptive inference schedule
+    rather than only shaping attention.</li>
+  <li><a href="taf_vla_tactile_force_alignment_vla.html">TaF-VLA</a> and
+    <a href="vla_touch_dual_level_tactile_feedback.html">VLA-Touch</a>
+    &mdash; same Cluster C (multisensory force/tactile VLA policies); alternative
+    designs for injecting contact feedback into a pretrained VLA.</li>
+  <li><a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a> and
+    <a href="beyond_sight_fuse_heterogeneous_sensors_language.html">Beyond Sight (FuSe)</a>
+    &mdash; broader heterogeneous-sensor fusion into VLAs; FAVLA is the
+    frequency-asymmetry specialist within that family.</li>
+  <li><a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive Diffusion Policy</a>
+    &mdash; the closest non-VLA analogue: an explicit slow-fast visuotactile
+    diffusion policy. Direct architectural cousin to FAVLA's fast&ndash;slow split.</li>
+  <li><a href="foar_force_aware_reactive_policy.html">FoAR</a> and
+    <a href="tactile_conditioned_diffusion_policy_force_aware.html">Tactile-Conditioned Diffusion Policy</a>
+    &mdash; force-aware reactive control at the policy layer; the diffusion-policy
+    counterparts to FAVLA's force-injected flow-matching AE.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+    &mdash; situates FAVLA in the broader push to make foundation-model policies
+    force-aware.</li>
+</ul>
+
+</body>
+</html>

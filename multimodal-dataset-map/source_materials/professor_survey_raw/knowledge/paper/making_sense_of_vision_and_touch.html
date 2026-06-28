@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Making Sense of Vision and Touch: Learning Multimodal Representations for Contact-Rich Tasks</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Lee, Zhu, Zachares, Tan, Srinivasan, Savarese, Fei-Fei, Garg, Bohg">
+<meta name="year" content="2019">
+<meta name="venue" content="ICRA 2019 / T-RO (extended)">
+<meta name="arxiv_id" content="1907.13098">
+<meta name="url" content="https://arxiv.org/abs/1907.13098">
+<meta name="pdf" content="../../raw/papers/making_sense_of_vision_and_touch.pdf">
+<meta name="tags" content="visuo-tactile, force-torque, self-supervised-learning, representation-learning, contact-rich, reinforcement-learning, sensory-fusion, sim-to-real, force-control">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Making Sense of Vision and Touch: Learning Multimodal Representations for Contact-Rich Tasks</h1>
+<p class="meta">
+  Michelle A. Lee, Yuke Zhu, Peter Zachares, Matthew Tan, Krishnan Srinivasan,
+  Silvio Savarese, Li Fei-Fei, Animesh Garg, Jeannette Bohg
+  &middot; Stanford University
+  &middot; 2019 (ICRA; this extended version is the T-RO journal extension)
+  &middot; <a href="https://arxiv.org/abs/1907.13098">arXiv:1907.13098</a>
+  &middot; <a href="../../raw/papers/making_sense_of_vision_and_touch.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Self-supervised prediction tasks (optical flow,
+next end-effector pose, will-it-contact, are-these-streams-time-aligned) fuse
+RGB, depth, force&ndash;torque, and proprioception into one compact latent that
+a sample-efficient RL policy uses to solve real-robot peg insertion &mdash; the
+canonical demonstration that <em>force/touch is a first-class control modality,
+not a visual afterthought</em>.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Contact-rich tasks (peg insertion, fastening, edge-following) need both
+vision and touch: vision gives geometry for reaching/pre-shaping, while haptic
+feedback gives the contact state needed for localization and control under
+occlusion. Hand-designing controllers that fuse modalities with very different
+dimensionality, sampling rate (force at 1&nbsp;kHz vs. RGB at ~30&nbsp;Hz), and
+value range is brittle and task-specific. End-to-end RL avoids hand-design but
+is too sample-inefficient to run on a real robot, and most learned manipulation
+policies close the loop around a <em>single</em> modality (usually RGB). The
+paper's bet: decouple <strong>representation learning</strong> from
+<strong>control</strong> &mdash; learn a compact multimodal state with
+self-supervision (no human labels), freeze it, then learn the policy on top with
+far fewer samples.</p>
+
+<h2>Method</h2>
+<p>The architecture (Fig 2) has four <strong>modality encoders</strong> feeding
+a <strong>multimodal fusion module</strong>, which feeds four
+<strong>self-supervised decoders</strong>; the fused latent <code>z</code>
+(default <code>d=128</code>) is the only thing handed to the policy.</p>
+
+<p><strong>Modality encoders.</strong> RGB (<code>128&times;128&times;3</code>)
+&rarr; six-layer FlowNet-style CNN; depth (<code>128&times;128&times;1</code>)
+&rarr; eighteen-layer VGG-like CNN; force &mdash; a <code>32&times;6</code> window
+of 6-axis F/T readings (a 32&nbsp;ms window) &rarr; 5-layer causal convolutions;
+proprioception (EE position, orientation, linear + angular velocity) &rarr;
+4-layer MLP. Each encoder, following a <strong>variational</strong> formulation,
+outputs a <code>2&times;d</code> Gaussian (mean <code>&mu;</code> and variance
+<code>&sigma;&sup2;</code>) rather than a point.</p>
+
+<p><strong>Variational fusion (product of experts).</strong> Each modality is
+treated as a conditionally-independent Gaussian observation of <code>z</code>;
+the modalities are fused by the normalized <em>product</em> of the per-modality
+Gaussians (Eqn 5), giving one multimodal Gaussian over the latent. Training
+minimizes the negative ELBO &mdash; reconstruction-style log-likelihood of the
+self-supervised targets plus a KL to an isotropic prior <code>N(0,I)</code>,
+with the reparameterization trick for backprop. This variational design is the
+key delta from the authors' earlier deterministic ICRA-2019 conference version.</p>
+
+<p><strong>Self-supervised objectives</strong> (the supervision is generated
+automatically, no human labels). Given the <em>next action</em> (encoded by a
+2-layer MLP and concatenated to <code>z</code>), four decoders predict: (i)
+action-conditional <strong>optical flow</strong> of the scene; (ii) the
+<strong>flow mask</strong> (segmentation of the robot in motion); (iii)
+<strong>contact</strong> &mdash; binary "will the EE make contact next control
+cycle?"; (iv) the <strong>next EE pose</strong>. A fifth objective is
+<strong>time-alignment / pairing</strong>: a 1-layer MLP classifies whether the
+sensor streams fed in were time-locked or a randomly shifted (mismatched)
+mix &mdash; forcing the latent to encode co-occurring contact events shared
+across modalities. Flow / contact ground truth is generated from known robot
+kinematics and thresholded F/T readings. Six loss terms total (five predictions
++ KL).</p>
+
+<p><strong>Policy + controller.</strong> The frozen representation (its mean is
+used at policy time) feeds a 2-layer MLP policy trained with
+<strong>TRPO</strong> (model-free) to output 3-DoF position displacement
+<code>&Delta;x</code> + 1-DoF roll <code>&Delta;&alpha;</code> at 20&nbsp;Hz.
+Freezing the representation drops learnable policy params to ~1.5% of the model.
+A trajectory generator interpolates these to 500&nbsp;Hz, an impedance PD
+controller tracks them, and an operational-space controller emits 1000&nbsp;Hz
+torque commands (Fig 3) &mdash; compliant, reactive control so the peg can slide
+on the box surface. A staged reward (hole-search / alignment / insertion / depth)
+guides exploration.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> peg insertion, four 3D-printed peg
+  shapes (square, triangular, semicircular, hexagonal), ~2&nbsp;mm clearance.
+  Representation trained on 150k real-robot states + 600k sim states; rollout
+  policy + heuristic policy collect the self-supervised annotations offline.</li>
+  <li><strong>Hardware / simulator:</strong> Kuka LBR IIWA (real) and Franka
+  Panda (real, reproducing prior results); both 7-DoF torque-controlled.
+  Kinect&nbsp;v2 RGB-D + wrist-mounted OptoForce 6-axis F/T (mounted between last
+  joint and peg). Simulation uses SAI&nbsp;2.0 for high-fidelity articulated
+  rigid-body contact and CHAI3D for rendering.</li>
+  <li><strong>Baselines:</strong> ablated modality sets (No&nbsp;RGB, No&nbsp;Depth,
+  No&nbsp;Haptics); representation variants (Deterministic model [prior ICRA
+  version], Reconstruction model [VAE reconstructing inputs], No&nbsp;Pairing
+  [drops the time-alignment loss]); latent dimension sweep
+  (<code>d&isin;{16,64,128,256}</code>).</li>
+  <li><strong>Compute:</strong> representation trained 20 epochs on a single
+  Quadro P5000 GPU; 100k real states ~= 90&nbsp;min to collect; real-robot policy
+  trained 450 episodes &asymp; 7&nbsp;h wall-clock.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: the <strong>Full Model completes simulated square-peg insertion
+78%</strong> of the time; no modality-ablation or representation-ablation reaches
+it. On the real robot, learned policies hit a similar success regime and the
+multimodal representations <strong>transfer to unseen peg shapes</strong> (>70%
+on hexagonal and square pegs with <em>no</em> further policy training; a new
+policy on the same frozen representation pushes this to +8% / +10%). Policy
+recovers from occlusion and physical perturbation.</p>
+
+<table>
+<caption style="font-size:0.85em;color:#777;text-align:left;">Simulated peg insertion: completed-insertion rate (Fig 5).</caption>
+<tr><th>Condition</th><th>Completed insertion</th></tr>
+<tr><td><strong>Full Model</strong></td><td><strong>78%</strong></td></tr>
+<tr><td>No Depth</td><td>30%</td></tr>
+<tr><td>No RGB</td><td>16%</td></tr>
+<tr><td>No Haptics</td><td>50%</td></tr>
+<tr><td>No Pairing (drop time-align loss)</td><td>22%</td></tr>
+<tr><td>Reconstruction model</td><td>36%</td></tr>
+<tr><td>Deterministic model</td><td>24%</td></tr>
+<tr><td>d=16</td><td>18%</td></tr>
+<tr><td>d=64</td><td>46%</td></tr>
+<tr><td>d=256</td><td>28%</td></tr>
+</table>
+
+<p>What the numbers say: (a) every modality matters &mdash; No&nbsp;Depth is
+worst, but No&nbsp;RGB and No&nbsp;Haptics both badly hurt, so vision and touch
+are complementary not redundant. (b) The <strong>time-alignment pairing loss is
+the single most important objective</strong> &mdash; dropping it collapses
+insertion to 22%, the largest drop among representation ablations. (c) The
+<strong>variational</strong> model beats the deterministic one by a wide margin
+(78% vs 24%), and Table&nbsp;I shows the deterministic model's contact/pairing
+<em>test/train</em> loss ratios blow up (312&times;, 2514&times;) &mdash; it
+overfits; the variational ELBO regularizes the latent. (d) Latent dimension is a
+sweet-spot: too small (<code>d=16</code>) underfits the state, too large
+(<code>d=256</code>) bloats the policy's state space; both hurt. The
+Reconstruction (VAE) baseline (36%) loses to action-conditional self-supervision,
+confirming that predicting <em>dynamics/action-relevant</em> targets beats
+reconstructing raw inputs for control.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><strong>(a) Author-stated.</strong> Control is only 4-DoF
+(<code>&Delta;x</code> + roll), not full 6-DoF pose; extending to 6-DoF
+position+orientation contact-rich control is future work. Real-robot training
+faces sensor-synchronization issues, variable sensing-to-control delays, and
+complex dynamics not present in sim. The latent-dimension trade-off is set
+empirically; a more principled way to size the representation is open. They flag
+richer modalities &mdash; <em>sound, temperature, proximity</em> &mdash; and new
+self-supervision sources as future directions.</p>
+<p><strong>(b) What I noticed reading it.</strong> Success is reported as
+percentage of staged completion over 50 eval rollouts per policy, with the
+"completed insertion" rate the headline &mdash; but there's no variance/CI across
+seeds on the bar charts (shaded RL curves aside), so the 78% vs 50% gaps are
+single-run point estimates. The task is a <em>single</em> family (peg-in-hole);
+generality to qualitatively different contact tasks (screwing, sliding, cable
+routing) is asserted via 4 peg shapes, not demonstrated. The self-supervised
+contact label is just a thresholded F/T magnitude &mdash; it's a crude binary
+"is in contact" signal, not a rich predicate (no notion of <em>where</em> or
+<em>how hard</em>). And the whole thing is on-policy RL (TRPO) per task; the
+"sample efficiency" win is relative to from-scratch RL, not relative to
+imitation or to modern offline/diffusion policies. No language anywhere &mdash;
+the task is fixed and reward-specified.</p>
+
+<h2>Why I care</h2>
+<p>This is a foundational pillar for the thesis that drives the 2026-06-24 batch:
+<strong>many manipulation predicates are not visually evaluable &mdash;
+<code>is_inserted</code>, <code>is_grasped</code>, <code>is_screwed_tight</code>,
+<code>surface_is_rough</code> live in touch and force, not pixels.</strong> Lee
+et&nbsp;al. make exactly this argument empirically: a vision-only state can't
+solve tight-clearance insertion, and the force stream is what disambiguates the
+contact state during alignment and insertion. For
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>,
+whose visual predicate classifiers gate symbolic preconditions/effects, this is
+both an opportunity and a warning: the predicates BLADE most wants
+(<code>is_inserted</code>) are precisely the ones a visual classifier will read
+unreliably. A natural extension is BLADE-style behavior abstractions whose
+precondition/effect <em>classifiers</em> ingest a Lee-style fused visuo-tactile
+latent rather than RGB alone &mdash; learning <em>force-grounded</em> predicates.
+The paper also seeds the key design lesson the batch repeats: action-conditional
+self-supervision and a cross-modal <em>time-alignment</em> objective are what make
+fusion work, a precursor to the contrastive/binding losses in
+<a href="../../raw/papers/binding_touch_to_everything_unitouch.pdf">UniTouch</a>
+and
+<a href="../../raw/papers/imagebind_one_embedding_space.pdf">ImageBind</a>.
+It is squarely on-theme &mdash; the historical anchor (Cluster F, 2019 classic)
+for the force/proprioception-policy line; its main gap relative to Weiyu's agenda
+is the total absence of language and of compositional, long-horizon structure.</p>
+
+<h2>Quotable</h2>
+<blockquote>Visual feedback provides semantic and geometric object properties for
+accurate reaching or grasp pre-shaping. Haptic feedback provides observations of
+current contact conditions between object and environment for accurate
+localization and control under occlusions.
+<span class="quote-cite">&mdash; &sect;I / p.1</span></blockquote>
+<blockquote>We see that No Pairing affects the policy learning the most, with
+insertion rates dropping to 22%. &hellip; deciding whether sensory streams are
+time-aligned requires the detection of co-occurring patterns across modalities.
+<span class="quote-cite">&mdash; &sect;VIII-A2 / p.9</span></blockquote>
+
+<h2>Related</h2>
+<p><strong>Cited here, worth ingesting next:</strong></p>
+<ul>
+  <li><a href="../../raw/papers/imagebind_one_embedding_space.pdf">ImageBind</a> &mdash;
+  the binding-via-one-modality idea that generalizes this paper's cross-modal
+  pairing objective to a shared embedding space.</li>
+  <li>Calandra et&nbsp;al., "More than a feeling / The feeling of success"
+  (CoRL 2017) &mdash; grasp-outcome prediction from vision+touch; the
+  grasp-stability ancestor of this representation line. <em>(not in batch
+  cross-ref list)</em></li>
+  <li>Yang, Ramesh, Chitta et&nbsp;al., "Deep multimodal representation learning
+  from temporal data" (CVPR 2017) &mdash; the temporal-pairing self-supervision
+  this paper adopts. <em>(not in batch cross-ref list)</em></li>
+</ul>
+<p><strong>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</strong></p>
+<ul>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a> &mdash;
+  same Stanford fuse-vision-touch-audio lineage, extends the modality set to
+  contact audio.</li>
+  <li><a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive Diffusion Policy</a> &mdash;
+  modern slow/fast visuo-tactile policy; the diffusion-era successor to this
+  TRPO-on-frozen-latent recipe.</li>
+  <li><a href="tactile_conditioned_diffusion_policy_force_aware.html">Tactile-Conditioned Diffusion Policy</a> &mdash;
+  force-aware policy, shares the "touch is a control modality" thesis with a
+  diffusion backbone.</li>
+  <li><a href="foar_force_aware_reactive_policy.html">FoAR</a> /
+  <a href="factr_force_attending_curriculum_training.html">FACTR</a> &mdash;
+  Cluster&nbsp;F force/proprioception policies that descend from this contact-rich
+  control line.</li>
+  <li><a href="objectfolder_dataset_implicit_representations.html">ObjectFolder</a> &mdash;
+  multisensory (visual/acoustic/tactile) object representations; the dataset-side
+  counterpart to learning fused sensory latents.</li>
+</ul>
+
+</body>
+</html>

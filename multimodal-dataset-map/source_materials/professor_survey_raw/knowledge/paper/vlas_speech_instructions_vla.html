@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VLAS: Vision-Language-Action Model With Speech Instructions For Customized Robot Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Zhao, Ding, Zhang, Gong, Bai, Zhao, Wang">
+<meta name="year" content="2025">
+<meta name="venue" content="ICLR 2025">
+<meta name="arxiv_id" content="2502.13508">
+<meta name="url" content="https://arxiv.org/abs/2502.13508">
+<meta name="pdf" content="../../raw/papers/vlas_speech_instructions_vla.pdf">
+<meta name="tags" content="vision-language-action, vla, audio-sensing, speech, learning-from-language, foundation-models, vlm, multisensory">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>VLAS: Vision-Language-Action Model With Speech Instructions For Customized Robot Manipulation</h1>
+<p class="meta">
+  Wei Zhao, Pengxiang Ding, Min Zhang, Zhefei Gong, Shuanghao Bai, Han Zhao, Donglin Wang
+  &middot; Westlake University / Zhejiang University / Xi'an Jiaotong University
+  &middot; ICLR 2025
+  &middot; <a href="https://arxiv.org/abs/2502.13508">arXiv:2502.13508</a>
+  &middot; <a href="../../raw/papers/vlas_speech_instructions_vla.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> VLAS is the first end-to-end VLA that takes <em>raw
+speech</em> (not ASR-transcribed text) as its instruction modality, so it can
+exploit non-semantic cues in the audio &mdash; chiefly the speaker's voiceprint
+&mdash; to retrieve personal knowledge and disambiguate otherwise under-specified
+commands like "pick up my cup."</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Existing VLAs ride on vision-language models that only consume <em>text</em>
+instructions. Supporting spoken commands means bolting on an external ASR system,
+which (i) inflates the pipeline and propagates transcription errors into the
+policy, and (ii) discards everything in the speech beyond its words &mdash;
+identity, emotion, intonation. The authors argue that for <em>customized</em>
+home-care tasks, that discarded auxiliary information is exactly what lets the
+robot pick the <em>right</em> cup. The motivating example (Fig 1): given "Please
+pick up my cup," a text-only VLA fails (it can't know which cup), while VLAS,
+hearing "This is Li's voice. He owns a green cup," succeeds. The key question
+posed: how to integrate speech directly into a VLA "to produce a simpler and
+better end-user experience."</p>
+
+<h2>Method</h2>
+<p>VLAS extends the open-source LLaVA VLM (CLIP ViT vision encoder, Vicuna LLM)
+to accept speech, then fine-tunes it into a robot policy. Architecture in Fig 2.</p>
+
+<p><strong>Speech path.</strong> A frozen <a href="../../raw/papers/whisper_robust_speech_recognition.pdf">Whisper</a>
+encoder converts a speech instruction <code>s</code> into hidden states; the
+signal is first turned into an 80-bin mel-spectrogram (STFT, padded to 3000
+frames), producing 1500 hidden representations. A time-dimension reshape with
+reduction factor 5 shrinks this, and an MLP projects the speech tokens into the
+shared LLM semantic space &mdash; mirroring how LLaVA's MLP projects vision
+tokens. Formally the LLM input is
+<code>concat(MLP_s(Emb_s(s)), Tok_l(RAG(s)), MLP_v(Emb_v(O)))</code> (Eq 1), and
+actions are produced autoregressively (Eq 2).</p>
+
+<p><strong>Voice RAG.</strong> The novel piece for personalization. The raw speech
+is passed to a pre-trained <em>speaker-identification / voiceprint</em> module,
+whose voiceprint keys into an external database of personal knowledge (e.g. "Voice
+2: I have a blue block; I keep things in drawers"). The retrieved text is
+tokenized and concatenated alongside the speech and vision tokens as background
+context. This avoids from-scratch training of the retrieval module.</p>
+
+<p><strong>Action tokenization.</strong> Continuous actions are discretized into
+256 uniformly spaced bins, reusing the 256 least-frequent LLM vocabulary tokens
+as action tokens. A 7-DoF action <code>[x, y, z, &phi;, &theta;, &psi;, g]</code>
+(Eq 3) is emitted as a space-separated string and de-tokenized to continuous
+values at deploy time.</p>
+
+<p><strong>Three-stage training (Fig 4).</strong>
+<strong>Stage I &mdash; Speech Alignment:</strong> coarse modality alignment via
+speech recognition on LibriSpeech-360; only the speech-encoder&rarr;LLM MLP and
+the LLM backbone update (speaker-ID module optionally co-trained).
+<strong>Stage II &mdash; Speech Question Answering:</strong> fine-tune on the
+curated SQA dataset plus LLaVA's original VQA and LibriSpeech-100, updating all
+components except the frozen image/speech encoders &mdash; yielding
+<strong>VLAS-Base</strong>, a multimodal LM handling both text-image and
+speech-image instructions.
+<strong>Stage III &mdash; Robot Manipulation Fine-tuning:</strong> behavior-cloning
+on the CSI dataset (image observations + speech/text instructions + manipulation
+trajectories) to get the final VLAS policy.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Two new datasets the authors build
+    with the ESPnet/VITS TTS tool (trained on LibriTTS). <strong>SQA</strong>:
+    185K image-audio pairs from 185K LLaVA image-text pairs, over 1,152 voices.
+    <strong>CSI</strong> (CALVIN with Speech Instructions): CALVIN's 389 text
+    instructions rendered into ~194K audio samples over 500 voices, across 23K
+    episodes; half the training samples have text replaced by speech. Evaluated
+    on the CALVIN benchmark (1,000 long-horizon tasks, chains of 5 sub-tasks) and
+    a new self-built <em>customized-task</em> benchmark (Ownership / Preference /
+    Compound tasks, 39 unseen voices). Also SGQA and LibriSpeech for foundation-model
+    checks.</li>
+  <li><strong>Hardware / simulator:</strong> CALVIN simulator for the main results;
+    a real-world <strong>UR5 robot arm</strong> fine-tuned on the Berkeley UR5
+    demo dataset plus the authors' own cup-picking dataset (Fig 7). Evaluation
+    speech uses 39 novel TTS voices plus real recorded speech from 10 individuals.</li>
+  <li><strong>Baselines:</strong> MCIL, HULC, RT-1, a text-only VLA built on the
+    same LLaVA backbone, and RoboFlamingo &mdash; the speech-only baselines (VLA+ASR,
+    RoboFlamingo+ASR) pipe Whisper large-v2 ASR into a text policy. Foundation-model
+    baselines: LLaVA v1.5, BLIP-2, InstructBLIP, Qwen-VL (Tables 3&ndash;4).</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>CALVIN long-horizon (Table 1, success per sub-task LH-1..LH-5, avg length
+out of 5).</strong> VLAS with speech instructions roughly matches the text-only
+VLA and beats cascaded ASR pipelines:</p>
+
+<table>
+  <tr><th>Model</th><th>Instr.</th><th>LH-1</th><th>LH-5</th><th>Avg len</th></tr>
+  <tr><td>HULC</td><td>text</td><td>89.2%</td><td>33.5%</td><td>2.90</td></tr>
+  <tr><td>RT-1</td><td>text</td><td>84.4%</td><td>22.7%</td><td>2.45</td></tr>
+  <tr><td>VLA (text baseline)</td><td>text</td><td>95.5%</td><td>58.2%</td><td>3.80</td></tr>
+  <tr><td>VLAS</td><td>text</td><td>94.5%</td><td>64.6%</td><td>3.74</td></tr>
+  <tr><td>RoboFlamingo+ASR</td><td>speech</td><td>89.8%</td><td>48.3%</td><td>3.41</td></tr>
+  <tr><td>VLA+ASR</td><td>speech</td><td>88.7%</td><td>40.2%</td><td>3.13</td></tr>
+  <tr><td><strong>VLAS</strong></td><td>speech</td><td><strong>94.2%</strong></td><td><strong>54.6%</strong></td><td><strong>3.70</strong></td></tr>
+  <tr><td>VLAS (real speech)</td><td>speech</td><td>93.6%</td><td>51.3%</td><td>3.61</td></tr>
+</table>
+
+<p>End-to-end speech (3.70) beats both cascaded ASR baselines (3.13, 3.41), which
+the authors attribute to ASR errors amplifying into control. With real recorded
+speech VLAS only drops to 3.61, just 0.19 behind the text VLA baseline.</p>
+
+<p><strong>Customized tasks (Table 2, avg success).</strong> Here the Voice RAG is
+enabled and the gap is dramatic: the text-only VLA scores 19.2% avg (it has no
+access to who is speaking), while <strong>VLAS hits 86.5%</strong> (100% on
+Compound and Compound-Multistage Stage-1). Real speech: 78.6%. Ablating RAG
+collapses VLAS to 16.0%; adding RAG to the text VLA (VLA+RAG) lifts it to 82.0%
+&mdash; isolating Voice RAG as the driver, with the speech path contributing the
+voiceprint key that makes RAG possible at all.</p>
+
+<p><strong>Foundation-model sanity (Tables 3&ndash;4).</strong> VLAS-Base nearly
+matches LLaVA v1.5 on VQAv2/GQA/POPE (e.g. GQA 62.0 = LLaVA) and surpasses BLIP-2
+on SGQA (50.8 vs 41.0), showing the speech grafting doesn't degrade the VLM. On
+LibriSpeech ASR, VLAS-Base reaches 2.79% WER vs Whisper's 2.7% &mdash; comparable.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The fixed downsampling reduction factor (5) on the speech spectrum is noted
+    as suboptimal &mdash; LibriSpeech WER could improve with a better downsampling
+    module.</li>
+  <li>Future work is framed as exploiting <em>other</em> auxiliary speech cues
+    (emotion, intonation) and environmental sounds, implying the current model
+    really only leverages voiceprint identity, not the richer paralinguistics the
+    intro advertises.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The customized-task win is almost entirely a <strong>RAG</strong> result,
+    not a speech-understanding result: VLA+RAG (text + retrieved knowledge) already
+    reaches 82.0% vs VLAS's 86.5%. The speech modality's load-bearing contribution
+    is narrow &mdash; supplying a voiceprint to key the database. The paper's framing
+    ("auxiliary information in raw speech") oversells what's demonstrated; only
+    speaker identity is actually used.</li>
+  <li>Voiceprint&rarr;knowledge retrieval assumes a clean, pre-populated per-speaker
+    database and reliable speaker ID. No analysis of impostor voices, unseen
+    speakers, noisy/overlapping speech, or retrieval errors &mdash; all likely in a
+    real home.</li>
+  <li>The "customized" benchmark is self-constructed in simulation with TTS voices;
+    Ownership/Preference semantics are injected as meta-knowledge. Whether the model
+    <em>reasons</em> over preferences or just pattern-matches retrieved strings is
+    untested.</li>
+  <li>Real-robot results (Fig 7) are qualitative success-case demonstrations on
+    cup-picking; no success-rate table over trials, so the real-world claim is the
+    weakest statistical part of the paper.</li>
+  <li>On standard CALVIN, end-to-end speech VLAS (3.70) is slightly <em>below</em>
+    the text VLA baseline (3.80) &mdash; the speech modality costs a little when
+    there's no personalization to exploit.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is a <strong>VLA / instruction-modality paper, not a contact-sensing
+paper</strong> &mdash; worth being honest about that up front. Unlike the touch/
+force/audio-vibration work in this batch, VLAS's "audio" is <em>human speech</em>,
+not contact sound; it does not touch the thesis that many manipulation predicates
+(<code>is_grasped</code>, <code>is_inserted</code>, <code>is_screwed_tight</code>)
+live in non-visual touch/force/sound channels. The audio here carries
+<em>semantic and speaker-identity</em> information, not physical-contact signal.</p>
+<p>Where it <em>is</em> relevant to my line of work
+(<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>,
+learning-from-language, long-horizon manipulation):</p>
+<ul>
+  <li><strong>Instruction grounding.</strong> BLADE's test-time LLM translates a
+    natural-language goal into a first-order-logic formula over learned predicates.
+    VLAS shows that the <em>instruction channel itself</em> can carry sub-textual
+    information (who is asking) that resolves otherwise-ambiguous goals &mdash; an
+    angle BLADE's text-only goal parsing ignores. "pick up my cup" is a goal whose
+    grounding depends on speaker identity, not just the scene.</li>
+  <li><strong>Personalization as retrieved priors.</strong> The Voice RAG result
+    (knowledge retrieval, not modality, does the heavy lifting) is a clean reminder
+    that customized/long-horizon tasks often bottleneck on <em>external knowledge</em>
+    rather than on perception or control &mdash; relevant to how an abstraction layer
+    should incorporate user/world priors.</li>
+  <li><strong>Contrast for the structure-vs-scale debate.</strong> VLAS is squarely
+    end-to-end LLaVA-fine-tuned (the "scale-everything" pole BLADE counterpoints):
+    no symbolic abstraction, action tokens emitted autoregressively. A useful foil.</li>
+</ul>
+<p>Net: <em>adjacent</em> to my thesis &mdash; a modality-extension VLA whose real
+contribution is retrieval-augmented personalization, not non-visual physical sensing.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  VLAS allows the robot to understand spoken commands through inner speech-text
+  alignment and produces corresponding actions to fulfill the task.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  The transcription procedure would lose non-semantic information in the raw
+  speech, such as voiceprint, which may be crucial for robots to successfully
+  complete customized tasks.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  The raw speech command is processed by the speaker identification module to
+  extract a voiceprint. This voiceprint serves as a key to query an external
+  database, retrieving relevant information.
+  <span class="quote-cite">&mdash; &sect;3.1, Voice RAG / p.5</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>Radford et al. 2023 &mdash; Whisper (Robust Speech Recognition)</strong>
+    &mdash; the frozen speech encoder VLAS builds on, and the ASR model used by the
+    cascaded baselines. Forward-ref: <a href="../../raw/papers/whisper_robust_speech_recognition.pdf">PDF</a> (not yet ingested).</li>
+  <li><strong>Liu et al. 2023 &mdash; LLaVA (Visual Instruction Tuning)</strong>
+    &mdash; the VLM backbone VLAS extends to speech.</li>
+  <li><strong>Kim et al. 2024 &mdash; OpenVLA</strong> &mdash; the canonical
+    open-source end-to-end VLA; closest design relative.</li>
+  <li><strong>Brohan et al. 2023 &mdash; RT-2</strong> &mdash; the web-knowledge VLA
+    template VLAS positions itself against.</li>
+  <li><strong>Shah et al. 2023 &mdash; MUTEX</strong> &mdash; unified policy for
+    multimodal task specifications (incl. speech); the nearest prior on
+    multi-modal instruction VLAs.</li>
+  <li><strong>Fu et al. 2024 &mdash; VITA</strong> &mdash; cited as recent end-to-end
+    speech-understanding LLM; relevant to the raw-speech-into-LLM trend.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">Beyond Sight (FuSe)</a>
+    &mdash; same cluster (multisensory VLA policies); fuses heterogeneous sensors with
+    language. VLAS's speech-as-instruction is the language-side analogue to FuSe's
+    sensor-side fusion.</li>
+  <li><a href="audio_vla_contact_audio_perception.html">Audio-VLA</a>
+    &mdash; the other "audio + VLA" paper in the batch, but its audio is
+    <em>contact</em> sound for perception, where VLAS's audio is human speech for
+    instruction &mdash; a clean contrast on what "audio in a VLA" can mean.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>,
+    <a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a>,
+    <a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>,
+    <a href="vla_touch_dual_level_tactile_feedback.html">VLA-Touch</a>,
+    <a href="taf_vla_tactile_force_alignment_vla.html">TaF-VLA</a>,
+    <a href="favla_force_adaptive_fast_slow_vla.html">FAVLA</a>,
+    <a href="bi_lat_bilateral_control_language_action_chunking.html">Bi-LAT</a>
+    &mdash; the rest of the multisensory-VLA cluster; all extend a VLA with a
+    physical-contact modality (touch/force), whereas VLAS extends the
+    <em>instruction</em> modality (speech). Together they map the space of "what
+    non-text channel to add to a VLA."</li>
+</ul>
+
+</body>
+</html>

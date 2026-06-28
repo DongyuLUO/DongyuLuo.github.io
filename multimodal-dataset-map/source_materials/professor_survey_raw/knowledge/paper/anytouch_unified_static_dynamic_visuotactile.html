@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>AnyTouch: Learning Unified Static-Dynamic Representation across Multiple Visuo-tactile Sensors</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Feng, Hu, Xia, Gao, Shen, Sun, Fang, Hu">
+<meta name="year" content="2025">
+<meta name="venue" content="ICLR 2025">
+<meta name="arxiv_id" content="2502.12191">
+<meta name="url" content="https://arxiv.org/abs/2502.12191">
+<meta name="pdf" content="../../raw/papers/anytouch_unified_static_dynamic_visuotactile.pdf">
+<meta name="tags" content="tactile-representation, visuo-tactile, cross-sensor, representation-learning, self-supervised-learning, touch-language, vision-based-tactile, gelsight, digit, multimodal-dataset">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1>AnyTouch: Learning Unified Static-Dynamic Representation across Multiple Visuo-tactile Sensors</h1>
+<p class="meta">
+  Ruoxuan Feng, Jiangyu Hu, Wenke Xia, Tianci Gao, Ao Shen, Yuhao Sun, Bin Fang&dagger;, Di Hu&dagger;
+  &middot; Renmin University of China / Wuhan UST / Beijing UPT
+  &middot; ICLR 2025
+  &middot; <a href="https://arxiv.org/abs/2502.12191">arXiv:2502.12191</a>
+  &middot; <a href="../../raw/papers/anytouch_unified_static_dynamic_visuotactile.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> AnyTouch builds a <em>sensor-agnostic</em> visuo-tactile
+representation by training a shared encoder on tactile <em>images and videos</em> at
+two granularities &mdash; pixel-level masked modeling for fine detail and semantic-level
+touch&ndash;vision&ndash;language alignment plus a novel cross-sensor matching task &mdash;
+so one model perceives static properties (material/hardness) and dynamic changes
+(sliding/pressure) and transfers across GelSight, DIGIT, DuraGel, and unseen sensors.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Visuo-tactile sensors (GelSight, DIGIT, etc.) are poorly standardized: each sensor
+renders the same physical contact differently, so models trained on one sensor's data
+don't transfer, and per-sensor datasets stay small. Two gaps motivate the paper. First,
+<strong>data:</strong> prior cross-sensor efforts lack <em>aligned</em> multi-sensor data
+(Rodriguez et al. 2024 paired only two sensors on narrow manipulation tasks, ignoring
+material/hardness and multi-modal text). Second, <strong>representation:</strong> human
+touch is both <em>static</em> (a brief touch recognizes texture/material) and
+<em>dynamic</em> (continuous perception while unlocking a lock or pouring), but existing
+tactile representation work (e.g. <a href="binding_touch_to_everything_unitouch.html">UniTouch</a>,
+TLV-Link) learns from static tactile images only and clusters by sensor rather than by the
+object property being touched. AnyTouch attacks both: a new aligned dataset (TacQuad) and
+a unified static-dynamic, multi-level framework.</p>
+
+<h2>Method</h2>
+<p>Two contributions: the <strong>TacQuad</strong> dataset and the <strong>AnyTouch</strong>
+multi-level framework (Fig 2). The framework integrates tactile images and videos and trains
+in two sequential stages.</p>
+
+<p><strong>Unified input format.</strong> A static tactile image <code>I &isin; R^(1&times;H&times;W&times;3)</code>
+is treated as a single-frame video by replicating it <code>F</code> times into a 4-D tensor
+<code>X_T &isin; R^(F&times;H&times;W&times;3)</code>; videos pass through directly. A shared
+patch projection turns both into spatio-temporal tokens <code>z &isin; R^(N&times;d)</code>,
+so images and videos are processed by the same encoder.</p>
+
+<p><strong>Stage 1 &mdash; Masked modeling (pixel level, &sect;4.2).</strong> Randomly mask
+tokens of images/videos at ratio <code>&rho;</code>; a decoder reconstructs the static image
+<code>I&#770;</code> and dynamic video <code>V&#770;</code> under MSE losses
+<code>L_rec^S</code> and <code>L_rec^D</code> (Eq 1). An additional <strong>next-frame
+prediction</strong> task (Eq 2) predicts frame <code>V_(F+1)</code> to capture continuous
+deformation dynamics. This learns fine-grained, sensor-specific deformation detail.</p>
+
+<p><strong>Stage 2a &mdash; Multi-modal aligning (semantic level, &sect;4.3).</strong> Bind
+touch to <em>vision</em> and <em>text</em> via CLIP-style contrastive learning, using text
+(tactile attribute descriptions) as the anchor since text consistently describes attributes
+across datasets. Because tri-modal tactile data is rare, they use GPT-4o to expand text
+pairings (1.4M new text pairs across four datasets) and adopt a
+<strong>modality-missing-aware</strong> contrastive loss (Eq 3&ndash;4) that aligns over the
+largest available subset per modality pair (touch&harr;vision, touch&harr;text,
+vision&harr;text) with weights <code>&alpha;_TV, &alpha;_TL, &alpha;_VL</code>.</p>
+
+<p><strong>Stage 2b &mdash; Cross-sensor matching (sensor-agnostic features, &sect;4.4).</strong>
+The novel task: given a tactile sample <code>X_T</code>, decide whether another sample
+<code>X_T^+</code> (same object + same position, <em>different</em> sensor) versus a negative
+<code>X_T^-</code> (different object/position) come from the same physical contact.
+Touch representations are element-wise multiplied (<code>x_T &middot; x_T^+</code>) and scored by an
+MLP under a binary-cross-entropy loss (Eq 5&ndash;6). This explicitly <em>clusters
+representations of the same object across sensors</em> (Fig 3), going beyond UniTouch's
+image-only alignment.</p>
+
+<p><strong>Universal sensor tokens (&sect;4.5).</strong> Instead of only sensor-specific
+tokens <code>s_k</code> (which can't transfer to unseen sensors), they add a shared
+<em>universal</em> token <code>s_u</code>. During training each input randomly uses
+<code>s_u</code> with probability <code>p_u</code> that increases linearly (Eq 7); at
+inference, unseen sensors always use <code>s_u</code>. Stage losses: Stage 1
+<code>= L_rec^S + L_rec^D + L_pred^D</code> (Eq 8); Stage 2 <code>= L_align + &lambda; L_match</code> (Eq 9).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> 9 tactile training datasets &mdash; Touch and
+    Go, VisGel, Cloth, ObjectFolder Real, TVL, YCB-Slide, SSVTP, Octopi, plus the
+    coarse-grained subset of their new <strong>TacQuad</strong> (aligned, 4 sensors, 72,606
+    contact frames: 17,524 fine-grained spatio-temporal across 25 objects + 55,082
+    coarse-grained spatial across 99 objects; each frame has GPT-4o-generated,
+    manually-corrected tactile text). Downstream eval: Touch and Go, Feel, ObjectFolder 1.0
+    and 2.0; real-world fine-grained pouring.</li>
+  <li><strong>Hardware / simulator:</strong> four visuo-tactile sensors &mdash; GelSight Mini
+    (public), DIGIT (public), DuraGel (self-made), Tac3D (force-field). Real-world pouring
+    uses a robot arm with GelSight Mini pouring beads into a cylinder (Fig 5). Unseen-sensor
+    eval includes simulated sensors TACTO and Taxim.</li>
+  <li><strong>Baselines:</strong> single-sensor models ViT-LENS-2, TLV-Link, OmniBind;
+    multi-sensor models UniTouch and UniTouch&dagger; (retrained on matched data); CLIP
+    (no tactile pre-training); and T3 (trained on 3M data) for the real-world pouring task.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (data volumes up to 2,427k samples reported).</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Static perception on seen sensor (GelSight), Table 2 (accuracy):</strong></p>
+<table>
+  <tr><th>Method</th><th>TAG Material</th><th>TAG Roughness</th><th>TAG Hardness</th><th>Feel Grasp</th></tr>
+  <tr><td>CLIP</td><td>52.96</td><td>84.09</td><td>88.34</td><td>72.37</td></tr>
+  <tr><td>ViT-LENS-2</td><td>63.0</td><td>85.1</td><td>92.0</td><td>&ndash;</td></tr>
+  <tr><td>TLV-Link</td><td>67.2</td><td>84.7</td><td>91.3</td><td>94.5&Dagger;</td></tr>
+  <tr><td>UniTouch</td><td>61.3</td><td>&ndash;</td><td>&ndash;</td><td>82.3</td></tr>
+  <tr><td>TLV-Link&dagger;</td><td>74.12</td><td>85.94</td><td>76.97</td><td>76.97</td></tr>
+  <tr><td><strong>AnyTouch</strong> (TAG, Feel, YCB, OF2.0)</td><td><strong>82.74</strong></td><td>86.01</td><td>94.24</td><td><strong>87.17</strong></td></tr>
+  <tr><td><strong>AnyTouch</strong> (all data)</td><td>80.82</td><td><strong>86.74</strong></td><td><strong>94.68</strong></td><td>80.53</td></tr>
+</table>
+
+<p><strong>Static perception on unseen sensors (TACTO &amp; Taxim), Table 3 (linear probe,
+material acc):</strong> AnyTouch reaches 49.62 on ObjectFolder 1.0 (vs UniTouch&dagger; 47.25,
+CLIP 41.00) and 85.87 on ObjectFolder 2.0 (vs 75.29 / 73.16) &mdash; best on both unseen
+sensors, confirming cross-sensor transfer from the universal sensor token + cross-sensor
+matching.</p>
+
+<p><strong>Real-world dynamic pouring, Table 4 (mean error in grams, lower better):</strong></p>
+<table>
+  <tr><th>Method</th><th>Dynamic Perception</th><th>Fine-tune err</th><th>Freeze err</th></tr>
+  <tr><td>CLIP</td><td>&#10007;</td><td>5.22</td><td>49.1</td></tr>
+  <tr><td>T3 (3M data)</td><td>&#10007;</td><td>2.33</td><td>9.74</td></tr>
+  <tr><td>AnyTouch (static-only)</td><td>&#10007;</td><td>2.45</td><td>9.60</td></tr>
+  <tr><td><strong>AnyTouch</strong></td><td>&#10003;</td><td><strong>1.56</strong></td><td><strong>8.22</strong></td></tr>
+</table>
+<p>The full dynamic AnyTouch beats T3 despite T3 using more data; the static-only ablation is
+roughly on par with T3, isolating the value of dynamic (video) perception.</p>
+
+<p><strong>Where it loses / is mixed.</strong> In TAG <em>material</em> (Table 1), the model
+trained on <em>only</em> GelSight data scores 83.55 &mdash; higher than versions trained on
+more multi-sensor data (down to 79.61). Adding more sensors dilutes the seen-dataset's share
+and slightly hurts that one in-distribution task (the authors note this echoes CLIP's
+data-overlap finding). Also, integrating large DIGIT data helps less than GelSight Mini data,
+attributed to hardware image differences.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Fine-grained spatio-temporal aligned collection is costly and time-consuming, capping
+    the precisely-aligned subset at 30 sets / 25 objects (17,524 frames); the larger subset
+    is only coarse-grained.</li>
+  <li>Adding more multi-sensor data can <em>reduce</em> performance on an in-distribution task
+    when it shrinks that dataset's proportion (the GelSight-only-best-on-TAG-material effect).</li>
+  <li>Benefit of integrating a given sensor depends on hardware similarity &mdash; DIGIT's
+    images differ more, so its data transfers less than GelSight Mini's.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The cross-sensor matching task needs <em>same-object same-position</em> pairs across
+    sensors, which is exactly the expensive aligned data TacQuad provides &mdash; the method's
+    headline novelty is bottlenecked on the dataset that is admittedly hard to scale. How does
+    matching degrade as alignment quality drops from fine- to coarse-grained?</li>
+  <li>Real-world dynamic eval is a single task (pouring) averaged over only <strong>10 runs</strong>,
+    reported as mean error without variance &mdash; a thin statistical basis for the dynamic-perception
+    claim, the paper's most novel capability.</li>
+  <li>"Static-dynamic" is operationalized as image-vs-video plus next-frame prediction; there
+    is no explicit force/pressure signal &mdash; all dynamics are inferred from the optical gel
+    deformation, so force-magnitude predicates (e.g. <code>is_screwed_tight</code>) aren't directly
+    addressed.</li>
+  <li>Most evaluation tasks are binary/few-class classification (material, roughness, hardness,
+    grasp success); harder open-ended property reasoning (cf.
+    <a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>) isn't tested.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely on-theme for the touch-as-a-perception-channel thesis behind the 2026-06-24
+batch: many manipulation predicates (<code>is_grasped</code>, <code>is_inserted</code>,
+<code>surface_is_rough</code>, <code>is_full</code>) are <em>not</em> visually evaluable and live
+in touch. Relative to <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>,
+where predicate classifiers <code>f_&theta;(p)</code> are learned from RGB-D crops, AnyTouch is a
+candidate <em>tactile backbone</em> for predicates that vision can't ground &mdash; and crucially
+it claims a <strong>sensor-agnostic</strong> representation, which matters if a BLADE-style system
+should not be re-trained per gripper/sensor. Two specific hooks: (1) its <em>static</em> branch
+maps to instantaneous predicates (material, hardness) while its <em>dynamic</em> branch maps to
+process/effect predicates (the pouring task is literally estimating a continuous <code>fill</code>
+quantity &mdash; the touch analogue of BLADE's diffusion-policy continuous parameters). (2) Its
+cross-sensor matching is a clean way to make learned predicates portable, a generalization axis
+orthogonal to BLADE's novel-state generalization. The representation is foundation-model-style, not
+a planner, so it complements rather than competes with the abstraction layer &mdash; it would sit
+<em>below</em> the predicate classifiers, supplying the tactile features they read.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We recognize that the human tactile perception is a combination of static and dynamic
+  processes&hellip; Drawing on this insight, we propose learning unified representations from
+  both static and dynamic perspectives to accommodate a range of tasks.
+  <span class="quote-cite">&mdash; &sect;1, Introduction / p.4</span>
+</blockquote>
+<blockquote>
+  Our method not only uses multi-modal data to bridge the gap between sensors, but also
+  explicitly clusters representations of the same position on the same object from different
+  sensors together.
+  <span class="quote-cite">&mdash; Fig 3 caption / p.6</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>Feng et al. 2024 &mdash; Play to the Score (stage-guided dynamic multi-sensory
+    fusion)</strong> &mdash; same first author; dynamic visuo-tactile + audio fusion for pouring
+    and peg insertion. Direct conceptual precursor to AnyTouch's dynamic branch.</li>
+  <li><strong>Rodriguez et al. 2024</strong> &mdash; the dual-sensor cross-sensor-generation
+    dataset AnyTouch positions TacQuad against.</li>
+  <li><strong>He et al. 2022 &mdash; Masked Autoencoders (MAE)</strong> &mdash; the pixel-level
+    masked-modeling backbone of Stage 1.</li>
+  <li><strong>Radford et al. 2021 &mdash; CLIP</strong> &mdash; the contrastive aligning recipe
+    underlying Stage 2a.</li>
+  <li><strong>Yang et al. 2024 (sensor-specific tokens)</strong> &mdash; the token scheme
+    AnyTouch extends with universal sensor tokens.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a> &mdash; the closest prior
+    multi-sensor tactile representation and a key baseline; AnyTouch differs by adding dynamic
+    (video) perception and explicit cross-sensor matching.</li>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL</a> and
+    <a href="touch100k_touch_language_vision_dataset.html">Touch100k</a> /
+    <a href="tlv_touch_language_vision_dataset.html">TLV</a> &mdash; touch&ndash;vision&ndash;language
+    datasets AnyTouch trains on and whose TLV-Link is a baseline; same touch-language-alignment family.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a> and
+    <a href="t3_transferable_tactile_transformers.html">T3</a> &mdash; sibling tactile
+    representation/foundation models (T3 is the real-world pouring baseline); same Cluster B problem,
+    different recipe (self-supervised touch vs. transferable transformers vs. static-dynamic multi-sensor).</li>
+  <li><a href="unit_data_efficient_tactile_representation.html">UniT</a> and
+    <a href="mvitac_visuotactile_contrastive_pretraining.html">MViTac</a> &mdash; other tactile
+    pretraining approaches (data-efficient / visual-tactile contrastive) in the same cluster.</li>
+  <li><a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a> &mdash; tactile-language
+    property reasoning; the harder open-ended-reasoning eval AnyTouch's classification benchmarks don't cover.</li>
+</ul>
+
+</body>
+</html>

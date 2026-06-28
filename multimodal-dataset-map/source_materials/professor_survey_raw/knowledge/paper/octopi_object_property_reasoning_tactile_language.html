@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Octopi: Object Property Reasoning with Large Tactile-Language Models</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Yu, Lin, Xiao, Duan, Soh">
+<meta name="year" content="2024">
+<meta name="venue" content="RSS 2024">
+<meta name="arxiv_id" content="2405.02794">
+<meta name="url" content="https://arxiv.org/abs/2405.02794">
+<meta name="pdf" content="../../raw/papers/octopi_object_property_reasoning_tactile_language.pdf">
+<meta name="tags" content="tactile-language-model, touch-language, property-reasoning, gelsight, foundation-models, robot-learning, vision-based-tactile, multimodal-dataset, material-recognition, vlm">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Octopi: Object Property Reasoning with Large Tactile-Language Models</h1>
+<p class="meta">
+  Samson Yu, Kelvin Lin, Anxing Xiao, Jiafei Duan, Harold Soh
+  &middot; NUS / University of Washington
+  &middot; RSS 2024
+  &middot; <a href="https://arxiv.org/abs/2405.02794">arXiv:2405.02794</a>
+  &middot; <a href="../../raw/papers/octopi_object_property_reasoning_tactile_language.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Octopi bolts a GelSight tactile encoder onto a
+Vicuna LLM (via a CLIP visual backbone + a LLaVA-style projection module) so
+that a vision-language model can <em>feel</em> &mdash; predicting hardness,
+roughness, and bumpiness from tactile video and then chaining those properties
+into commonsense reasoning (e.g., picking the ripe avocado because it feels
+softer) &mdash; trained on a new GelSight dataset, PhysiCleAR.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>LVLMs reason about physical properties only from <em>visual</em> or
+<em>text</em> inputs, so they fail under visual ambiguity &mdash; material,
+texture, compliance, and occluded state often live in <em>touch</em>, not
+pixels. For humans, touch supplies physical information that vision cannot
+(material, temperature, compliance), improving physical reasoning. The authors
+want general-purpose robots, especially LLM-empowered ones, to do the same. The
+obstacle is a large domain gap: vision-based tactile sensors like
+<a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">GelSight</a>
+produce image frames that are far from the natural images CLIP/LVLMs were trained
+on, and there is no dataset pairing GelSight tactile video with physical-property
+labels and language descriptions. The paper closes both gaps: a dataset
+(PhysiCleAR) and a tactile-language model (Octopi).</p>
+
+<h2>Method</h2>
+<p>Two contributions: the PhysiCleAR training/eval suite (covered under Setup)
+and the Octopi model (Fig 3).</p>
+
+<p><strong>Architecture.</strong> Three trained components: (1) a tactile input
+encoder, (2) a projection module, (3) an LLM. The tactile encoder is built on a
+CLIP ViT-L/14 visual encoder; following ViFi-CLIP, frame-level CLIP embeddings
+are average-pooled to a video-level representation. The projection module is two
+linear layers with an intermediate GELU activation (LLaVA-style), mapping tactile
+embeddings into Vicuna v1.5's word-embedding space. Two new word tokens
+<code>&lt;tact_start&gt;</code> and <code>&lt;tact_end&gt;</code> delimit a
+tactile frame sequence from a single sensor reading; the projected tactile
+embeddings are spliced between them and merged with ordinary word embeddings to
+form the instruction. Two LLM sizes: Octopi-7b (Vicuna-7b) and Octopi-13b
+(Vicuna-13b).</p>
+
+<p><strong>Three-step training.</strong></p>
+<p><strong>(i) Encoder fine-tuning.</strong> Because tactile frames are a large
+distribution shift from natural images, the CLIP visual encoder is adapted via
+multitask physical-property classification. Using the ViFi-CLIP architecture, 8
+task-specific learnable prompts (Visual Prompt Tuning) are attached to the input
+of each Transformer layer while the backbone is frozen; three separate
+classification heads predict hardness, roughness, and bumpiness, trained jointly
+with cross-entropy. The checkpoint that correctly predicts all three properties
+for the most objects is selected.</p>
+<p><strong>(ii) Tactile feature alignment.</strong> The classification heads are
+discarded; the fine-tuned encoder's outputs become the output embeddings. Only
+the projection module (and the two new token embeddings) is trained to align
+encoder outputs with language annotations; encoder and LLM are frozen.</p>
+<p><strong>(iii) End-to-end fine-tuning.</strong> The projection module plus
+LoRA adapters on the LLM are fine-tuned (encoder frozen) to improve coherence and
+similarity to the language annotations. LoRA: rank 128, scaling 256, dropout
+0.05.</p>
+
+<p><strong>Inference / reasoning.</strong> At test time Octopi is instructed to
+describe the physical properties of a tactile reading, then to use those
+predictions for downstream reasoning (property comparison, superlative
+selection, object matching, scenario reasoning). The intermediate property
+descriptions are the bridge: the LLM reasons over its own emitted descriptions
+(e.g., "ripe avocados are moderately hard with small bumps") to answer the
+scenario.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> <strong>PhysiCleAR</strong>, a new
+    GelSight dataset of 74 everyday objects, 408 tactile videos plus
+    corresponding object videos, collected by hand with two exploratory
+    procedures (pressing, then rotation for shear). Three physical properties,
+    each 3-way: hardness (soft / moderately hard / hard), roughness (smooth /
+    slightly rough / rough), bumpiness (no bumps / small bumps / big bumps);
+    Table I. Annotated by 3 annotators (averaged), &gt;1,200 annotations, high
+    inter-annotator agreement (ICC3k 0.894 / 0.979 / 0.792). 80-10-10 split
+    (60 train / 7 val / 7 test objects). Five tasks (Table III): Object Property
+    Description (OPD), Property Comparison (PC), Property Superlative Selection
+    (PSS), Property-object Matching (POM), and Property Scenario Reasoning (PSR,
+    eval-only).</li>
+  <li><strong>Hardware / simulator:</strong> GelSight tactile sensor for data
+    collection. Real-robot demo: two GelSight sensors on a 7-DoF Franka Emika
+    Panda for avocado ripeness classification (instructions relayed via ROS).</li>
+  <li><strong>Baselines:</strong> Random baseline on every task;
+    <strong>PG-InstructBLIP</strong> (physically-grounded VLM from
+    <em>visual</em> input) on avocado property prediction; internal ablations
+    (no-OPD, base vs fine-tuned CLIP, with/without LoRA, 7b vs 13b).</li>
+  <li><strong>Compute:</strong> Encoder fine-tuning 30 epochs, &lt;5GB VRAM,
+    6 h. Alignment + end-to-end: 5 h (7b) / 6.5 h (13b). 1&times; NVIDIA RTX
+    A6000 (7b), 2&times; A6000 (13b).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: Octopi describes unseen-object tactile properties well above random
+and, crucially, <em>using</em> its property descriptions improves downstream
+reasoning. Physical-understanding test set (Table VI, accuracy %):</p>
+
+<table>
+  <tr><th>Task</th><th>Random</th><th>Octopi-7b</th><th>Octopi-7b (no OPD)</th><th>Octopi-13b</th><th>Octopi-13b (no OPD)</th></tr>
+  <tr><td>PC</td><td>33.33</td><td>48.10</td><td>46.51</td><td><strong>55.06</strong></td><td>40.70</td></tr>
+  <tr><td>PSS</td><td>33.33</td><td>74.67</td><td>39.88</td><td><strong>84.00</strong></td><td>39.88</td></tr>
+  <tr><td>POM</td><td>16.67</td><td>44.39</td><td>23.23</td><td><strong>60.43</strong></td><td>18.71</td></tr>
+</table>
+
+<p>Object-property prediction on unseen objects (Table IX, accuracy %): combined
+(all three correct) Octopi-7b 47.37, Octopi-13b 55.26, vs random 3.70 and
+fine-tuned-CLIP 57.89; per-property the 13b model reaches hardness 78.95,
+roughness 78.95, bumpiness 78.95.</p>
+
+<p>Scenario reasoning (Table VII, PSR accuracy %): Octopi-7b 69.57, Octopi-13b
+67.39, vs random 50.00; removing OPD drops 13b to 39.13 (below random) &mdash;
+direct evidence the intermediate property descriptions carry the reasoning.</p>
+
+<p>Avocado real-robot (Table VIII): Octopi-13b property prediction 35.50%
+(random 3.70), ripeness classification 63.00% (random 50.00) over 10 avocados /
+200 tactile samples / 100 pairs &mdash; and the visual baseline
+<strong>PG-InstructBLIP</strong> collapses on these avocados (hardness 37.50,
+roughness 3.00, bumpiness 9.50), always picking the first object on ripeness,
+since ripeness is hard to see but felt through softness.</p>
+
+<p><strong>Where it loses / surprises:</strong></p>
+<ul>
+  <li>Octopi-7b <em>beats</em> the larger Octopi-13b on PSR (69.57 vs 67.39) &mdash;
+    scale did not help reasoning here (the authors flag this as "marginal").</li>
+  <li>The fine-tuned-CLIP encoder slightly out-predicts Octopi end-to-end on raw
+    combined property accuracy (FT-CLIP 57.89 vs Octopi-13b 55.26 in Table IX),
+    i.e., wrapping the encoder in an LLM costs a little raw prediction in exchange
+    for language reasoning.</li>
+  <li>Ablations confirm both fine-tuned CLIP (Tables X-XI) and LoRA end-to-end
+    fine-tuning (Tables XII-XIII) are necessary: base-CLIP and no-LoRA variants
+    degrade across tasks (e.g., 13b POM 60.43 &rarr; 34.76 without LoRA).</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Only three properties (hardness, roughness, bumpiness); geometric and
+    affective properties deemed too hard for GelSight and excluded.</li>
+  <li>Data collected by hand to avoid sensor damage and because securing
+    irregular objects is hard &mdash; limits scale and consistency of exploratory
+    motion.</li>
+  <li>Future work: improve the tactile encoder, add more exploratory procedures,
+    combine other tactile-sensor datasets, add robot proprioception, align with
+    object images, and fine-tune the LLM on additional physical-understanding
+    data.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Tiny test object set.</strong> Generalization is judged on 7 held-out
+    objects (and avocado eval on 10 avocados). High per-property accuracies
+    (~79%) rest on a very small object count &mdash; an n that small makes the
+    accuracy numbers noisy and easy to overfit to.</li>
+  <li><strong>Properties are 3-bucket categorical.</strong> Hardness/roughness/
+    bumpiness are coarse 3-way labels; the actual continuous compliance/texture
+    signal a manipulation controller would need (force, friction coefficient) is
+    quantized away &mdash; the reasoning never touches continuous force.</li>
+  <li><strong>Pressing-only at deployment.</strong> Avocado readings use pressing
+    only (no rotation), yet the model trained on press+rotate still works; the
+    paper reads this as robustness, but it also means the shear/rotation signal
+    may contribute less than the dataset design implies.</li>
+  <li><strong>The LLM reasons over its own text, not the tactile latent.</strong>
+    PSR collapsing below random without OPD shows reasoning is mediated entirely
+    through emitted natural-language property descriptions &mdash; a fragile
+    pipeline (a wrong property word poisons the downstream answer) rather than
+    end-to-end tactile reasoning. This is a strength (interpretable) and a
+    weakness (error-propagating).</li>
+  <li>No comparison to a tactile-classifier + symbolic-rule baseline; hard to tell
+    how much the LLM adds over "predict 3 properties, look up a rule table."</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely on-theme for the thesis that <strong>many manipulation
+predicates are not visually evaluable</strong> &mdash; <code>surface_is_rough</code>,
+<code>is_soft</code>, <code>is_ripe</code> live in touch, not pixels. Octopi is a
+clean existence proof: a VLM that, given GelSight input, can <em>name</em>
+property-predicates (hardness/roughness/bumpiness) and then reason with them.
+Relative to <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>,
+where predicates are learned as visual classifiers
+<code>f<sub>&theta;</sub>(p): O &rarr; {T,F}</code> over RGB-D, Octopi is the
+tactile analogue of the <em>predicate-evaluation</em> step: it grounds a small
+vocabulary of physical predicates in a non-visual modality. The natural question
+for my line: could a BLADE-style operator library use a tactile-language model
+like Octopi as the precondition/effect evaluator for predicates that vision can't
+check (<code>is_grasped</code>, <code>is_inserted</code>,
+<code>surface_is_rough</code>)? Octopi's most relevant limitation for me is that
+its reasoning is mediated by emitted text rather than a continuous force signal,
+and its predicates are coarse and categorical &mdash; exactly the gap between a
+property-describer and a planning-grade precondition checker. Off the
+abstraction-learning core, but directly load-bearing for the "touch-grounded
+predicates" extension of BLADE/PARL.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Octopi stands out as the one of the first models capable of processing tactile
+  images alongside language instructions to enable physical reasoning.
+  <span class="quote-cite">&mdash; &sect;II, Related Work / p.3</span>
+</blockquote>
+<blockquote>
+  For humans, touch is a crucial sense that provides physical information beyond
+  what vision can provide (e.g., material properties, texture information,
+  temperature), especially during occlusion.
+  <span class="quote-cite">&mdash; &sect;I, Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  The most suitable object is a) a hard and smooth surface with no bumps, because
+  it is more likely to penetrate the thin ice covering a car exterior and not get
+  stuck.
+  <span class="quote-cite">&mdash; Table IV, PSR example (Octopi-13b) / p.5</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>Yang et al. 2022 &mdash; <a href="../../raw/papers/touch_and_go_human_collected_vision_touch.pdf">Touch and Go</a></strong>
+    [56] &mdash; human-collected vision+touch dataset; predecessor GelSight
+    dataset PhysiCleAR is positioned against.</li>
+  <li><strong>Gao et al. 2022 &mdash; <a href="../../raw/papers/objectfolder_2_multisensory_sim2real.pdf">ObjectFolder 2.0</a></strong>
+    [18] and the <a href="../../raw/papers/objectfolder_benchmark_neural_real.pdf">ObjectFolder Benchmark</a>
+    [19] &mdash; multisensory object datasets compared in Table II.</li>
+  <li><strong>Yuan et al. 2017 &mdash; <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">GelSight</a></strong>
+    [60] &mdash; the sensor Octopi is built on; foundational dependency.</li>
+  <li><strong>Gao et al. 2023 &mdash; <a href="../../raw/papers/physically_grounded_vision_language_models_for_robotic_manipulation.pdf">PG-InstructBLIP / Physically Grounded VLMs</a></strong>
+    [17] &mdash; the visual-only physical-reasoning baseline Octopi beats on
+    avocados.</li>
+  <li><strong>Hong et al. 2024 &mdash; Multiply</strong> [22] &mdash; multisensory
+    object-centric embodied LLM in 3D; closest concurrent tactile-LLM but on
+    simulated tactile.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="octopi_1_5_visual_tactile_language_model.html">Octopi-1.5</a>
+    &mdash; the direct successor from the same group; visual-tactile-language
+    model demonstration. Ingest-and-compare priority.</li>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL (A Touch, Vision, and Language Dataset)</a>
+    &mdash; sibling touch-vision-language dataset/model; the closest
+    contemporaneous touch&ndash;language grounding effort to PhysiCleAR.</li>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a>
+    &mdash; binds touch to vision/language/other modalities; the multimodal-binding
+    counterpart to Octopi's CLIP-anchored tactile encoder.</li>
+  <li><a href="touch100k_touch_language_vision_dataset.html">Touch100k</a>
+    and <a href="tlv_touch_language_vision_dataset.html">TLV</a>
+    &mdash; larger touch-language-vision datasets; what PhysiCleAR's property-labeled
+    suite could scale toward.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a>
+    and <a href="t3_transferable_tactile_transformers.html">T3</a>
+    &mdash; self-supervised / transferable tactile representations; alternatives to
+    Octopi's CLIP-fine-tuned tactile encoder for the (i) encoder step.</li>
+</ul>
+
+</body>
+</html>

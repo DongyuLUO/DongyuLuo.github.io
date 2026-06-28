@@ -1,0 +1,2268 @@
+{
+  "items": [
+    {
+      "id": "d_molmoact_dataset",
+      "slug": "molmoact-dataset",
+      "name": "MolmoAct Dataset",
+      "summary": "Ai2's own MolmoAct real-robot Franka dataset: household + tabletop EE manipulation, 3 camera views.",
+      "description": "Ai2's self-collected MolmoAct real-robot manipulation dataset, used to train MolmoAct action reasoning models, covering household and tabletop domains. The Household split has 7,529 episodes across 115 tasks with varying viewpoints; the Tabletop split adds 2,959 episodes across 19 tasks with a fixed exocentric camera (~10,488 episodes total). It uses a Franka arm with three RGB views (primary, secondary, wrist) and a 7-dim end-effector action space, in LeRobot format with per-episode language annotations.",
+      "source_name": "Allen Institute for AI (Ai2)",
+      "source_type": "lab",
+      "source_url": "https://huggingface.co/datasets/allenai/MolmoAct2-MolmoAct-Dataset-Household",
+      "motion_type": "manipulator",
+      "viewpoint": "exocentric",
+      "realness": "physical",
+      "num_cameras": 3,
+      "license": "Apache-2.0",
+      "schema_summary": "LeRobot: 3 RGB videos (primary/secondary/wrist, 480x640) + 7-dim EE state and 7-dim absolute/delta EE actions; per-episode language instructions. Household + Tabletop splits.",
+      "action_space": "7-dim end-effector pose (x,y,z,rx,ry,rz,gripper), absolute and delta.",
+      "num_episodes": 10488,
+      "num_hours": 22,
+      "num_tasks": 134,
+      "size_bytes": 50670000000,
+      "year": 2026,
+      "homepage_url": "https://allenai.org/blog/molmoact",
+      "paper_url": "https://arxiv.org/abs/2605.02881",
+      "code_url": "https://github.com/allenai/MolmoAct",
+      "download_url": "https://huggingface.co/datasets/allenai/MolmoAct2-MolmoAct-Dataset-Household",
+      "usage_snippet": "from datasets import load_dataset\nhousehold = load_dataset(\"allenai/MolmoAct2-MolmoAct-Dataset-Household\")\ntabletop = load_dataset(\"allenai/MolmoAct2-MolmoAct-Dataset-Tabletop\")",
+      "citation": "Fang et al. MolmoAct2: Action Reasoning Models for Real-world Deployment. arXiv:2605.02881, 2026.",
+      "used_by_papers": [
+        {
+          "slug": "arxiv-2605.02881",
+          "title": "MolmoAct2 Bimanual YAM Dataset (source paper)",
+          "url": "https://arxiv.org/abs/2605.02881",
+          "year": 2026,
+          "authors": null,
+          "venue": "arXiv"
+        }
+      ],
+      "popularity": 318,
+      "popularity_label": "318 downloads",
+      "featured": false,
+      "embodiment": [
+        "franka_panda"
+      ],
+      "environment": [
+        "home",
+        "tabletop"
+      ],
+      "modality": [
+        "ee_pose",
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "success-only"
+      ],
+      "format": [
+        "lerobot"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_molmoact_dataset_0",
+          "url": "https://datasets.bot/api/images/img_molmoact_dataset_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_molmoact_dataset_1",
+          "url": "https://datasets.bot/api/images/img_molmoact_dataset_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        }
+      ],
+      "created_at": 1782365645029,
+      "updated_at": 1782365645029
+    },
+    {
+      "id": "d_molmoact2_so100_101",
+      "slug": "molmoact2-so100-101",
+      "name": "MolmoAct2 SO-100/SO-101 Dataset",
+      "summary": "Ai2 language re-annotations for 1,220 community SO-100/SO-101 LeRobot manipulation datasets.",
+      "description": "A MolmoAct2 resource from Ai2 providing per-episode annotated language instructions for low-cost SO-100 and SO-101 arm data sourced from 1,220 community LeRobot repositories (377 users). It does not re-host trajectories; each source dataset gets a tasks_annotated.parquet of refined instructions indexed by episode, with the source repos listed in repo_list.json.",
+      "source_name": "Allen Institute for AI (Ai2)",
+      "source_type": "lab",
+      "source_url": "https://huggingface.co/datasets/allenai/MolmoAct2-SO100_101-Dataset",
+      "motion_type": "manipulator",
+      "viewpoint": null,
+      "realness": "physical",
+      "num_cameras": null,
+      "license": "Apache-2.0",
+      "schema_summary": "Manifest of 1,220 source SO-100/SO-101 LeRobot repos + per-repo tasks_annotated.parquet of refined per-episode language instructions; repo_list.json lists originals.",
+      "action_space": null,
+      "num_episodes": null,
+      "num_hours": null,
+      "num_tasks": null,
+      "size_bytes": 3460000,
+      "year": 2026,
+      "homepage_url": "https://allenai.org/blog/molmoact",
+      "paper_url": "https://arxiv.org/abs/2605.02881",
+      "code_url": "https://github.com/allenai/MolmoAct",
+      "download_url": "https://huggingface.co/datasets/allenai/MolmoAct2-SO100_101-Dataset",
+      "usage_snippet": "from datasets import load_dataset\nannotations = load_dataset(\"allenai/MolmoAct2-SO100_101-Dataset\")",
+      "citation": "Fang et al. MolmoAct2: Action Reasoning Models for Real-world Deployment. arXiv:2605.02881, 2026.",
+      "used_by_papers": [
+        {
+          "slug": "arxiv-2605.02881",
+          "title": "MolmoAct2 Bimanual YAM Dataset (source paper)",
+          "url": "https://arxiv.org/abs/2605.02881",
+          "year": 2026,
+          "authors": null,
+          "venue": "arXiv"
+        }
+      ],
+      "popularity": 489,
+      "popularity_label": "489 downloads",
+      "featured": false,
+      "embodiment": [
+        "parallel_jaw"
+      ],
+      "environment": [
+        "tabletop"
+      ],
+      "modality": [
+        "language"
+      ],
+      "outcome": [],
+      "format": [
+        "lerobot"
+      ],
+      "camera_type": [],
+      "sample_images": [
+        {
+          "id": "img_molmoact2_so100_101_0",
+          "url": "https://datasets.bot/api/images/img_molmoact2_so100_101_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_molmoact2_so100_101_1",
+          "url": "https://datasets.bot/api/images/img_molmoact2_so100_101_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        }
+      ],
+      "created_at": 1782365645028,
+      "updated_at": 1782365645028
+    },
+    {
+      "id": "d_molmoact2_bimanual_yam",
+      "slug": "molmoact2-bimanual-yam",
+      "name": "MolmoAct2 Bimanual YAM Dataset",
+      "summary": "Ai2 bimanual YAM-arm tabletop manipulation: 32k episodes, 720+ hours, 34 tasks, 3 camera views.",
+      "description": "A large-scale bimanual manipulation dataset collected by Ai2 for MolmoAct2 using paired YAM follower arms. It contains 32,246 episodes (76M frames) spanning 34 tabletop tasks with 720+ hours of teleoperated demonstrations. Each episode provides three RGB camera views (left, right, top) plus 14-dim joint/gripper states, in LeRobot format with per-episode annotated language instructions.",
+      "source_name": "Allen Institute for AI (Ai2)",
+      "source_type": "lab",
+      "source_url": "https://huggingface.co/datasets/allenai/MolmoAct2-BimanualYAM-Dataset",
+      "motion_type": "manipulator",
+      "viewpoint": "exocentric",
+      "realness": "physical",
+      "num_cameras": 3,
+      "license": "Apache-2.0",
+      "schema_summary": "LeRobot: 3 RGB videos (left/right/top, 360x640, 30fps) + 14-dim joint/gripper state and action; per-episode language instructions.",
+      "action_space": "14-dim bimanual joint positions (6 joints + gripper per arm).",
+      "num_episodes": 32246,
+      "num_hours": 720,
+      "num_tasks": 34,
+      "size_bytes": 2350000000000,
+      "year": 2026,
+      "homepage_url": "https://allenai.org/blog/molmoact",
+      "paper_url": "https://arxiv.org/abs/2605.02881",
+      "code_url": "https://github.com/allenai/MolmoAct",
+      "download_url": "https://huggingface.co/datasets/allenai/MolmoAct2-BimanualYAM-Dataset",
+      "usage_snippet": "from datasets import load_dataset\nds = load_dataset(\"allenai/MolmoAct2-BimanualYAM-Dataset\")",
+      "citation": "Fang et al. MolmoAct2: Action Reasoning Models for Real-world Deployment. arXiv:2605.02881, 2026.",
+      "used_by_papers": [
+        {
+          "slug": "arxiv-2605.02881",
+          "title": "MolmoAct2 Bimanual YAM Dataset (source paper)",
+          "url": "https://arxiv.org/abs/2605.02881",
+          "year": 2026,
+          "authors": null,
+          "venue": "arXiv"
+        }
+      ],
+      "popularity": 16672,
+      "popularity_label": "17k downloads",
+      "featured": false,
+      "embodiment": [
+        "aloha"
+      ],
+      "environment": [
+        "tabletop"
+      ],
+      "modality": [
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "success-only"
+      ],
+      "format": [
+        "lerobot"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_molmoact2_bimanual_yam_0",
+          "url": "https://datasets.bot/api/images/img_molmoact2_bimanual_yam_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_molmoact2_bimanual_yam_1",
+          "url": "https://datasets.bot/api/images/img_molmoact2_bimanual_yam_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        }
+      ],
+      "created_at": 1782365645027,
+      "updated_at": 1782365645027
+    },
+    {
+      "id": "d_lerobot_folding",
+      "slug": "lerobot-folding",
+      "name": "LeRobot Shirt-Folding Dataset",
+      "summary": "Bimanual t-shirt folding via teleoperation: 5,688 episodes / ~131h (plus a 1,200-ep high-quality subset), 3 cameras, LeRobot v3.0.",
+      "description": "The shirt-folding dataset from LeRobot's open-source 'Unfolding Robotics: Open-Source Shirt Folding from Data to Deployment' project, which trained a bimanual robot to fold t-shirts at a 90% success rate. Collected via real-world leader-follower teleoperation across 8 bimanual setups optimizing for diversity (25+ t-shirts, 8 backgrounds, varied camera/robot heights), structured as Level 1 (fold a laid-out shirt) and Level 2 (spread a crumpled shirt, fold, set aside). The full dataset has 5,688 episodes (~131h); a curated high-quality subset (lerobot/high_quality_folding) has 1,200 episodes (~30h). Each episode has 3 camera streams (base 480x640, two wrists 720x1280) and 16-dim joint+gripper states/actions, stored in LeRobotDataset v3.0 (video-encoded).",
+      "source_name": "LeRobot (Hugging Face)",
+      "source_type": "company",
+      "source_url": "https://huggingface.co/datasets/lerobot/full_folding",
+      "motion_type": "manipulator",
+      "viewpoint": "both",
+      "realness": "physical",
+      "num_cameras": 3,
+      "license": "Apache-2.0",
+      "schema_summary": "LeRobotDataset v3.0: 3 camera video streams (base 480x640 + 2 wrists 720x1280) + 16-dim (7 joints + gripper x2 arms) states & actions.",
+      "action_space": "Bimanual: 2 x (7 joints + gripper) = 16-dim joint+gripper action.",
+      "num_episodes": 5688,
+      "num_hours": 131,
+      "num_tasks": 2,
+      "size_bytes": null,
+      "year": 2026,
+      "homepage_url": "https://huggingface.co/spaces/lerobot/robot-folding",
+      "paper_url": null,
+      "code_url": "https://github.com/huggingface/lerobot",
+      "download_url": "https://huggingface.co/datasets/lerobot/full_folding",
+      "usage_snippet": "from lerobot.common.datasets.lerobot_dataset import LeRobotDataset\nds = LeRobotDataset(\"lerobot/full_folding\")  # or lerobot/high_quality_folding",
+      "citation": "Unfolding Robotics: Open-Source Shirt Folding from Data to Deployment. LeRobot (Hugging Face), 2026. https://huggingface.co/spaces/lerobot/robot-folding",
+      "used_by_papers": [
+        {
+          "slug": "unfolding-robotics",
+          "title": "Unfolding Robotics: Open-Source Shirt Folding from Data to Deployment",
+          "url": "https://huggingface.co/spaces/lerobot/robot-folding",
+          "year": 2026,
+          "authors": "LeRobot (Hugging Face)",
+          "venue": "HF blog"
+        }
+      ],
+      "popularity": 7637,
+      "popularity_label": "7.6k downloads",
+      "featured": false,
+      "embodiment": [
+        "parallel_jaw"
+      ],
+      "environment": [
+        "home",
+        "tabletop"
+      ],
+      "modality": [
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "mixed"
+      ],
+      "format": [
+        "lerobot"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_lerobot_folding_0",
+          "url": "https://datasets.bot/api/images/img_lerobot_folding_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_lerobot_folding_1",
+          "url": "https://datasets.bot/api/images/img_lerobot_folding_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        },
+        {
+          "id": "img_lerobot_folding_2",
+          "url": "https://datasets.bot/api/images/img_lerobot_folding_2",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 2
+        },
+        {
+          "id": "img_lerobot_folding_3",
+          "url": "https://datasets.bot/api/images/img_lerobot_folding_3",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 3
+        },
+        {
+          "id": "img_lerobot_folding_4",
+          "url": "https://datasets.bot/api/images/img_lerobot_folding_4",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 4
+        }
+      ],
+      "created_at": 1782162296045,
+      "updated_at": 1782162296045
+    },
+    {
+      "id": "d_ftp_1_dataset",
+      "slug": "ftp-1-dataset",
+      "name": "FTP-1 Dataset",
+      "summary": "Pretraining corpus for FTP-1, a generalist foundation tactile policy: ~3,000 hours across 21 tactile sensors.",
+      "description": "FTP-1-Dataset is the heterogeneous pretraining corpus behind FTP-1 (A Generalist Foundation Tactile Policy Across Tactile Sensors for Contact-Rich Manipulation). It aggregates roughly 3,000 hours of contact-rich manipulation data from 26 sources spanning human demonstrations, dexterous-hand, and gripper robots, recorded with 21 distinct tactile sensors (image-, array-, and state-based). Each episode pairs tactile observations with RGB images, proprioceptive state, and action trajectories, stored in zarr format. Hosted on ModelScope and mirrored on Hugging Face.",
+      "source_name": "FTP-1 (Yuan et al.)",
+      "source_type": "lab",
+      "source_url": "https://www.modelscope.cn/datasets/Eureka1064/FTP-1-Dataset",
+      "motion_type": "manipulator",
+      "viewpoint": "both",
+      "realness": "physical",
+      "num_cameras": null,
+      "license": "MIT",
+      "schema_summary": "Zarr-format episodes (FTP-1 key convention): image-/array-/state-based tactile observations, RGB images, proprioceptive state, and action trajectories, with morphology-aware tactile tokens across 21 sensor types.",
+      "action_space": "Action trajectories across heterogeneous embodiments (gripper + dexterous-hand; EE and joint actions).",
+      "num_episodes": null,
+      "num_hours": 3000,
+      "num_tasks": null,
+      "size_bytes": null,
+      "year": 2026,
+      "homepage_url": "https://ftp1-policy.github.io/",
+      "paper_url": "https://arxiv.org/abs/2606.13102",
+      "code_url": "https://github.com/michaelyuancb/ftp1-policy",
+      "download_url": "https://www.modelscope.cn/datasets/Eureka1064/FTP-1-Dataset",
+      "usage_snippet": "from modelscope.msdatasets import MsDataset\nds = MsDataset.load('Eureka1064/FTP-1-Dataset')",
+      "citation": "Yuan et al. FTP-1: A Generalist Foundation Tactile Policy Across Tactile Sensors for Contact-Rich Manipulation. arXiv:2606.13102, 2026.",
+      "used_by_papers": [
+        {
+          "slug": "arxiv-2606.13102",
+          "title": "FTP-1 Dataset (source paper)",
+          "url": "https://arxiv.org/abs/2606.13102",
+          "year": 2026,
+          "authors": null,
+          "venue": "arXiv"
+        }
+      ],
+      "popularity": 0,
+      "popularity_label": null,
+      "featured": false,
+      "embodiment": [
+        "multi"
+      ],
+      "environment": [
+        "lab",
+        "tabletop"
+      ],
+      "modality": [
+        "force_torque",
+        "language",
+        "proprioception",
+        "tactile",
+        "rgb"
+      ],
+      "outcome": [
+        "has-success-labels"
+      ],
+      "format": [
+        "zarr"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_ftp_1_dataset_0",
+          "url": "https://datasets.bot/api/images/img_ftp_1_dataset_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_ftp_1_dataset_1",
+          "url": "https://datasets.bot/api/images/img_ftp_1_dataset_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        }
+      ],
+      "created_at": 1782365645030,
+      "updated_at": 1782365645030
+    },
+    {
+      "id": "d_dreamdojo",
+      "slug": "dreamdojo",
+      "name": "DreamDojo GR-1 Post-Training",
+      "summary": "DreamDojo's released GR-1 humanoid post-training data — teleoperated trajectories + evaluation sets. (The 44.7k-hr DreamDojo-HV human-video pretraining corpus is in-house and NOT released.)",
+      "description": "The publicly released dataset accompanying DreamDojo, NVIDIA's generalist robot world model (arXiv 2602.06949, ICML 2026). DreamDojo is pretrained on DreamDojo-HV — a 44.7k-hour in-house egocentric human-video corpus that is **not** publicly released. What is released (Feb 2026) is the GR-1 post-training data: teleoperated trajectories on the Fourier GR-1 humanoid plus evaluation sets, used to post-train and evaluate the world model. Hosted on Hugging Face as nvidia/PhysicalAI-Robotics-GR00T-Teleop-GR1 (LeRobot / parquet+video), CC-BY-NC-4.0. 2B/14B model checkpoints and pre/post-training code are also released.",
+      "source_name": "NVIDIA",
+      "source_type": "company",
+      "source_url": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-Teleop-GR1",
+      "motion_type": "manipulator",
+      "viewpoint": "egocentric",
+      "realness": "physical",
+      "num_cameras": null,
+      "license": "CC-BY-NC-4.0",
+      "schema_summary": "DreamDojo-HV: human egocentric RGB videos (640x480) with GPT-derived language task annotations; released robot subset (GR-1 teleop, LeRobot-style parquet): episodes -> steps -> {observation (video, state/proprioception), action, task index, fine/coarse human annotations, reward, done}.",
+      "action_space": null,
+      "num_episodes": null,
+      "num_hours": 88.4,
+      "num_tasks": null,
+      "size_bytes": null,
+      "year": 2026,
+      "homepage_url": "https://dreamdojo-world.github.io/",
+      "paper_url": "https://arxiv.org/abs/2602.06949",
+      "code_url": "https://github.com/NVIDIA/DreamDojo",
+      "download_url": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-Teleop-GR1",
+      "usage_snippet": "from datasets import load_dataset\nds = load_dataset(\"nvidia/PhysicalAI-Robotics-GR00T-Teleop-GR1\")\n# or: git clone https://github.com/NVIDIA/DreamDojo",
+      "citation": "@article{gao2026dreamdojo, title={DreamDojo: A Generalist Robot World Model from Large-Scale Human Videos}, author={Shenyuan Gao and William Liang and Kaiyuan Zheng and Ayaan Malik and Seonghyeon Ye and Sihyun Yu and Wei-Cheng Tseng and Yuzhu Dong and Kaichun Mo and Chen-Hsuan Lin and Qianli Ma and Seungjun Nah and Loic Magne and Jiannan Xiang and Yuqi Xie and Ruijie Zheng and Dantong Niu and You Liang Tan and K.R. Zentner and George Kurian and Suneel Indupuru and Pooya Jannaty and Jinwei Gu and Jun Zhang and Jitendra Malik and Pieter Abbeel and Ming-Yu Liu and Yuke Zhu and Joel Jang and Linxi \"Jim\" Fan}, journal={arXiv preprint arXiv:2602.06949}, year={2026}}",
+      "used_by_papers": [
+        {
+          "slug": "dreamdojo",
+          "title": "DreamDojo: A Generalist Robot World Model from Large-Scale Human Videos",
+          "url": "https://arxiv.org/abs/2602.06949",
+          "year": 2026,
+          "authors": "Gao et al.",
+          "venue": "ICML 2026"
+        }
+      ],
+      "popularity": 55,
+      "popularity_label": "55 citations",
+      "featured": true,
+      "embodiment": [
+        "humanoid_other"
+      ],
+      "environment": [
+        "home",
+        "lab",
+        "kitchen",
+        "tabletop"
+      ],
+      "modality": [
+        "ee_pose",
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "has-success-labels",
+        "mixed"
+      ],
+      "format": [
+        "lerobot"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_dreamdojo_0",
+          "url": "https://datasets.bot/api/images/img_dreamdojo_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_dreamdojo_1",
+          "url": "https://datasets.bot/api/images/img_dreamdojo_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        },
+        {
+          "id": "img_dreamdojo_2",
+          "url": "https://datasets.bot/api/images/img_dreamdojo_2",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 2
+        },
+        {
+          "id": "img_dreamdojo_3",
+          "url": "https://datasets.bot/api/images/img_dreamdojo_3",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 3
+        },
+        {
+          "id": "img_dreamdojo_4",
+          "url": "https://datasets.bot/api/images/img_dreamdojo_4",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 4
+        }
+      ],
+      "created_at": 1781637147105,
+      "updated_at": 1781831335000
+    },
+    {
+      "id": "d_bitrobot_hiw_500",
+      "slug": "bitrobot-hiw-500",
+      "name": "HIW-500: Humanoids In-the-Wild",
+      "summary": "500+ hours of Unitree G1 humanoid whole-body teleoperation across 12 real homes in Southeast Asia.",
+      "description": "HIW-500 (Humanoids In-the-Wild) is a large-scale dataset for whole-body humanoid robot learning in natural home environments, capturing human teleoperation demonstrations on the Unitree G1 across 12 real homes in Southeast Asia. It contains 500+ hours and 23K+ episodes spanning 10+ household tasks with 161 subtask labels (~10 TB). Each episode records synchronized head (stereo RGB) and wrist (RGB + stereo IR) cameras, 29-DoF joint states, end-effector state, IMU, odometry, and language annotations.",
+      "source_name": "BitRobot",
+      "source_type": "company",
+      "source_url": "https://huggingface.co/datasets/BitRobot/HIW-500",
+      "motion_type": "mobile_manipulator",
+      "viewpoint": "egocentric",
+      "realness": "physical",
+      "num_cameras": 2,
+      "license": "unknown",
+      "schema_summary": "Raw ROS bag / MCAP recordings by task and episode: head stereo RGB (480p/30fps) and wrist RGB+stereo IR, 29-DoF joint states, end-effector state, IMU, odometry, language annotations, camera intrinsics/extrinsics.",
+      "action_space": "Whole-body humanoid teleoperation over 29-DoF joint states + end-effector commands.",
+      "num_episodes": 23000,
+      "num_hours": 500,
+      "num_tasks": 10,
+      "size_bytes": null,
+      "year": 2026,
+      "homepage_url": "https://bitrobot-foundation.github.io/humanoids-in-the-wild-500-hours/",
+      "paper_url": null,
+      "code_url": null,
+      "download_url": "https://huggingface.co/datasets/BitRobot/HIW-500",
+      "usage_snippet": "from huggingface_hub import snapshot_download\nsnapshot_download(repo_id=\"BitRobot/HIW-500\", repo_type=\"dataset\")",
+      "citation": "HIW-500: Humanoids In-the-Wild Dataset for Robot Learning. BitRobot, 2026. https://bitrobot-foundation.github.io/humanoids-in-the-wild-500-hours/",
+      "used_by_papers": [],
+      "popularity": 16082,
+      "popularity_label": "16k downloads",
+      "featured": false,
+      "embodiment": [
+        "unitree_humanoid"
+      ],
+      "environment": [
+        "home",
+        "kitchen"
+      ],
+      "modality": [
+        "depth",
+        "ee_pose",
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "success-only"
+      ],
+      "format": [
+        "rosbag",
+        "lerobot"
+      ],
+      "camera_type": [
+        "rgb",
+        "stereo"
+      ],
+      "sample_images": [
+        {
+          "id": "img_bitrobot_hiw_500_0",
+          "url": "https://datasets.bot/api/images/img_bitrobot_hiw_500_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_bitrobot_hiw_500_1",
+          "url": "https://datasets.bot/api/images/img_bitrobot_hiw_500_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        }
+      ],
+      "created_at": 1782365645023,
+      "updated_at": 1782365645023
+    },
+    {
+      "id": "d_agibot_world",
+      "slug": "agibot-world",
+      "name": "AgiBot World 2026",
+      "summary": "2026 release of AgiBot World: large-scale real-world dual-arm humanoid manipulation on the AGIBOT G2 platform.",
+      "description": "AgiBot World 2026 is the latest release of the AgiBot World embodied-AI dataset, succeeding the earlier Alpha/Beta releases. It is collected in real-world commercial, home, and general-purpose environments using the AGIBOT G2 wheeled humanoid with dual 7-DOF force-controlled arms, capturing synchronized RGB(D), LiDAR point clouds, tactile, IMU, and full-body joint states. Released in sequential phases, it provides long-horizon manipulation, navigation, dual-arm coordination, and human-robot collaboration data in LeRobot format (~9.4 TB).",
+      "source_name": "AgiBot (Zhiyuan Robotics)",
+      "source_type": "company",
+      "source_url": "https://agibot-world.com",
+      "motion_type": "mobile_manipulator",
+      "viewpoint": "both",
+      "realness": "both",
+      "num_cameras": 9,
+      "license": "custom",
+      "schema_summary": "LeRobot v2.1: per-episode Parquet + MP4 for 9 image streams (top/left/right hand RGB, head depth, head fisheye x3, head stereo x2), joint pos/vel and EE actions, plus subtask/bbox/instruction annotations.",
+      "action_space": "Dual-arm joint positions/velocities + end-effector control.",
+      "num_episodes": null,
+      "num_hours": 2976.4,
+      "num_tasks": null,
+      "size_bytes": 10292916584908,
+      "year": 2026,
+      "homepage_url": "https://agibot-world.com",
+      "paper_url": "https://arxiv.org/abs/2503.06669",
+      "code_url": "https://github.com/OpenDriveLab/AgiBot-World",
+      "download_url": "https://huggingface.co/datasets/agibot-world/AgiBotWorld2026",
+      "usage_snippet": "from datasets import load_dataset\nds = load_dataset(\"agibot-world/AgiBotWorld2026\")",
+      "citation": "AgiBot World 2026. AgiBot World Team, 2026. https://huggingface.co/datasets/agibot-world/AgiBotWorld2026",
+      "used_by_papers": [
+        {
+          "slug": "dreamgen",
+          "title": "DreamGen: Unlocking Generalization in Robot Learning through Neural Trajectories",
+          "url": "https://arxiv.org/abs/2505.12705",
+          "year": 2025,
+          "authors": "Jang et al.",
+          "venue": "arXiv"
+        },
+        {
+          "slug": "gr00t-n1",
+          "title": "GR00T N1: An Open Foundation Model for Generalist Humanoid Robots",
+          "url": "https://arxiv.org/abs/2503.14734",
+          "year": 2025,
+          "authors": "NVIDIA (Bjorck et al.)",
+          "venue": "arXiv"
+        }
+      ],
+      "popularity": 345,
+      "popularity_label": "345 citations",
+      "featured": true,
+      "embodiment": [
+        "humanoid_other"
+      ],
+      "environment": [
+        "home",
+        "industrial",
+        "lab",
+        "retail"
+      ],
+      "modality": [
+        "depth",
+        "ee_pose",
+        "language",
+        "point_cloud",
+        "proprioception",
+        "tactile",
+        "rgb"
+      ],
+      "outcome": [
+        "success-only"
+      ],
+      "format": [
+        "lerobot"
+      ],
+      "camera_type": [
+        "fisheye",
+        "rgbd",
+        "stereo"
+      ],
+      "sample_images": [
+        {
+          "id": "img_agibot_world_0",
+          "url": "https://datasets.bot/api/images/img_agibot_world_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_agibot_world_2",
+          "url": "https://datasets.bot/api/images/img_agibot_world_2",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 2
+        },
+        {
+          "id": "img_agibot_world_3",
+          "url": "https://datasets.bot/api/images/img_agibot_world_3",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 3
+        },
+        {
+          "id": "img_agibot_world_4",
+          "url": "https://datasets.bot/api/images/img_agibot_world_4",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 4
+        }
+      ],
+      "created_at": 1781637147088,
+      "updated_at": 1782365645031
+    },
+    {
+      "id": "d_abc_130k",
+      "slug": "abc-130k",
+      "name": "ABC-130k",
+      "summary": "Largest open bimanual teleoperation dataset: ~131K episodes, ~3,600 hours across ~195 manipulation tasks.",
+      "description": "ABC-130k is an open bimanual robot manipulation dataset released with the paper 'Scalable Behavior Cloning with Open Data, Training, and Evaluation'. It contains roughly 130,919 episodes (43,090 annotated) totaling about 3,598 hours collected on bimanual YAM stations with two 6-DoF arms and parallel-jaw grippers, spanning ~195 tasks such as pick-and-place, folding, sorting, handover, insertion, tool use, and assembly. Each episode includes three camera views (one top plus two wrist), joint states, end-effector poses, gripper aperture, and task/subtask annotations, plus 400 hours of accompanying sim-teleop data.",
+      "source_name": "UC Berkeley / MIT / Amazon FAR / CMU / XDOF",
+      "source_type": "lab",
+      "source_url": "https://abc.bot/",
+      "motion_type": "manipulator",
+      "viewpoint": "exocentric",
+      "realness": "both",
+      "num_cameras": 3,
+      "license": "Apache-2.0",
+      "schema_summary": "episodes -> steps -> {states_actions (14 state + 14 action), combined_camera-images-rgb.mp4, metadata}",
+      "action_space": "Bimanual: two 6-DoF arms + parallel-jaw grippers (14-dim state / 14-dim action)",
+      "num_episodes": 130919,
+      "num_hours": 3598.2,
+      "num_tasks": 195,
+      "size_bytes": 24299023532032,
+      "year": 2026,
+      "homepage_url": "https://abc.bot/",
+      "paper_url": null,
+      "code_url": "https://github.com/amazon-far/abc",
+      "download_url": "https://huggingface.co/datasets/XDOF/ABC-130k",
+      "usage_snippet": "from huggingface_hub import snapshot_download\nlocal_dir = snapshot_download(repo_id='XDOF/ABC-130k', repo_type='dataset', allow_patterns=['data/**','meta/**'])",
+      "citation": "@article{abc2026, title={Scalable Behavior Cloning with Open Data, Training, and Evaluation}, author={Allshire, Arthur and Singh, Himanshu Gaurav and Singh, Ritvik and others}, year={2026}, url={https://abc.bot/}}",
+      "used_by_papers": [
+        {
+          "slug": "abc-scalable-bc",
+          "title": "Scalable Behavior Cloning with Open Data, Training, and Evaluation",
+          "url": "https://abc.bot/",
+          "year": 2026,
+          "authors": "Allshire, Singh, Singh et al.",
+          "venue": "arXiv"
+        }
+      ],
+      "popularity": 149,
+      "popularity_label": "149★ GitHub",
+      "featured": true,
+      "embodiment": [
+        "parallel_jaw",
+        "aloha"
+      ],
+      "environment": [
+        "lab",
+        "simulation",
+        "tabletop"
+      ],
+      "modality": [
+        "ee_pose",
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "mixed"
+      ],
+      "format": [
+        "custom"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_abc_130k_0",
+          "url": "https://datasets.bot/api/images/img_abc_130k_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_abc_130k_1",
+          "url": "https://datasets.bot/api/images/img_abc_130k_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        },
+        {
+          "id": "img_abc_130k_2",
+          "url": "https://datasets.bot/api/images/img_abc_130k_2",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 2
+        }
+      ],
+      "created_at": 1782156124713,
+      "updated_at": 1782156124713
+    },
+    {
+      "id": "FBdqGvqbDm2nGI8j0npnh",
+      "slug": "maniparena",
+      "name": "ManipArena",
+      "summary": "Real-world reasoning-oriented manipulation benchmark (CVPR 2026): 20 tasks, 10.8k trajectories, ~188h, 5 robots, LeRobot v2.1.",
+      "description": "ManipArena is a comprehensive real-world benchmark for evaluating reasoning-oriented generalist robot manipulation, run as a CVPR 2026 Embodied AI Workshop challenge. It provides 10,812 expert trajectories (~188 hours, 13.5M frames) across 20 real tasks spanning execution-reasoning, semantic-reasoning, and long-horizon mobile manipulation, plus 3 synchronized real-to-sim tasks built via 3D scanning for fair Vision-Language-Action and world-model comparison. Demonstrations are recorded on 5 robot platforms with 3 synchronized RGB cameras (one overhead + two wrist), 56-D proprioception (joint positions/velocities/currents), gripper and mobile-base states, and three-level language annotations, in LeRobot v2.1 format.",
+      "source_name": "ManipArena (SYSU x MBZUAI)",
+      "source_type": "lab",
+      "source_url": "https://maniparena.com/",
+      "motion_type": "mobile_manipulator",
+      "viewpoint": "both",
+      "realness": "both",
+      "num_cameras": 3,
+      "license": "Apache-2.0",
+      "schema_summary": "LeRobot v2.1: 3 synchronized RGB streams (overhead + 2 wrist), 56-D proprioception (joint pos/vel/currents), end-effector + gripper + mobile-base states, three-level language annotations.",
+      "action_space": "Bimanual end-effector + joint control (56-D proprioception); plus mobile-base control for mobile-manipulation tasks.",
+      "num_episodes": 10812,
+      "num_hours": 188,
+      "num_tasks": 20,
+      "size_bytes": null,
+      "year": 2026,
+      "homepage_url": "https://maniparena.com/",
+      "paper_url": "https://arxiv.org/abs/2603.28545",
+      "code_url": null,
+      "download_url": "https://huggingface.co/datasets/ManipArena/maniparena-dataset",
+      "usage_snippet": "from lerobot.common.datasets.lerobot_dataset import LeRobotDataset\nds = LeRobotDataset('ManipArena/maniparena-dataset')  # request access on HF",
+      "citation": "Sun, Cao, Yang, et al. ManipArena: Comprehensive Real-world Evaluation of Reasoning-Oriented Generalist Robot Manipulation. arXiv:2603.28545, 2026.",
+      "used_by_papers": [
+        {
+          "slug": "arxiv-2603-28545",
+          "title": "ManipArena: Comprehensive Real-world Evaluation of Reasoning-Oriented Generalist Robot Manipulation",
+          "url": "https://arxiv.org/abs/2603.28545",
+          "year": 2026,
+          "authors": "Sun, Cao, Yang, et al.",
+          "venue": "CVPR 2026 Workshop"
+        }
+      ],
+      "popularity": 1306,
+      "popularity_label": "1.3k downloads",
+      "featured": false,
+      "embodiment": [
+        "parallel_jaw",
+        "aloha"
+      ],
+      "environment": [
+        "home",
+        "simulation",
+        "tabletop"
+      ],
+      "modality": [
+        "ee_pose",
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "has-success-labels"
+      ],
+      "format": [
+        "lerobot"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_maniparena_0",
+          "url": "https://datasets.bot/api/images/img_maniparena_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_maniparena_1",
+          "url": "https://datasets.bot/api/images/img_maniparena_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        },
+        {
+          "id": "img_maniparena_2",
+          "url": "https://datasets.bot/api/images/img_maniparena_2",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 2
+        },
+        {
+          "id": "img_maniparena_3",
+          "url": "https://datasets.bot/api/images/img_maniparena_3",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 3
+        },
+        {
+          "id": "img_maniparena_4",
+          "url": "https://datasets.bot/api/images/img_maniparena_4",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 4
+        },
+        {
+          "id": "img_maniparena_5",
+          "url": "https://datasets.bot/api/images/img_maniparena_5",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 5
+        },
+        {
+          "id": "img_maniparena_6",
+          "url": "https://datasets.bot/api/images/img_maniparena_6",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 6
+        }
+      ],
+      "created_at": 1782467579340,
+      "updated_at": 1782509366760
+    },
+    {
+      "id": "d_nvidia_gr00t_n1_x_embodiment_sim",
+      "slug": "nvidia-gr00t-n1-x-embodiment-sim",
+      "name": "NVIDIA GR00T X-Embodiment Sim",
+      "summary": "NVIDIA's open simulated humanoid/arm manipulation dataset used to post-train the GR00T N1 foundation model; LeRobot format, CC-BY-4.0.",
+      "description": "The public, downloadable dataset behind NVIDIA's Isaac GR00T N1 humanoid foundation model. It bundles simulated post-training trajectories across multiple embodiments (Fourier GR1 humanoid in arms-only/full-upper-body/arms+waist configs, single-arm and bimanual Franka Panda with gripper and dexterous-hand variants, and a Unitree G1 loco-manipulation set) covering cross-embodied bimanual manipulation, humanoid tabletop manipulation, and robot-arm kitchen manipulation. Released on Hugging Face under CC-BY-4.0 in a LeRobot-compatible per-task layout (data/meta/videos), it has surpassed 10M downloads. The related DreamGen / GR00T-Dreams release (arXiv 2505.12705, Apache-2.0) is a synthetic-trajectory generation method plus code/benchmark, not a standalone downloadable trajectory dataset.",
+      "source_name": "NVIDIA (GEAR Lab / Isaac)",
+      "source_type": "company",
+      "source_url": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-X-Embodiment-Sim",
+      "motion_type": "manipulator",
+      "viewpoint": "exocentric",
+      "realness": "simulated",
+      "num_cameras": null,
+      "license": "CC-BY-4.0",
+      "schema_summary": "Multiple per-embodiment/per-task LeRobot datasets (data/meta/videos) -> episodes -> steps -> {observation (rgb images + state/proprioception), action, language task annotation}",
+      "action_space": null,
+      "num_episodes": null,
+      "num_hours": null,
+      "num_tasks": null,
+      "size_bytes": null,
+      "year": 2025,
+      "homepage_url": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-X-Embodiment-Sim",
+      "paper_url": "https://arxiv.org/abs/2505.12705",
+      "code_url": "https://github.com/NVIDIA/GR00T-Dreams",
+      "download_url": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-X-Embodiment-Sim",
+      "usage_snippet": "huggingface-cli download nvidia/PhysicalAI-Robotics-GR00T-X-Embodiment-Sim --repo-type dataset --include \"gr1_arms_only.CanSort/**\" --local-dir $HOME/gr00t_dataset",
+      "citation": "Jang, J., et al. \"DreamGen: Unlocking Generalization in Robot Learning through Video World Models.\" arXiv:2505.12705, 2025 (first author Joel Jang; senior author Linxi Fan). Dataset: NVIDIA, PhysicalAI-Robotics-GR00T-X-Embodiment-Sim, Hugging Face, 2025 (CC-BY-4.0).",
+      "used_by_papers": [
+        {
+          "slug": "gr00t-n1",
+          "title": "GR00T N1: An Open Foundation Model for Generalist Humanoid Robots",
+          "url": "https://arxiv.org/abs/2503.14734",
+          "year": 2025,
+          "authors": "NVIDIA (Bjorck et al.)",
+          "venue": "arXiv"
+        }
+      ],
+      "popularity": 95,
+      "popularity_label": "95 citations",
+      "featured": false,
+      "embodiment": [
+        "franka_panda",
+        "humanoid_other",
+        "unitree_humanoid"
+      ],
+      "environment": [
+        "simulation",
+        "kitchen",
+        "tabletop"
+      ],
+      "modality": [
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "success-only"
+      ],
+      "format": [
+        "lerobot"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_nvidia_gr00t_n1_x_embodiment_sim_1",
+          "url": "https://datasets.bot/api/images/img_nvidia_gr00t_n1_x_embodiment_sim_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        },
+        {
+          "id": "img_nvidia_gr00t_n1_x_embodiment_sim_2",
+          "url": "https://datasets.bot/api/images/img_nvidia_gr00t_n1_x_embodiment_sim_2",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 2
+        },
+        {
+          "id": "img_nvidia_gr00t_n1_x_embodiment_sim_3",
+          "url": "https://datasets.bot/api/images/img_nvidia_gr00t_n1_x_embodiment_sim_3",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 3
+        },
+        {
+          "id": "img_nvidia_gr00t_n1_x_embodiment_sim_4",
+          "url": "https://datasets.bot/api/images/img_nvidia_gr00t_n1_x_embodiment_sim_4",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 4
+        }
+      ],
+      "created_at": 1781637147101,
+      "updated_at": 1781709588545
+    },
+    {
+      "id": "d_humanoid_everyday",
+      "slug": "humanoid-everyday",
+      "name": "Humanoid Everyday",
+      "summary": "Unitree G1/H1 humanoid manipulation: 10.3k trajectories, 260 tasks, RGB-D + LiDAR + tactile, LeRobot.",
+      "description": "Humanoid Everyday is a large-scale, diverse humanoid manipulation dataset from USC's Physical Superintelligence Lab, collected via human-supervised teleoperation on real Unitree G1 and H1 humanoids. It comprises 10,300 trajectories and over 3 million frames across 260 tasks in 7 categories, spanning dexterous manipulation, human-humanoid interaction, and locomotion-integrated activities. Each trajectory aggregates egocentric and third-person RGB, depth, LiDAR point clouds, tactile, IMU, and proprioception at 30 Hz, with natural-language annotations, in LeRobot v2.0 format.",
+      "source_name": "USC Physical Superintelligence Lab",
+      "source_type": "lab",
+      "source_url": "https://huggingface.co/datasets/USC-PSI-Lab/humanoid-everyday",
+      "motion_type": "mobile_manipulator",
+      "viewpoint": "both",
+      "realness": "physical",
+      "num_cameras": null,
+      "license": "Apache-2.0",
+      "schema_summary": "LeRobot v2.0 episodes at 30 Hz: egocentric/third-person RGB, depth, LiDAR point clouds, tactile, IMU, odometry, arm/leg/hand joint states; natural-language task annotations.",
+      "action_space": "28-DoF whole-body joint position commands (arm, leg, dexterous hand).",
+      "num_episodes": 10300,
+      "num_hours": 27.8,
+      "num_tasks": 260,
+      "size_bytes": null,
+      "year": 2025,
+      "homepage_url": "https://humanoid-everyday.github.io/",
+      "paper_url": "https://arxiv.org/abs/2510.08807",
+      "code_url": "https://github.com/ausbxuse/Humanoid-Everyday",
+      "download_url": "https://huggingface.co/datasets/USC-PSI-Lab/humanoid-everyday",
+      "usage_snippet": "from lerobot.datasets.lerobot_dataset import LeRobotDataset\nds = LeRobotDataset(\"USC-PSI-Lab/humanoid-everyday\", tolerance_s=1e-2)",
+      "citation": "Zhao et al. Humanoid Everyday: A Comprehensive Robotic Dataset for Open-World Humanoid Manipulation. arXiv:2510.08807, 2025.",
+      "used_by_papers": [
+        {
+          "slug": "arxiv-2510.08807",
+          "title": "Humanoid Everyday (source paper)",
+          "url": "https://arxiv.org/abs/2510.08807",
+          "year": 2025,
+          "authors": null,
+          "venue": "arXiv"
+        }
+      ],
+      "popularity": 36295,
+      "popularity_label": "36k downloads",
+      "featured": true,
+      "embodiment": [
+        "unitree_humanoid"
+      ],
+      "environment": [
+        "home",
+        "lab",
+        "office",
+        "outdoor",
+        "tabletop"
+      ],
+      "modality": [
+        "depth",
+        "language",
+        "point_cloud",
+        "proprioception",
+        "tactile",
+        "rgb"
+      ],
+      "outcome": [
+        "success-only"
+      ],
+      "format": [
+        "lerobot"
+      ],
+      "camera_type": [
+        "rgbd"
+      ],
+      "sample_images": [
+        {
+          "id": "img_humanoid_everyday_0",
+          "url": "https://datasets.bot/api/images/img_humanoid_everyday_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        }
+      ],
+      "created_at": 1782365645026,
+      "updated_at": 1782365645026
+    },
+    {
+      "id": "d_galaxea_open_world",
+      "slug": "galaxea-open-world",
+      "name": "Galaxea Open-World Dataset",
+      "summary": "500+ hours of real-world mobile bimanual manipulation on the Galaxea R1 Lite robot with subtask language annotations.",
+      "description": "The Galaxea Open-World Dataset is a large-scale real-world mobile manipulation collection gathered with a single embodiment, the Galaxea R1 Lite dual-arm mobile manipulator, across home, kitchen, retail, and office environments. It contains roughly 100K demonstration trajectories totaling 500+ hours, paired with fine-grained subtask-level language annotations. Data is released in LeRobot v2.1 format with four RGB camera streams plus proprioceptive state, and underpins the G0 dual-system VLA model.",
+      "source_name": "Galaxea AI",
+      "source_type": "company",
+      "source_url": "https://huggingface.co/datasets/OpenGalaxea/Galaxea-Open-World-Dataset",
+      "motion_type": "mobile_manipulator",
+      "viewpoint": "both",
+      "realness": "physical",
+      "num_cameras": 4,
+      "license": "custom",
+      "schema_summary": "LeRobot v2.1 Parquet archives: 4 RGB camera videos (head, head-right, left/right wrist; 720x1280 AV1@15fps), proprioceptive state (joint pos/vel, gripper, EE poses, IMU), and subtask-level language annotations.",
+      "action_space": "Dual-arm joint positions, gripper commands, torso velocities, and omnidirectional chassis velocities (whole-body).",
+      "num_episodes": 100000,
+      "num_hours": 500,
+      "num_tasks": 150,
+      "size_bytes": 3155291258880,
+      "year": 2025,
+      "homepage_url": "https://opengalaxea.github.io/GalaxeaVLA/",
+      "paper_url": "https://arxiv.org/abs/2509.00576",
+      "code_url": "https://github.com/OpenGalaxea/GalaxeaVLA",
+      "download_url": "https://huggingface.co/datasets/OpenGalaxea/Galaxea-Open-World-Dataset",
+      "usage_snippet": "from huggingface_hub import hf_hub_download\npath = hf_hub_download(repo_id='OpenGalaxea/Galaxea-Open-World-Dataset', filename='<task>.tar.gz', repo_type='dataset')",
+      "citation": "Galaxea Open-World Dataset and G0 Dual-System VLA Model. Galaxea Team, arXiv:2509.00576, 2025.",
+      "used_by_papers": [
+        {
+          "slug": "arxiv-2509.00576",
+          "title": "Galaxea Open-World Dataset (source paper)",
+          "url": "https://arxiv.org/abs/2509.00576",
+          "year": 2025,
+          "authors": null,
+          "venue": "arXiv"
+        }
+      ],
+      "popularity": 13093,
+      "popularity_label": "13k downloads",
+      "featured": false,
+      "embodiment": [
+        "multi"
+      ],
+      "environment": [
+        "home",
+        "office",
+        "retail",
+        "kitchen"
+      ],
+      "modality": [
+        "ee_pose",
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "success-only"
+      ],
+      "format": [
+        "lerobot"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_galaxea_open_world_0",
+          "url": "https://datasets.bot/api/images/img_galaxea_open_world_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        }
+      ],
+      "created_at": 1782365645024,
+      "updated_at": 1782365645024
+    },
+    {
+      "id": "d_egodex",
+      "slug": "egodex",
+      "name": "EgoDex",
+      "summary": "829 hours of egocentric Apple Vision Pro video with paired 3D hand/finger tracking across 194 manipulation tasks.",
+      "description": "EgoDex is a large-scale egocentric human manipulation dataset from Apple, comprising 829 hours of 1080p 30Hz video (~90M frames) recorded with Apple Vision Pro. It pairs each frame with 3D pose annotations for the head, upper body, and hands (68 joints) via on-device tracking, plus camera intrinsics and natural-language task descriptions. The data spans 194 diverse tabletop tasks with everyday objects (~338K episodes), intended for imitation learning of dexterous manipulation from human video.",
+      "source_name": "Apple",
+      "source_type": "company",
+      "source_url": "https://machinelearning.apple.com/research/egodex-learning-dexterous-manipulation",
+      "motion_type": null,
+      "viewpoint": "egocentric",
+      "realness": "physical",
+      "num_cameras": 1,
+      "license": "research-only",
+      "schema_summary": "Paired MP4 (1080p,30Hz) + HDF5: camera intrinsics, per-frame SE(3) transforms for 68 head/upper-body/hand joints, confidence scores, and language task descriptions.",
+      "action_space": "3D hand and finger joint poses (SE(3) transforms for 68 joints).",
+      "num_episodes": 338000,
+      "num_hours": 829,
+      "num_tasks": 194,
+      "size_bytes": 2199023255552,
+      "year": 2025,
+      "homepage_url": "https://machinelearning.apple.com/research/egodex-learning-dexterous-manipulation",
+      "paper_url": "https://arxiv.org/abs/2505.11709",
+      "code_url": "https://github.com/apple/ml-egodex",
+      "download_url": "https://ml-site.cdn-apple.com/datasets/egodex/part1.zip",
+      "usage_snippet": "git clone https://github.com/apple/ml-egodex && pip install -r requirements.txt\npython visualize_2d.py --data_dir [path]",
+      "citation": "Hoque, Huang, Yoon, Sivapurapu, Zhang. EgoDex: Learning Dexterous Manipulation from Large-Scale Egocentric Video. arXiv:2505.11709, 2025.",
+      "used_by_papers": [
+        {
+          "slug": "arxiv-2505.11709",
+          "title": "EgoDex (source paper)",
+          "url": "https://arxiv.org/abs/2505.11709",
+          "year": 2025,
+          "authors": null,
+          "venue": "arXiv"
+        }
+      ],
+      "popularity": 300,
+      "popularity_label": "300★ GitHub",
+      "featured": true,
+      "embodiment": [
+        "human"
+      ],
+      "environment": [
+        "home",
+        "tabletop"
+      ],
+      "modality": [
+        "ee_pose",
+        "language",
+        "rgb"
+      ],
+      "outcome": [
+        "success-only"
+      ],
+      "format": [
+        "hdf5"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_egodex_0",
+          "url": "https://datasets.bot/api/images/img_egodex_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_egodex_1",
+          "url": "https://datasets.bot/api/images/img_egodex_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        },
+        {
+          "id": "img_egodex_2",
+          "url": "https://datasets.bot/api/images/img_egodex_2",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 2
+        },
+        {
+          "id": "img_egodex_3",
+          "url": "https://datasets.bot/api/images/img_egodex_3",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 3
+        }
+      ],
+      "created_at": 1782365645025,
+      "updated_at": 1782365645025
+    },
+    {
+      "id": "d_airoa_moma",
+      "slug": "airoa-moma",
+      "name": "AIRoA MoMa Dataset",
+      "summary": "Large-scale hierarchical mobile-manipulation dataset of ~25.5K Toyota HSR teleoperation episodes in LeRobot format.",
+      "description": "The AIRoA MoMa Dataset is a large-scale, real-world dataset for mobile manipulation collected with the Toyota Human Support Robot (HSR) via leader-follower teleoperation in household environments. It contains 25,469 episodes (~94 hours) sampled at 30 Hz, with synchronized RGB images from head and wrist cameras, joint states, six-axis wrist force-torque signals, and internal robot states. A two-layer annotation schema of sub-goals and primitive actions supports hierarchical learning and error analysis across seven primary household tasks. The data is standardized in the LeRobot v2.1 format and released by AIRoA (AI Robot Association) under the GENIAC project (METI/NEDO).",
+      "source_name": "AIRoA (AI Robot Association)",
+      "source_type": "community",
+      "source_url": "https://huggingface.co/datasets/airoa-org/airoa-moma",
+      "motion_type": "mobile_manipulator",
+      "viewpoint": "both",
+      "realness": "physical",
+      "num_cameras": 2,
+      "license": "custom",
+      "schema_summary": "LeRobot v2.1: synchronized RGB (head + wrist), joint states, six-axis wrist force-torque, internal states; two-layer sub-goal + primitive-action annotation.",
+      "action_space": "Teleoperation/joint control commands for the HSR mobile manipulator (base + arm + gripper).",
+      "num_episodes": 25469,
+      "num_hours": 94,
+      "num_tasks": 7,
+      "size_bytes": null,
+      "year": 2025,
+      "homepage_url": "https://huggingface.co/datasets/airoa-org/airoa-moma",
+      "paper_url": "https://arxiv.org/abs/2509.25032",
+      "code_url": "https://github.com/airoa-org/rebake",
+      "download_url": "https://huggingface.co/datasets/airoa-org/airoa-moma",
+      "usage_snippet": "from lerobot.common.datasets.lerobot_dataset import LeRobotDataset\ndataset = LeRobotDataset(\"airoa-org/airoa-moma\")",
+      "citation": "@article{takanami2025airoa, title={AIRoA MoMa Dataset: A Large-Scale Hierarchical Dataset for Mobile Manipulation}, author={Takanami, Ryosuke and others}, journal={arXiv preprint arXiv:2509.25032}, year={2025}}",
+      "used_by_papers": [
+        {
+          "slug": "airoa-moma-paper",
+          "title": "AIRoA MoMa Dataset: A Large-Scale Hierarchical Dataset for Mobile Manipulation",
+          "url": "https://arxiv.org/abs/2509.25032",
+          "year": 2025,
+          "authors": "Takanami et al.",
+          "venue": "arXiv"
+        }
+      ],
+      "popularity": 5,
+      "popularity_label": "5 citations",
+      "featured": false,
+      "embodiment": [],
+      "environment": [
+        "home",
+        "kitchen"
+      ],
+      "modality": [
+        "force_torque",
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "has-success-labels"
+      ],
+      "format": [
+        "lerobot"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_airoa_moma_0",
+          "url": "https://datasets.bot/api/images/img_airoa_moma_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        }
+      ],
+      "created_at": 1782160221733,
+      "updated_at": 1782160221733
+    },
+    {
+      "id": "d_tartandrive_2",
+      "slug": "tartandrive-2",
+      "name": "TartanDrive 2.0",
+      "summary": "Seven-hour off-road driving dataset collected on a Yamaha Viking ATV at speeds up to 15 m/s, adding three LiDAR sensors to the original camera, IMU, GPS and proprioceptive data, with tooling to reconfigure the data for self-supervised off-road learning.",
+      "description": "TartanDrive 2.0 is an expanded large-scale off-road driving dataset from CMU's AirLab, collected on a Yamaha Viking All-Terrain Vehicle (ATV named 'Vicky') over 255+ acres of diverse terrain in Western Pennsylvania (narrow paths, dense foliage, rocky areas, dirt paths, steep hills). It comprises roughly 7 hours of data at speeds up to 15 m/s. Building on TartanDrive 1.0, version 2.0 adds three LiDAR sensors: two Velodyne VLP-32 units (front-roof mounted, one tilted downward) and one Livox Mid-70 (under the camera), all at 10 Hz. The camera system is a Carnegie Robotics MultiSense S21 providing stereo greyscale images plus a left RGB image at 10 Hz. Inertial/positioning comes from a NovAtel PROPAK-V3-RT2i GNSS (IMU at 100 Hz, GPS-fused pose at 50 Hz) and the MultiSense IMU at 400 Hz. Proprioceptive data (Racepak G2X Pro logger plus joystick/pedals) includes per-wheel RPM, rear suspension shock travel, steering commands and angle, and accelerator/brake pedal positions. Post-processed products include TartanVO and Super Odometry estimates, registered point clouds, predicted point clouds, heightmaps, RGB bird's-eye-view maps, IMU-derived roughness cost, and 200x200m BEV LiDAR feature maps at 0.5m resolution (min/max/mean height, roughness, SVD features, ground height/slope). Rich per-sequence metadata (driver ID, vehicle, passenger count, date/time, weather, lighting, course ID, top/average speed, duration) plus timestamped event annotations and 1-5 driving-quality scores are included. Data is distributed both as original rosbags and in a KITTI-like time-synced sequence format, with scripts to regenerate data at custom sample frequency, map size and resolution. A GUI tool (scripts/tartandrive_gui.py) lets users browse runs and select which modalities to download to save storage; a point-cloud scan of the ATV is downloadable separately. Released alongside the ICRA 2024 paper (arXiv:2402.01913).",
+      "source_name": "CMU AirLab",
+      "source_type": "lab",
+      "source_url": "https://theairlab.org/TartanDrive2/",
+      "motion_type": "mobile",
+      "viewpoint": "egocentric",
+      "realness": "physical",
+      "num_cameras": 1,
+      "license": "MIT",
+      "schema_summary": "KITTI-like time-synced sequence format (and original rosbags). Per sample/sequence: FPV left RGB + stereo greyscale images (10 Hz), point clouds from 2x Velodyne VLP-32 + Livox Mid-70 (10 Hz), TartanVO/Super Odometry pose, registered/predicted point clouds, heightmaps, RGB BEV maps, 200x200m BEV LiDAR feature maps @0.5m, IMU (100/400 Hz), GPS-fused pose (50 Hz), per-wheel RPM, suspension shock travel, steering angle/commands, pedal positions, plus per-sequence metadata, event annotations and driving-quality scores.",
+      "action_space": "continuous: steering commands, accelerator and brake pedal positions",
+      "num_episodes": null,
+      "num_hours": 7,
+      "num_tasks": null,
+      "size_bytes": null,
+      "year": 2024,
+      "homepage_url": "https://theairlab.org/TartanDrive2/",
+      "paper_url": "https://arxiv.org/abs/2402.01913",
+      "code_url": "https://github.com/castacks/tartan_drive_2.0",
+      "download_url": "https://github.com/castacks/tartan_drive_2.0",
+      "usage_snippet": "git clone https://github.com/castacks/tartan_drive_2.0\ncd tartan_drive_2.0\npython3 scripts/tartandrive_gui.py  # browse runs, select modalities to download\npython3 scripts/pull_atv_scan.py     # optional ATV point-cloud scan",
+      "citation": "Sivaprakasam, M., Maheshwari, P., Castro, M. G., Triest, S., Nye, M., Willits, S., Saba, A., Wang, W., & Scherer, S. (2024). TartanDrive 2.0: More Modalities and Better Infrastructure to Further Self-Supervised Learning Research in Off-Road Driving Tasks. arXiv:2402.01913 / ICRA 2024.",
+      "used_by_papers": [],
+      "popularity": 36,
+      "popularity_label": "36 citations",
+      "featured": false,
+      "embodiment": [],
+      "environment": [
+        "outdoor"
+      ],
+      "modality": [
+        "depth",
+        "point_cloud",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "mixed"
+      ],
+      "format": [
+        "custom",
+        "rosbag"
+      ],
+      "camera_type": [
+        "rgb",
+        "stereo"
+      ],
+      "sample_images": [
+        {
+          "id": "img_tartandrive_2_0",
+          "url": "https://datasets.bot/api/images/img_tartandrive_2_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_tartandrive_2_1",
+          "url": "https://datasets.bot/api/images/img_tartandrive_2_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        },
+        {
+          "id": "img_tartandrive_2_3",
+          "url": "https://datasets.bot/api/images/img_tartandrive_2_3",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 3
+        }
+      ],
+      "created_at": 1781835072171,
+      "updated_at": 1781835072171
+    },
+    {
+      "id": "d_tartanaviation",
+      "slug": "tartanaviation",
+      "name": "TartanAviation",
+      "summary": "Multimodal terminal-airspace dataset from CMU AirLab: ground/sky RGB imagery of aircraft, ATC speech audio, and ADS-B aircraft trajectories collected at general-aviation airports near Pittsburgh.",
+      "description": "TartanAviation is an open-source multimodal dataset focused on terminal-area airspace operations at general-aviation airports, providing a holistic view of the airport environment by concurrently collecting image, speech, and ADS-B trajectory data using sensor setups installed within airport boundaries. It contains 3.1 million images across 550 sequences (captured with a 4-camera array of Sony IMX264 RGB sensors at 2048x2448 resolution and 24 FPS, stored as MP4/AVI), 3,374 hours of Air Traffic Control (ATC) speech audio (WAV, 44.1 kHz; 477.6 hours above a -20 dB activity threshold), and 661 days of ADS-B aircraft trajectory data (CSV/TXT; ~63 million raw position reports with fields such as ID, timestamp, altitude MSL, speed, heading, lat/long, wind components, range, and bearing). Data were collected at two airfields in the Greater Pittsburgh area: Allegheny County Airport (KAGC, towered) and Pittsburgh-Butler Regional Airport (KBTP, non-towered), spanning multiple months and seasons (vision Dec 2021-Feb 2023 at KAGC; trajectory/speech data Sept 2020-Feb 2023 across both airports) to capture diversity in aircraft operations, aircraft types, and weather. Post-processed (synchronized, filtered, interpolated) versions are also provided. Cameras are static ground-based installations imaging crewed general-aviation aircraft against the sky (no drones/UAVs are involved); no depth, stereo, or fisheye sensing is used. Recording/post-processing/download scripts are released on GitHub, and the dataset is openly hosted on Hugging Face, CMU AirLab servers, and Zenodo.",
+      "source_name": "CMU AirLab",
+      "source_type": "lab",
+      "source_url": "https://theairlab.org/tartanaviation/",
+      "motion_type": null,
+      "viewpoint": "exocentric",
+      "realness": "physical",
+      "num_cameras": 4,
+      "license": "CC-BY-4.0",
+      "schema_summary": "Images: MP4/AVI video (2048x2448, 24 FPS, 4-camera Sony IMX264 RGB array), 3.1M frames / 550 sequences. Audio: WAV, 44.1 kHz ATC speech, 3,374 hours (477.6 hrs above -20 dB). Trajectories: ADS-B CSV/TXT with ID, timestamp, altitude (ft MSL), speed (kts), heading (deg), lat/long, wind components, range (km), bearing; ~63M position reports over 661 days.",
+      "action_space": null,
+      "num_episodes": 550,
+      "num_hours": 3374,
+      "num_tasks": null,
+      "size_bytes": null,
+      "year": 2024,
+      "homepage_url": "https://theairlab.org/tartanaviation/",
+      "paper_url": "https://arxiv.org/abs/2403.03372",
+      "code_url": "https://github.com/castacks/TartanAviation",
+      "download_url": "https://github.com/castacks/TartanAviation",
+      "usage_snippet": null,
+      "citation": "Patrikar, J., Dantas, J., Moon, B., Hamidi, M., Ghosh, S., Keetha, N., Higgins, I., Chandak, A., Yoneyama, T., Scherer, S. Image, speech, and ADS-B trajectory datasets for terminal airspace operations. Scientific Data 12 (2025). https://doi.org/10.1038/s41597-025-04775-6 ; arXiv:2403.03372",
+      "used_by_papers": [],
+      "popularity": 12,
+      "popularity_label": "12 citations",
+      "featured": false,
+      "embodiment": [],
+      "environment": [
+        "outdoor"
+      ],
+      "modality": [
+        "audio",
+        "language",
+        "rgb"
+      ],
+      "outcome": [],
+      "format": [
+        "custom"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_tartanaviation_0",
+          "url": "https://datasets.bot/api/images/img_tartanaviation_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        }
+      ],
+      "created_at": 1781835072172,
+      "updated_at": 1781835072172
+    },
+    {
+      "id": "d_tartanair_v2",
+      "slug": "tartanair-v2",
+      "name": "TartanAir V2",
+      "summary": "Next-generation photorealistic synthetic SLAM and navigation dataset from CMU AirLab, spanning 65 Unreal Engine environments with multimodal sensor data (RGB, depth, segmentation, optical flow, LiDAR, IMU, event cameras) and customizable pinhole, fisheye, and equirectangular camera models.",
+      "description": "TartanAir V2 is a large-scale photorealistic synthetic dataset built on Unreal Engine 4 with the AirSim plugin, developed by CMU's AirLab (castacks) to push the limits of visual SLAM, navigation, and robotics perception. It contains 65 highly distinct simulated environments covering urban, rural, domestic, infrastructure, thematic, and nature scenarios, both indoor and outdoor, with some environments split into sub-environments for weather/time-of-day variation. Data is collected from pre-recorded, challenging and realistic trajectories of a generic free-flying 6-DoF camera that mimic real-world robot motion (trajectories are sampled in free space, connected via RRT*, refined for loop closures, and smoothed for physically plausible motion). In each environment 12 perfectly synchronized cameras (two stereo sets of six cameras pointing in six directions to cover a 360-degree view) capture raw pinhole RGB at 640x640, 90-degree FoV, 10 Hz, with a 0.25 m stereo baseline. Raw data is processed into a rich set of modalities: stereo RGB images (plus 1000 Hz MP4 video of the left-front camera), float32 depth maps (compressed losslessly to 4-channel 8-bit PNG), category-level semantic segmentation spanning 1447 semantic classes (manually labeled, with per-environment seg_label_map.json and statistics), optical flow (CUDA-accelerated, generatable across any camera-model pair, stored as npz with covisibility/FoV masks), LiDAR point clouds sampled from depth following Velodyne VLP-16 (and VLP-32C) patterns, IMU with configurable noise modeling, event-camera data generated at 1000 Hz via the ESIM simulator with contrast thresholds 0.2-1.0, occupancy maps, and ground-truth camera poses. The accompanying tartanairpy toolkit supports sampling customizable camera models including pinhole, fisheye (doublesphere / Linear Spherical model), and equirectangular/panoramic views, plus tools for adding noise and motion blur. The dataset is downloaded and managed through the 'tartanair' Python package (pip install tartanair), with data hosted on the AirLab server and Hugging Face (theairlabcmu/tartanair, ~1.11 TB). It succeeds TartanAir V1 (IROS 2020, the official CVPR 2020 Visual SLAM Challenge dataset), adding more scenes, more modalities, and the new fisheye/panoramic camera support; it also underpins the related TartanGround ground-robot dataset.",
+      "source_name": "CMU AirLab",
+      "source_type": "lab",
+      "source_url": "https://www.tartanair.org/",
+      "motion_type": "mobile",
+      "viewpoint": "egocentric",
+      "realness": "simulated",
+      "num_cameras": 12,
+      "license": "CC-BY-4.0",
+      "schema_summary": "Per-environment trajectories with 12 synchronized cameras (two 6-camera stereo rings covering 360 degrees), 640x640 at 10 Hz, 0.25 m baseline. Per timestep: stereo RGB PNG (8-bit), float32 depth (stored as 4-channel 8-bit PNG), semantic segmentation (1447 classes via seg_label_map.json), camera poses; derived modalities: optical flow (npz with covisibility/FoV masks), LiDAR point clouds (VLP-16/VLP-32C), IMU with noise, event-camera streams from 1000 Hz MP4 via ESIM, occupancy maps; customizable pinhole/fisheye/equirectangular camera sampling.",
+      "action_space": null,
+      "num_episodes": null,
+      "num_hours": null,
+      "num_tasks": null,
+      "size_bytes": null,
+      "year": 2024,
+      "homepage_url": "https://www.tartanair.org/",
+      "paper_url": "https://arxiv.org/abs/2003.14338",
+      "code_url": "https://github.com/castacks/tartanairpy",
+      "download_url": "https://www.tartanair.org/",
+      "usage_snippet": "pip install tartanair\nimport tartanair as ta\nta.init('/path/to/data')\nta.download(env=['AbandonedFactory'], difficulty=['easy'], modality=['image','depth','seg','flow','lidar','imu'], camera_name=['lcam_front'])",
+      "citation": "Wang, Wenshan, et al. \"TartanAir: A Dataset to Push the Limits of Visual SLAM.\" 2020 IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS), 2020.",
+      "used_by_papers": [],
+      "popularity": 686,
+      "popularity_label": "686 citations",
+      "featured": true,
+      "embodiment": [],
+      "environment": [
+        "home",
+        "industrial",
+        "office",
+        "outdoor",
+        "simulation"
+      ],
+      "modality": [
+        "depth",
+        "event",
+        "point_cloud",
+        "proprioception",
+        "segmentation",
+        "rgb"
+      ],
+      "outcome": [],
+      "format": [
+        "custom"
+      ],
+      "camera_type": [
+        "event",
+        "fisheye",
+        "rgb",
+        "rgbd",
+        "stereo"
+      ],
+      "sample_images": [
+        {
+          "id": "img_tartanair_v2_0",
+          "url": "https://datasets.bot/api/images/img_tartanair_v2_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_tartanair_v2_1",
+          "url": "https://datasets.bot/api/images/img_tartanair_v2_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        },
+        {
+          "id": "img_tartanair_v2_2",
+          "url": "https://datasets.bot/api/images/img_tartanair_v2_2",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 2
+        },
+        {
+          "id": "img_tartanair_v2_3",
+          "url": "https://datasets.bot/api/images/img_tartanair_v2_3",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 3
+        },
+        {
+          "id": "img_tartanair_v2_4",
+          "url": "https://datasets.bot/api/images/img_tartanair_v2_4",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 4
+        }
+      ],
+      "created_at": 1781835072168,
+      "updated_at": 1781835072168
+    },
+    {
+      "id": "d_subt_mrs",
+      "slug": "subt-mrs",
+      "name": "SubT-MRS",
+      "summary": "Real-world all-weather multi-robot SLAM dataset spanning the DARPA Subterranean Challenge and extensions (2019-2023), with LiDAR, fisheye/depth/thermal/RGB cameras and IMU on aerial, legged, wheeled and RC-car robots in fog, dust, smoke and snow.",
+      "description": "SubT-MRS is an extremely challenging real-world dataset designed to push SLAM toward all-weather, perceptually-degraded environments. It comprises roughly five years of data: three years from the DARPA Subterranean (SubT) Challenge (2019-2021) plus two additional years of diverse environments (2022-2023). The collection covers over 2000 hours and 300+ kilometers of terrain across more than 30 diverse scenes, including subterranean caves, tunnels, urban areas, long structureless corridors, mixed indoor/outdoor settings, off-road terrain, deserts, forests and bushlands. It captures extreme conditions such as dense fog, dust, smoke, heavy snow, darkness and varying illumination. Data is collected on multiple robot platforms: unmanned ground vehicles (UGV1/2/3), RC cars (RC1/2/7), legged robots (Boston Dynamics Spot), aerial robots (UAV/drone) and handheld devices, in a multi-robot configuration. Each platform carries hardware time-synchronized multimodal sensors: up to 4 RGB cameras (plus fisheye), one LiDAR, one IMU and one thermal camera. The dataset is distributed in ROS bag format and an extracted folder format, with ground-truth trajectories provided in TUM format (timestamp x y z q_x q_y q_z q_w) and initialization poses. It is organized into subsets including the SubT-MRS main track, a Sensor Fusion extension, a TartanAir LiDAR track (which adds depth and semantic segmentation) and the SuperLoc subset, totaling roughly 25 sequences across the released tracks. The associated CVPR 2024 paper ('SubT-MRS Dataset: Pushing SLAM Towards All-weather Environments', Zhao et al.) also introduces accuracy and robustness evaluation tracks with novel robustness metrics. Released under CC BY 4.0 and hosted on the Super Odometry platform by CMU's AirLab (Robotics Institute).",
+      "source_name": "CMU AirLab",
+      "source_type": "lab",
+      "source_url": "https://superodometry.com/datasets",
+      "motion_type": "mobile",
+      "viewpoint": "egocentric",
+      "realness": "physical",
+      "num_cameras": 4,
+      "license": "CC-BY-4.0",
+      "schema_summary": "Per-sequence ROS bags and extracted folders containing time-synchronized multimodal sensor streams (up to 4 RGB + fisheye cameras, LiDAR point clouds, IMU, thermal camera). Ground-truth trajectories in TUM format (timestamp x y z q_x q_y q_z q_w) plus initialization poses.",
+      "action_space": null,
+      "num_episodes": 25,
+      "num_hours": 2000,
+      "num_tasks": null,
+      "size_bytes": null,
+      "year": 2024,
+      "homepage_url": "https://theairlab.org/subt-mrs/",
+      "paper_url": "https://arxiv.org/abs/2307.07607",
+      "code_url": "https://github.com/water-horse/ICCV2023_SLAM_Challenge",
+      "download_url": "https://superodometry.com/datasets",
+      "usage_snippet": null,
+      "citation": "Zhao, S., et al. \"SubT-MRS Dataset: Pushing SLAM Towards All-weather Environments.\" Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR), June 2024, pp. 22647-22657.",
+      "used_by_papers": [],
+      "popularity": 77,
+      "popularity_label": "77 citations",
+      "featured": true,
+      "embodiment": [
+        "drone",
+        "multi",
+        "spot"
+      ],
+      "environment": [
+        "industrial",
+        "outdoor"
+      ],
+      "modality": [
+        "depth",
+        "point_cloud",
+        "proprioception",
+        "segmentation",
+        "rgb"
+      ],
+      "outcome": [],
+      "format": [
+        "custom",
+        "rosbag"
+      ],
+      "camera_type": [
+        "depth_only",
+        "fisheye",
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_subt_mrs_0",
+          "url": "https://datasets.bot/api/images/img_subt_mrs_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_subt_mrs_1",
+          "url": "https://datasets.bot/api/images/img_subt_mrs_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        },
+        {
+          "id": "img_subt_mrs_2",
+          "url": "https://datasets.bot/api/images/img_subt_mrs_2",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 2
+        },
+        {
+          "id": "img_subt_mrs_3",
+          "url": "https://datasets.bot/api/images/img_subt_mrs_3",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 3
+        }
+      ],
+      "created_at": 1781835072169,
+      "updated_at": 1781835072169
+    },
+    {
+      "id": "d_robocasa",
+      "slug": "robocasa",
+      "name": "RoboCasa",
+      "summary": "Large-scale simulated kitchen benchmark for generalist robots: 120 scenes, 100 tasks, 100K+ MimicGen trajectories on a Franka mobile manipulator.",
+      "description": "RoboCasa is a MuJoCo/robosuite-based simulation framework of photorealistic kitchen environments for training generalist robots (used in NVIDIA's GR00T effort). The original RSS 2024 release provides 120 kitchen scenes (10 floor plans, 12 styles), 2,509 3D assets across 153 categories, and 100 tasks (25 atomic + 75 LLM-generated composite), with 50 human demonstrations per atomic task expanded to 100K+ trajectories via MimicGen on a PandaOmron (Franka arm on Omron mobile base). The framework also supports cross-embodiments including humanoid robots and quadruped robots with arms. The 2026 RoboCasa365 extension scales this to 365 tasks across 2,500 kitchen scenes, 3,200+ objects, and 600+ hours of human plus 1,600+ hours of synthetic demonstrations.",
+      "source_name": "UT Austin (Yuke Zhu) and NVIDIA Research",
+      "source_type": "lab",
+      "source_url": "https://robocasa.ai",
+      "motion_type": "mobile_manipulator",
+      "viewpoint": "both",
+      "realness": "simulated",
+      "num_cameras": 3,
+      "license": "CC-BY-4.0",
+      "schema_summary": "robomimic-style HDF5: episodes -> steps -> {observation (3 RGB cameras: left/right agentview + eye-in-hand, proprioception/ee_pose), action (mobile base + EE delta + gripper)}",
+      "action_space": "12-DoF: mobile base motion (4D) + control mode (1D) + end-effector position (3D) + end-effector rotation (3D) + gripper (1D), Box(-1,1)",
+      "num_episodes": null,
+      "num_hours": 2227,
+      "num_tasks": 100,
+      "size_bytes": null,
+      "year": 2024,
+      "homepage_url": "https://robocasa.ai",
+      "paper_url": "https://arxiv.org/abs/2406.02523",
+      "code_url": "https://github.com/robocasa/robocasa",
+      "download_url": "https://github.com/robocasa/robocasa",
+      "usage_snippet": "git clone https://github.com/robocasa/robocasa && cd robocasa && pip install -e . && python -m robocasa.scripts.download_kitchen_assets  # datasets via robocasa download scripts (robomimic HDF5); LeRobot demo: load_dataset('pepijn223/robocasa_CloseFridge')",
+      "citation": "@inproceedings{robocasa2024, title={RoboCasa: Large-Scale Simulation of Everyday Tasks for Generalist Robots}, author={Soroush Nasiriany and Abhiram Maddukuri and Lance Zhang and Adeet Parikh and Aaron Lo and Abhishek Joshi and Ajay Mandlekar and Yuke Zhu}, booktitle={Robotics: Science and Systems (RSS)}, year={2024}}",
+      "used_by_papers": [
+        {
+          "slug": "dreamgen",
+          "title": "DreamGen: Unlocking Generalization in Robot Learning through Neural Trajectories",
+          "url": "https://arxiv.org/abs/2505.12705",
+          "year": 2025,
+          "authors": "Jang et al.",
+          "venue": "arXiv"
+        },
+        {
+          "slug": "gr00t-n1",
+          "title": "GR00T N1: An Open Foundation Model for Generalist Humanoid Robots",
+          "url": "https://arxiv.org/abs/2503.14734",
+          "year": 2025,
+          "authors": "NVIDIA (Bjorck et al.)",
+          "venue": "arXiv"
+        },
+        {
+          "slug": "robocasa",
+          "title": "RoboCasa: Large-Scale Simulation of Everyday Tasks for Generalist Robots",
+          "url": "https://arxiv.org/abs/2406.02523",
+          "year": 2024,
+          "authors": "Nasiriany et al.",
+          "venue": "RSS 2024"
+        }
+      ],
+      "popularity": 362,
+      "popularity_label": "362 citations",
+      "featured": true,
+      "embodiment": [
+        "franka_panda",
+        "humanoid_other",
+        "unitree_quadruped"
+      ],
+      "environment": [
+        "simulation",
+        "kitchen"
+      ],
+      "modality": [
+        "ee_pose",
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "has-success-labels"
+      ],
+      "format": [
+        "hdf5",
+        "lerobot"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_robocasa_0",
+          "url": "https://datasets.bot/api/images/img_robocasa_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_robocasa_1",
+          "url": "https://datasets.bot/api/images/img_robocasa_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        },
+        {
+          "id": "img_robocasa_2",
+          "url": "https://datasets.bot/api/images/img_robocasa_2",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 2
+        },
+        {
+          "id": "img_robocasa_3",
+          "url": "https://datasets.bot/api/images/img_robocasa_3",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 3
+        },
+        {
+          "id": "img_robocasa_4",
+          "url": "https://datasets.bot/api/images/img_robocasa_4",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 4
+        }
+      ],
+      "created_at": 1781637147094,
+      "updated_at": 1781637147094
+    },
+    {
+      "id": "d_mobile_aloha",
+      "slug": "mobile-aloha",
+      "name": "Mobile ALOHA",
+      "summary": "Stanford mobile bimanual manipulation demos (kitchen/home tasks) on the Mobile ALOHA robot; RLDS in Open X / TFDS.",
+      "description": "Mobile ALOHA is a teleoperated mobile bimanual manipulation dataset collected by Fu, Zhao, and Finn (Stanford) using the low-cost whole-body Mobile ALOHA system, with ~50 human demonstrations per task across whole-body tasks such as sauteing shrimp, opening a two-door cabinet, calling/entering an elevator, and rinsing a pan. The TFDS/Open X release contains 276 episodes with 3 RGB cameras (overhead + two wrist cameras at 480x640), a 14-dim state, a 16-dim action, and per-step language instructions. Raw HDF5 demonstrations are also distributed via the project's Google Drive.",
+      "source_name": "Stanford University",
+      "source_type": "lab",
+      "source_url": "https://mobile-aloha.github.io/",
+      "motion_type": "mobile_manipulator",
+      "viewpoint": "both",
+      "realness": "physical",
+      "num_cameras": 3,
+      "license": "CC-BY-4.0",
+      "schema_summary": "episodes -> steps -> {observation: {cam_high, cam_left_wrist, cam_right_wrist (480x640x3), state(14)}, action(16), language_instruction, reward, discount, is_first/is_last/is_terminal}",
+      "action_space": "16-dim action (dual 7-DoF arms + grippers and mobile base velocities); 14-dim joint state",
+      "num_episodes": 276,
+      "num_hours": null,
+      "num_tasks": null,
+      "size_bytes": 50917757317,
+      "year": 2024,
+      "homepage_url": "https://mobile-aloha.github.io/",
+      "paper_url": "https://arxiv.org/abs/2401.02117",
+      "code_url": "https://github.com/MarkFzp/mobile-aloha",
+      "download_url": "https://www.tensorflow.org/datasets/catalog/aloha_mobile",
+      "usage_snippet": "import tensorflow_datasets as tfds\nds = tfds.load('aloha_mobile', split='train')",
+      "citation": "@inproceedings{fu2024mobile, author = {Fu, Zipeng and Zhao, Tony Z. and Finn, Chelsea}, title = {Mobile ALOHA: Learning Bimanual Mobile Manipulation with Low-Cost Whole-Body Teleoperation}, booktitle = {Conference on Robot Learning (CoRL)}, year = {2024}}",
+      "used_by_papers": [
+        {
+          "slug": "mobile-aloha",
+          "title": "Mobile ALOHA: Learning Bimanual Mobile Manipulation with Low-Cost Whole-Body Teleoperation",
+          "url": "https://arxiv.org/abs/2401.02117",
+          "year": 2024,
+          "authors": "Fu et al.",
+          "venue": "CoRL 2024"
+        },
+        {
+          "slug": "rdt-1b",
+          "title": "RDT-1B: a Diffusion Foundation Model for Bimanual Manipulation",
+          "url": "https://arxiv.org/abs/2410.07864",
+          "year": 2024,
+          "authors": "Liu et al.",
+          "venue": "ICLR 2025"
+        }
+      ],
+      "popularity": 678,
+      "popularity_label": "678 citations",
+      "featured": true,
+      "embodiment": [
+        "aloha"
+      ],
+      "environment": [
+        "home",
+        "lab",
+        "kitchen"
+      ],
+      "modality": [
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "success-only"
+      ],
+      "format": [
+        "hdf5",
+        "rlds"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_mobile_aloha_0",
+          "url": "https://datasets.bot/api/images/img_mobile_aloha_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_mobile_aloha_1",
+          "url": "https://datasets.bot/api/images/img_mobile_aloha_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        }
+      ],
+      "created_at": 1781637147086,
+      "updated_at": 1781637147086
+    },
+    {
+      "id": "d_humanplus",
+      "slug": "humanplus",
+      "name": "HumanPlus",
+      "summary": "Stanford CoRL 2024 system + HDF5 imitation-learning demos on a 33-DoF Unitree H1 humanoid for whole-body skills via human shadowing.",
+      "description": "HumanPlus is a Stanford full-stack system that lets a customized 33-DoF Unitree H1 humanoid shadow human body and hand motion in real time from RGB cameras, and then learn autonomous whole-body skills via behavior cloning on teleoperated demonstrations. The low-level shadowing policy is trained in simulation using the 40-hour AMASS human-motion dataset; the released task data consists of HDF5 imitation-learning episodes (ACT/Mobile-ALOHA style) recording two head-mounted egocentric RGB cameras plus 19-DoF body and dexterous-hand joint positions. Demonstrated skills include folding clothes, rearranging objects, warehouse unloading, two-robot greeting, wearing a shoe, and typing.",
+      "source_name": "Stanford University",
+      "source_type": "lab",
+      "source_url": "https://humanoid-ai.github.io/",
+      "motion_type": "mobile_manipulator",
+      "viewpoint": "egocentric",
+      "realness": "physical",
+      "num_cameras": 2,
+      "license": "unknown",
+      "schema_summary": "episodes (HDF5) -> timesteps -> {observation: 2x egocentric RGB images + proprioception (joint positions), action: target body+hand joint positions}",
+      "action_space": "19-DoF humanoid body joint position setpoints (2x4-DoF arms, 2x5-DoF legs, 1-DoF waist) plus dexterous hand joint angles; predicted as chunks of 50 target poses",
+      "num_episodes": null,
+      "num_hours": 40,
+      "num_tasks": 6,
+      "size_bytes": null,
+      "year": 2024,
+      "homepage_url": "https://humanoid-ai.github.io/",
+      "paper_url": "https://arxiv.org/abs/2406.10454",
+      "code_url": "https://github.com/MarkFzp/humanplus",
+      "download_url": "https://drive.google.com/drive/folders/1i3eGTd9Nl_tSieoE0grxuKqUAumBr2EV",
+      "usage_snippet": "git clone https://github.com/MarkFzp/humanplus\n# download task datasets (data_fold_clothes, data_rearrange_objects, data_two_robot_greeting, data_warehouse)\n# from https://drive.google.com/drive/folders/1i3eGTd9Nl_tSieoE0grxuKqUAumBr2EV and place in the HIT/ folder",
+      "citation": "@inproceedings{fu2024humanplus,\n  author = {Fu, Zipeng and Zhao, Qingqing and Wu, Qi and Wetzstein, Gordon and Finn, Chelsea},\n  title = {HumanPlus: Humanoid Shadowing and Imitation from Humans},\n  booktitle = {Conference on Robot Learning (CoRL)},\n  year = {2024}\n}",
+      "used_by_papers": [
+        {
+          "slug": "humanplus",
+          "title": "HumanPlus: Humanoid Shadowing and Imitation from Humans",
+          "url": "https://arxiv.org/abs/2406.10454",
+          "year": 2024,
+          "authors": "Fu et al.",
+          "venue": "CoRL 2024"
+        }
+      ],
+      "popularity": 296,
+      "popularity_label": "296 citations",
+      "featured": false,
+      "embodiment": [
+        "human",
+        "unitree_humanoid"
+      ],
+      "environment": [
+        "lab",
+        "warehouse",
+        "tabletop"
+      ],
+      "modality": [
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "success-only"
+      ],
+      "format": [
+        "hdf5"
+      ],
+      "camera_type": [
+        "rgb"
+      ],
+      "sample_images": [
+        {
+          "id": "img_humanplus_0",
+          "url": "https://datasets.bot/api/images/img_humanplus_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        }
+      ],
+      "created_at": 1781637147104,
+      "updated_at": 1781709588545
+    },
+    {
+      "id": "d_fmb_functional_manipulation_benchmark",
+      "slug": "fmb-functional-manipulation-benchmark",
+      "name": "FMB (Functional Manipulation Benchmark)",
+      "summary": "Berkeley real-world Franka Panda benchmark: 22,550 expert demos of grasping, repositioning, and assembly with RGB-D, proprioception, and force/torque.",
+      "description": "FMB is a real-world robotic manipulation benchmark from UC Berkeley's RAIL lab for studying functional manipulation, where a Franka Panda arm composes skills (grasping, repositioning, assembly/insertion) using 3D-printed objects on assembly boards. It comprises 22,550 expert demonstration trajectories across single-object and multi-object multi-stage tasks, recorded from 2 global and 2 wrist Intel RealSense D405 cameras (RGB + depth) plus proprioception and end-effector force/torque. Raw data ships as .npy dictionaries with code to convert into RLDS for training imitation-learning baselines.",
+      "source_name": "UC Berkeley (RAIL / Robotic AI & Learning Lab)",
+      "source_type": "lab",
+      "source_url": "https://functional-manipulation-benchmark.github.io/",
+      "motion_type": "manipulator",
+      "viewpoint": "both",
+      "realness": "physical",
+      "num_cameras": 4,
+      "license": "CC-BY-4.0",
+      "schema_summary": "trajectories -> steps -> {observation: {side_1, side_2, wrist_1, wrist_2 RGB+depth, tcp_pose, tcp_vel, tcp_force, tcp_torque, joint_pos, joint_vel, gripper}, action, primitive}",
+      "action_space": "7-DoF end-effector control (pose/velocity) + gripper; raw data also includes joint positions/velocities",
+      "num_episodes": 22550,
+      "num_hours": 31.3,
+      "num_tasks": 2,
+      "size_bytes": 1627389849600,
+      "year": 2024,
+      "homepage_url": "https://functional-manipulation-benchmark.github.io/",
+      "paper_url": "https://arxiv.org/abs/2401.08553",
+      "code_url": "https://github.com/rail-berkeley/fmb",
+      "download_url": "https://functional-manipulation-benchmark.github.io/dataset/index.html",
+      "usage_snippet": "from huggingface_hub import snapshot_download\nsnapshot_download(repo_id='charlesxu0124/functional-manipulation-benchmark', repo_type='dataset')\n# or download raw zips: https://rail.eecs.berkeley.edu/datasets/fmb/single_object_manipulation.zip\n# then build RLDS: cd fmb_single_object_insert_dataset && tfds build --data_dir=<output_path>",
+      "citation": "@article{luo2024fmb,\n  title={FMB: a Functional Manipulation Benchmark for Generalizable Robotic Learning},\n  author={Luo, Jianlan and Xu, Charles and Liu, Fangchen and Tan, Liam and Lin, Zipeng and Wu, Jeffrey and Abbeel, Pieter and Levine, Sergey},\n  journal={The International Journal of Robotics Research},\n  year={2024},\n  doi={10.1177/02783649241276017},\n  note={arXiv:2401.08553}\n}",
+      "used_by_papers": [
+        {
+          "slug": "uniact",
+          "title": "UniAct: Universal Actions for Enhanced Embodied Foundation Models",
+          "url": "https://arxiv.org/abs/2501.10105",
+          "year": 2025,
+          "authors": "Zheng et al.",
+          "venue": "CVPR 2025"
+        },
+        {
+          "slug": "openvla",
+          "title": "OpenVLA: An Open-Source Vision-Language-Action Model",
+          "url": "https://arxiv.org/abs/2406.09246",
+          "year": 2024,
+          "authors": "Kim et al.",
+          "venue": "CoRL 2024"
+        }
+      ],
+      "popularity": 100,
+      "popularity_label": "100 citations",
+      "featured": false,
+      "embodiment": [
+        "franka_panda"
+      ],
+      "environment": [
+        "lab",
+        "tabletop"
+      ],
+      "modality": [
+        "depth",
+        "ee_pose",
+        "force_torque",
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "success-only"
+      ],
+      "format": [
+        "custom",
+        "rlds"
+      ],
+      "camera_type": [
+        "rgbd"
+      ],
+      "sample_images": [
+        {
+          "id": "img_fmb_functional_manipulation_benchmark_0",
+          "url": "https://datasets.bot/api/images/img_fmb_functional_manipulation_benchmark_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_fmb_functional_manipulation_benchmark_1",
+          "url": "https://datasets.bot/api/images/img_fmb_functional_manipulation_benchmark_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        },
+        {
+          "id": "img_fmb_functional_manipulation_benchmark_2",
+          "url": "https://datasets.bot/api/images/img_fmb_functional_manipulation_benchmark_2",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 2
+        },
+        {
+          "id": "img_fmb_functional_manipulation_benchmark_3",
+          "url": "https://datasets.bot/api/images/img_fmb_functional_manipulation_benchmark_3",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 3
+        },
+        {
+          "id": "img_fmb_functional_manipulation_benchmark_4",
+          "url": "https://datasets.bot/api/images/img_fmb_functional_manipulation_benchmark_4",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 4
+        }
+      ],
+      "created_at": 1781637147089,
+      "updated_at": 1781709588545
+    },
+    {
+      "id": "d_droid",
+      "slug": "droid",
+      "name": "DROID",
+      "summary": "76k teleop trajectories (~350h) on Franka Panda across 564 scenes/13 institutions, RLDS + raw stereo MP4.",
+      "description": "DROID (Distributed Robot Interaction Dataset) is a large-scale in-the-wild robot manipulation dataset of 76,000 teleoperated demonstration trajectories (~350 hours), collected across 564 scenes and 84 tasks by 50 collectors over 12 months in North America, Asia, and Europe (13 institutions). Every episode uses a standardized Franka Panda 7-DoF arm with two exterior ZED 2 stereo cameras and a wrist-mounted ZED Mini, recording RGB/stereo video, depth, joint and Cartesian proprioception, camera calibration, and natural-language annotations (3 per episode for ~95% of successful episodes). It is distributed in RLDS (1.7TB) and raw stereo HD MP4 (8.7TB) formats, with a community LeRobot port, and is included in the OpenVLA training mix.",
+      "source_name": "DROID Collaboration (Stanford, UC Berkeley, et al. — 13 institutions)",
+      "source_type": "lab",
+      "source_url": "https://droid-dataset.github.io/",
+      "motion_type": "manipulator",
+      "viewpoint": "both",
+      "realness": "physical",
+      "num_cameras": 3,
+      "license": "CC-BY-4.0",
+      "schema_summary": "RLDS: episodes -> steps -> {observation (RGB left/wrist/exterior, joint positions, Cartesian state, gripper position, camera calibration), action (joint/Cartesian velocity + gripper), language_instruction x3}",
+      "action_space": "7-DoF (6x joint velocities + 1x gripper position); Cartesian/joint position and velocity control modes available",
+      "num_episodes": 76000,
+      "num_hours": 350,
+      "num_tasks": 84,
+      "size_bytes": 1700000000000,
+      "year": 2024,
+      "homepage_url": "https://droid-dataset.github.io/",
+      "paper_url": "https://arxiv.org/abs/2403.12945",
+      "code_url": "https://github.com/droid-dataset/droid",
+      "download_url": "https://droid-dataset.github.io/droid/the-droid-dataset",
+      "usage_snippet": "gsutil -m cp -r gs://gresearch/robotics/droid_100 <target_dir>  # 100-episode debug subset (2GB)\n# Full RLDS (1.7TB): gs://gresearch/robotics/droid\n# LeRobot port: from lerobot.common.datasets.lerobot_dataset import LeRobotDataset; ds = LeRobotDataset('cadene/droid')",
+      "citation": "@inproceedings{khazatsky2024droid, title={DROID: A Large-Scale In-The-Wild Robot Manipulation Dataset}, author={Khazatsky, Alexander and others}, booktitle={Robotics: Science and Systems (RSS)}, year={2024}, note={arXiv:2403.12945}}",
+      "used_by_papers": [
+        {
+          "slug": "dreamgen",
+          "title": "DreamGen: Unlocking Generalization in Robot Learning through Neural Trajectories",
+          "url": "https://arxiv.org/abs/2505.12705",
+          "year": 2025,
+          "authors": "Jang et al.",
+          "venue": "arXiv"
+        },
+        {
+          "slug": "gr00t-n1",
+          "title": "GR00T N1: An Open Foundation Model for Generalist Humanoid Robots",
+          "url": "https://arxiv.org/abs/2503.14734",
+          "year": 2025,
+          "authors": "NVIDIA (Bjorck et al.)",
+          "venue": "arXiv"
+        },
+        {
+          "slug": "uniact",
+          "title": "UniAct: Universal Actions for Enhanced Embodied Foundation Models",
+          "url": "https://arxiv.org/abs/2501.10105",
+          "year": 2025,
+          "authors": "Zheng et al.",
+          "venue": "CVPR 2025"
+        },
+        {
+          "slug": "crossformer",
+          "title": "CrossFormer: Scaling Cross-Embodied Learning",
+          "url": "https://arxiv.org/abs/2408.11812",
+          "year": 2024,
+          "authors": "Doshi et al.",
+          "venue": "CoRL 2024"
+        },
+        {
+          "slug": "openvla",
+          "title": "OpenVLA: An Open-Source Vision-Language-Action Model",
+          "url": "https://arxiv.org/abs/2406.09246",
+          "year": 2024,
+          "authors": "Kim et al.",
+          "venue": "CoRL 2024"
+        },
+        {
+          "slug": "rdt-1b",
+          "title": "RDT-1B: a Diffusion Foundation Model for Bimanual Manipulation",
+          "url": "https://arxiv.org/abs/2410.07864",
+          "year": 2024,
+          "authors": "Liu et al.",
+          "venue": "ICLR 2025"
+        },
+        {
+          "slug": "pi-0",
+          "title": "π0: A Vision-Language-Action Flow Model for General Robot Control",
+          "url": "https://arxiv.org/abs/2410.24164",
+          "year": 2024,
+          "authors": "Black et al. (Physical Intelligence)",
+          "venue": "arXiv"
+        }
+      ],
+      "popularity": 799,
+      "popularity_label": "799 citations",
+      "featured": true,
+      "embodiment": [
+        "franka_panda"
+      ],
+      "environment": [
+        "home",
+        "lab",
+        "office",
+        "kitchen",
+        "tabletop"
+      ],
+      "modality": [
+        "depth",
+        "ee_pose",
+        "language",
+        "proprioception",
+        "rgb"
+      ],
+      "outcome": [
+        "success-only"
+      ],
+      "format": [
+        "custom",
+        "lerobot",
+        "rlds"
+      ],
+      "camera_type": [
+        "rgb",
+        "stereo"
+      ],
+      "sample_images": [
+        {
+          "id": "img_droid_0",
+          "url": "https://datasets.bot/api/images/img_droid_0",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 0
+        },
+        {
+          "id": "img_droid_1",
+          "url": "https://datasets.bot/api/images/img_droid_1",
+          "camera": null,
+          "width": null,
+          "height": null,
+          "sort_order": 1
+        }
+      ],
+      "created_at": 1781637147083,
+      "updated_at": 1781709588545
+    }
+  ],
+  "next_cursor": "WyJ5ZWFyX2Rlc2MiLDIwMjQsImRfZHJvaWQiXQ"
+}

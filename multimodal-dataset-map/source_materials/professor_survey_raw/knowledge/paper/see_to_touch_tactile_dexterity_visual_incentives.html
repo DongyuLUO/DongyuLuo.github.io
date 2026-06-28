@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>See to Touch: Learning Tactile Dexterity through Visual Incentives</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Guzey, Dai, Evans, Chintala, Pinto">
+<meta name="year" content="2023">
+<meta name="venue" content="ICRA 2024 (arXiv 2309.12300)">
+<meta name="arxiv_id" content="2309.12300">
+<meta name="url" content="https://arxiv.org/abs/2309.12300">
+<meta name="pdf" content="../../raw/papers/see_to_touch_tactile_dexterity_visual_incentives.pdf">
+<meta name="tags" content="tactile-sensing, reinforcement-learning, dexterous-manipulation, visuo-tactile, contact-rich, in-hand-manipulation, imitation-learning, representation-learning, self-supervised-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>See to Touch: Learning Tactile Dexterity through Visual Incentives</h1>
+<p class="meta">
+  Irmak Guzey, Yinlong Dai, Ben Evans, Soumith Chintala, Lerrel Pinto
+  &middot; New York University / Meta AI Research
+  &middot; 2023 (arXiv:2309.12300; ICRA 2024)
+  &middot; <a href="https://arxiv.org/abs/2309.12300">arXiv:2309.12300</a>
+  &middot; <a href="../../raw/papers/see_to_touch_tactile_dexterity_visual_incentives.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> TAVI learns contact-rich, multi-fingered
+dexterous policies via online RL where the <em>action</em> uses both tactile
+and image input but the <em>reward</em> comes purely from a learned visual
+optimal-transport match to a single human demonstration &mdash; sidestepping
+the fact that raw tactile signals are too ambiguous to reward task completion
+on their own.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Multi-fingered hands need tactile sensing for precise, contact-rich
+fingertip manipulation, but tactile-only control is a dead end for
+<em>reward</em>: the touch signal from picking up a slender object looks almost
+identical to a pinch grasp, so it "lack[s] the necessary cues to reason about
+objects' spatial location." Pure offline imitation
+(<a href="dexterity_from_touch_self_supervised_pretraining.html">T-DEX</a>)
+needs large demonstration sets, requires densely covering object
+configurations, and cannot recover from execution errors. TAVI's insight: keep
+tactile <em>in the policy input</em> for fine control, but compute the reward
+from a learned <em>visual</em> representation, so the agent gets a strong,
+spatially-grounded incentive while still adapting tactile behavior online from
+a single demonstration.</p>
+
+<h2>Method</h2>
+<p>TAVI = <strong>T</strong>actile <strong>A</strong>daptation from
+<strong>V</strong>isual <strong>I</strong>ncentives. Three pieces, illustrated
+in Fig 1: a learned visual+tactile representation, an optimal-transport (OT)
+reward over the visual features, and online RL that adapts a residual policy.</p>
+
+<p><strong>1. Representation learning (vision + tactile).</strong> Both encoders
+map high-dimensional observations to a low-dimensional latent (mitigating the
+need for explicit state estimation). The <em>image</em> encoder is trained on
+task demonstrations with two losses: an InfoNCE time-contrastive loss
+(<code>L<sub>NCE</sub></code>, following Time-Contrastive Networks &mdash;
+nearby observations are positives) plus a <strong>change-prediction</strong>
+loss <code>&Delta;&#770;(z<sub>t</sub>, z<sub>t+k</sub>)</code> regressing the
+multi-step change in robot proprioceptive state between latents
+(<code>L<sub>&Delta;</sub> = ||s<sub>t+k</sub> - s<sub>t</sub> -
+&Delta;&#770;||</code>, with <code>k=5</code>). Final loss
+<code>L = L<sub>NCE</sub> + &lambda; L<sub>&Delta;</sub></code>. The
+<em>tactile</em> encoder is the <strong>pretrained T-DEX encoder</strong> (2.5
+hours of self-supervised tactile play data), used off-the-shelf.</p>
+
+<p><strong>2. OT reward from visual features only.</strong> Building on FISH,
+given an expert trajectory and a robot trajectory, encode both to latents and
+solve an optimal-transport problem with a pairwise cost matrix
+<code>C</code>; the transport plan <code>&mu;*</code> yields a time-invariant
+reward <code>r<sup>OT</sup> = -&sum; C<sub>t,t'</sub> &mu;*<sub>t,t'</sub></code>
+(Eq 2). Crucially the OT reward uses <strong>only the visual latent</strong>;
+the authors found that including tactile in the reward "results in convergence
+to sub-optimal solutions" (the agent pinches fingers together to game the touch
+signal). A second design choice (differing from FISH): match the
+<strong>last 10 frames</strong> of the robot rollout to the
+<strong>last frame</strong> of the expert &mdash; a sparse final-frame match
+that avoids the degenerate start-to-end matching that all-frames OT produces.</p>
+
+<p><strong>3. Online residual RL.</strong> They use FISH-style imitation: the
+base policy is an open-loop replay of the single expert demonstration; a
+learned residual policy <code>&pi;(o<sub>t</sub>, &tau;<sub>t</sub>)</code>
+(image + tactile in) adds corrective offsets, trained with DrQv2/DDPG to
+maximize <code>r<sup>OT</sup></code>. Observations are augmented with random
+resized crops. <strong>Exploration is restricted to task-relevant subsets of
+the action space</strong> per task (e.g., only base joints of fingers for peg
+insertion), with additive OU noise to prevent motor jitter. Long-horizon tasks
+(Fig 4) are handled by training separate sub-policies and concatenating them
+zero-shot.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> No public benchmark; six
+    self-collected contact-rich dexterous tasks &mdash; Peg Insertion, Sponge
+    Flipping, Eraser Turning, Bowl Unstacking, Plier Picking, Mint Opening
+    (Fig 2). One human demonstration per task collected via the HOLO-DEX VR
+    framework; data subsampled to 10Hz.</li>
+  <li><strong>Hardware / simulator:</strong> Real robot only &mdash; 6-DOF Jaco
+    arm + 16-DOF AllegroHand (4 fingers), fitted with 15 XELA uSkin tactile
+    sensors (each 4&times;4 tri-axial = 240 force readings total), plus a single
+    RGB camera. Online RL trained directly on hardware (~30 min / task).</li>
+  <li><strong>Baselines:</strong> <a href="dexterity_from_touch_self_supervised_pretraining.html">T-DEX</a>
+    (offline NN imitation w/ tactile+image encoders); BC-BeT (Behavior
+    Transformers); Tactile-Only (tactile features in the OT reward);
+    Image+Tactile Reward (both in reward); AVI (FISH with no tactile in the
+    policy at all). Visual-representation ablations: Contrastive-Only,
+    Joint-Difference-Only, BYOL, end-to-end BC, ImageNet-Pretrained ResNet-18.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (RL agent DrQv2; Adam,
+    lr 1e-4, batch 256, replay buffer 150k, 1000 exploration steps &mdash;
+    Table V).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: <strong>TAVI averages 73% success across the six tasks</strong>,
+vs 16% for T-DEX, 0% for BC-BeT, 38% Tactile-Only, 35% Image+Tactile-Reward,
+31% AVI &mdash; a 108% relative gain over policies using tactile+visual rewards,
+and 135% over policies without tactile observational input. Per-task success
+(out of 10 rollouts, Table I):</p>
+
+<table>
+  <tr><th>Task</th><th>T-DEX</th><th>BC-BeT</th><th>Tactile&nbsp;Only</th><th>Img+Tac&nbsp;Reward</th><th>AVI</th><th>TAVI</th></tr>
+  <tr><td>Peg Insertion</td><td>2</td><td>0</td><td>6</td><td>6</td><td>6</td><td><strong>8</strong></td></tr>
+  <tr><td>Sponge Flipping</td><td>1</td><td>0</td><td><strong>8</strong></td><td>4</td><td>3</td><td><strong>8</strong></td></tr>
+  <tr><td>Eraser Turning</td><td>2</td><td>0</td><td>0</td><td>2</td><td>0</td><td><strong>5</strong></td></tr>
+  <tr><td>Bowl Unstacking</td><td>1</td><td>0</td><td>5</td><td>6</td><td>3</td><td><strong>9</strong></td></tr>
+  <tr><td>Plier Picking</td><td>0</td><td>0</td><td>4</td><td>4</td><td>6</td><td><strong>7</strong></td></tr>
+  <tr><td>Mint Opening</td><td>4</td><td>0</td><td>0</td><td>5</td><td>1</td><td><strong>7</strong></td></tr>
+  <tr><td><strong>Avg</strong></td><td>0.16</td><td>0.0</td><td>0.38</td><td>0.35</td><td>0.31</td><td><strong>0.73</strong></td></tr>
+</table>
+
+<p>Where it wins and loses:</p>
+<ul>
+  <li><strong>Tactile in the policy matters most on precision tasks:</strong>
+    AVI (no tactile) nearly matches TAVI on peg insertion (6 vs 8) and plier
+    picking (6 vs 7) where force feedback is less critical, but collapses to 0
+    on eraser turning and 1 on mint opening &mdash; tasks needing care not to
+    over-exert force.</li>
+  <li><strong>Tactile in the reward hurts:</strong> Tactile-Only and
+    Image+Tactile-Reward each roughly <em>halve</em> success vs visual-only OT
+    on several tasks, confirming the central thesis that touch is a poor reward
+    signal even when it is a good observation.</li>
+  <li><strong>Visual representation ablation (Table II, 4 tasks):</strong> the
+    full TAVI encoder averages 7.75/10 vs 6/10 for BYOL (best baseline) and
+    4&ndash;4.5/10 for Contrastive-Only / Pretrained ResNet &mdash; ~56%
+    improvement in four of the tasks over prior representation methods.</li>
+  <li><strong>Generalization (Fig 3):</strong> on unseen objects, bowl
+    unstacking holds at 50% and peg insertion at 57% &mdash; partial transfer,
+    degrading when shape/mass change substantially.</li>
+  <li><strong>Camera sensitivity (Table IV):</strong> bowl unstacking drops
+    9&rarr;6&rarr;2&rarr;1 /10 as the camera moves None&rarr;2cm&rarr;2-10cm&rarr;12cm+orientation,
+    because the visual encoder is not multi-view consistent.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The observation representation lacks historical context; a transformer
+    could help but needs solving training with limited demonstration data.</li>
+  <li>Performance is "very dependant on the camera view" &mdash; reward depends
+    on the match between expert and robot trajectory; large camera shifts break
+    it (Table IV).</li>
+  <li>The exploration mechanism requires manually knowing which action-space
+    dimensions to enable per task; automating this would cut domain expertise.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Tiny statistics.</strong> Every success number is a count out of
+    <em>10</em> rollouts with no seeds/std reported &mdash; a much weaker
+    statistical claim than the headline percentages suggest. The 73% vs 35%
+    "108% improvement" rests on 6&times;10 trials.</li>
+  <li><strong>Single demonstration, but heavy priors.</strong> "Only one
+    demonstration" is true for the OT target, but the method also leans on a
+    T-DEX tactile encoder pretrained on 2.5h of play <em>and</em> hand-specified
+    per-task action subspaces &mdash; the one-demo framing understates the
+    upfront task engineering.</li>
+  <li><strong>Reward never sees touch, so force-sensitive success is
+    indirect.</strong> Tasks like eraser turning succeed because the visual end
+    state correlates with the right force application; there is no explicit
+    force/contact term in the objective. For predicates like
+    <code>is_screwed_tight</code> where the visual end-state is ambiguous, this
+    visual-reward trick would not transfer.</li>
+  <li><strong>Long-horizon claim is thin.</strong> Sub-policy concatenation
+    (Fig 4) is shown qualitatively on one Sponge&rarr;Plier&rarr;Mint sequence,
+    with no success-rate table.</li>
+  <li>The XELA tactile is used <em>raw through a frozen encoder</em> &mdash; no
+    finetuning on these six tasks; how much headroom a task-adapted tactile
+    encoder leaves is untested.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely on-theme for the batch thesis that <strong>many
+manipulation predicates live in touch/force, not vision</strong>. But See to
+Touch is a sharp, almost <em>contrarian</em> data point on that thesis: its
+core empirical finding is that touch is an excellent <em>controller input</em>
+yet a poor <em>reward / success signal</em>, because tactile readings don't
+disambiguate object spatial state. That is exactly the boundary I care about
+for <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+predicate-grounding question: a predicate like <code>is_grasped</code> may
+need tactile to <em>achieve</em> reliably but is most cheaply
+<em>evaluated</em> from vision &mdash; whereas <code>is_screwed_tight</code> or
+<code>surface_is_rough</code> have no clean visual end-state and would break
+TAVI's visual-reward recipe. TAVI sits at the low-level-control layer
+(diffusion-policy/RL controllers below an abstraction), the same slot BLADE's
+diffusion policies occupy; one could imagine BLADE's contact-primitive
+controllers trained TAVI-style with visual OT incentives instead of pure BC.
+The reliance on hand-picked per-task action subspaces is a nice contrast to
+BLADE's <em>learned</em> contact-primitive segmentation &mdash; TAVI bakes in
+the structure BLADE recovers automatically. Mostly relevant as a controller/
+representation building block, not as a planning or predicate-learning paper.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  relying solely on tactile sensing fails to provide adequate cues for
+  reasoning about objects' spatial configurations, limiting the ability to
+  correct errors and adapt to changing situations.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  the tactile signal obtained from picking up a slender object is very similar
+  to that of pinch grasping. To address this, we only use visual cues to
+  determine reward, which in turn provides a strong incentive for tactile-based
+  policy learning.
+  <span class="quote-cite">&mdash; &sect;I / p.2</span>
+</blockquote>
+<blockquote>
+  We find that including the tactile information in the reward results in
+  convergence to sub-optimal solutions by activating the touch sensors by
+  pinching the fingers together.
+  <span class="quote-cite">&mdash; &sect;IV / p.4</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[13] Guzey et al. 2023 &mdash; Dexterity from Touch (T-DEX)</strong>
+    &mdash; provides TAVI's pretrained tactile encoder and is the main baseline;
+    the direct predecessor. (Already in this batch &mdash; see below.)</li>
+  <li><strong>[12] Guzey et al. &mdash; HOLO-DEX</strong> (VR teleop framework
+    for collecting the demonstrations).</li>
+  <li><strong>[14] Haldar et al. &mdash; FISH ("Teach a Robot to Fish")</strong>
+    &mdash; the OT-imitation-from-one-demo framework TAVI extends; foundational
+    dependency.</li>
+  <li><strong>[44] Sermanet et al. &mdash; Time-Contrastive Networks</strong>
+    &mdash; the visual representation-learning method behind the InfoNCE loss.</li>
+  <li><strong>[68] Chen et al. &mdash; Sequential Dexterity</strong> &mdash;
+    chaining dexterous policies for long-horizon manipulation; relevant to the
+    sub-policy concatenation claim.</li>
+  <li><strong>[18] Qi et al. &mdash; General in-hand object rotation with vision
+    and touch</strong> &mdash; comparable visuo-tactile in-hand control.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="dexterity_from_touch_self_supervised_pretraining.html">Dexterity from Touch (T-DEX)</a>
+    &mdash; same authors; supplies TAVI's frozen tactile encoder and is its
+    primary baseline. T-DEX = offline NN imitation; TAVI = online RL with visual
+    rewards. The cleanest before/after pair in cluster B.</li>
+  <li><a href="text2touch_tactile_in_hand_llm_reward.html">Text2Touch</a>
+    &mdash; also tackles tactile in-hand dexterity via RL, but designs the reward
+    with an LLM rather than visual OT &mdash; a complementary take on the
+    "where does the reward come from for touch tasks" question.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a>,
+    <a href="t3_transferable_tactile_transformers.html">T3</a>,
+    <a href="unit_data_efficient_tactile_representation.html">UniT</a>,
+    <a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>
+    &mdash; the tactile-representation/foundation-model line; modern successors
+    to the T-DEX encoder TAVI freezes off-the-shelf.</li>
+  <li><a href="vtdexmanip_visual_tactile_dexterous_benchmark.html">VTDexManip</a>
+    &mdash; visuo-tactile dexterous-manipulation benchmark; the kind of public
+    eval TAVI's bespoke six-task suite lacked.</li>
+  <li><a href="making_sense_of_vision_and_touch.html">Making Sense of Vision and Touch</a>
+    &mdash; foundational visuo-tactile representation fusion for contact-rich
+    manipulation; conceptual ancestor of TAVI's dual-encoder design.</li>
+</ul>
+
+</body>
+</html>

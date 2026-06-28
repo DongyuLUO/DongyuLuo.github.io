@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Dexterity from Touch: Self-Supervised Pre-Training of Tactile Representations with Robotic Play</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Guzey, Evans, Chintala, Pinto">
+<meta name="year" content="2023">
+<meta name="venue" content="CoRL 2023">
+<meta name="arxiv_id" content="2303.12076">
+<meta name="url" content="https://arxiv.org/abs/2303.12076">
+<meta name="pdf" content="../../raw/papers/dexterity_from_touch_self_supervised_pretraining.pdf">
+<meta name="tags" content="tactile-sensing, self-supervised-learning, dexterous-manipulation, imitation-learning, representation-learning, tactile-representation, contact-rich, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Dexterity from Touch: Self-Supervised Pre-Training of Tactile Representations with Robotic Play</h1>
+<p class="meta">
+  Irmak Guzey, Ben Evans, Soumith Chintala, Lerrel Pinto
+  &middot; New York University / Meta AI
+  &middot; CoRL 2023
+  &middot; <a href="https://arxiv.org/abs/2303.12076">arXiv:2303.12076</a>
+  &middot; <a href="../../raw/papers/dexterity_from_touch_self_supervised_pretraining.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> T-DEX pre-trains a tactile encoder via BYOL on
+2.5 hours of aimless, task-agnostic robotic "play" data, then plugs that frozen
+encoder into a nearest-neighbor imitation policy that needs only 6 demos per
+task &mdash; letting a 16-DoF multi-fingered hand solve contact-rich, heavily
+self-occluded manipulation that pure-vision and torque-only policies fumble.
+
+<h2>Problem &amp; motivation</h2>
+<p>Dexterous multi-fingered manipulation is data-hungry and brittle exactly
+where it matters: when fingers make and break contact, the hand <em>occludes</em>
+the object from cameras, and torque-derived contact estimates are noisy. Touch
+is the natural modality for this regime &mdash; it is unaffected by occlusion and
+carries rich contact information &mdash; but tactile sensing is hard to exploit:
+high-resolution sensors like GelSight are hard to fit over a whole hand,
+many tactile sensors are hard to calibrate to physical force, and (unlike
+vision) there are <em>no</em> large pretrained tactile encoders or internet-scale
+tactile datasets to bootstrap from. T-DEX's bet: skip calibration entirely,
+learn tactile representations self-supervised from cheap play data, and use them
+to make few-shot imitation work on a high-dimensional hand.</p>
+
+<h2>Method</h2>
+<p>T-DEX runs in two phases (overview in Fig 4).</p>
+
+<p><strong>Phase I &mdash; self-supervised tactile pre-training from play.</strong>
+A human teleoperates the Allegro hand (Oculus headset re-targeting finger poses
+via IK; Kinova arm via joystick) to collect <strong>2.5 hours of contact-rich
+play</strong> &mdash; grasping, pinching, moving objects, spinning a steering
+wheel, in-hand manipulation (Fig 3). The hand carries 15 XELA uSkin tactile
+sensors (4 per finger, 3 on the thumb); each sensor is a <code>4&times;4</code>
+grid of tri-axial force readings, for a total of <code>720</code> dimensions per
+timestep. Readings are <em>uncalibrated</em> by choice (susceptible to hysteresis,
+magnet/metal interference). Play data is subsampled to ~10 Hz and filtered to
+frames where fingertips + end-effector moved &gt;1 cm total, shrinking 450k frames
+to 42k. To feed a standard CNN, the 3-axis <code>4&times;4</code> sensors are
+stacked into a <code>16&times;4</code> column for the fingers and <code>12&times;4</code>
+for the thumb, concatenated and padded into a 3-channel <code>16&times;16</code>
+"tactile image," then scaled to <code>224&times;224</code>. The encoder
+<code>f<sub>&theta;</sub></code> is an <strong>AlexNet</strong> (ImageNet
+pretrained) trained with <strong>BYOL</strong> &mdash; a non-contrastive SSL
+method using a primary encoder and an EMA target encoder. Crucially, only
+<em>Gaussian blur and small random resized crop</em> augmentations are used:
+color jitter / grayscale would violate the tactile signal's semantics. A key
+property the authors lean on: because all tactile data is in the hand's frame,
+sensor readings are pose-invariant and reusable across tasks.</p>
+
+<p><strong>Phase II &mdash; non-parametric downstream imitation.</strong> For
+each task, a teleoperator collects only <strong>6 demonstrations</strong>
+(&lt;10 min of successful data, though up to 30 min of collection time given
+the high failure rate without tactile feedback to the operator). Demos are
+subsampled to frames where the hand/arm moved &gt;2 cm. Because the action space
+is high-dimensional (16 joint angles + 3D position + 4D quaternion = 23 D),
+parametric BC struggles in the low-data regime, so T-DEX uses a
+<strong>nearest-neighbor (VINN-style) policy</strong>. Each demo tuple stores
+visual features <code>y<sub>i</sub><sup>V</sup></code> (ResNet-18, ImageNet,
+BYOL-augmented on demo images), tactile features
+<code>y<sub>i</sub><sup>T</sup></code> (frozen play encoder), and action
+<code>a<sub>i</sub></code>. Features are rescaled so per-feature max distance is
+1. At test time, compute current <code>(y<sub>t</sub><sup>V</sup>,
+y<sub>t</sub><sup>T</sup>)</code>, find the demo datum with lowest total
+distance, and execute its action. Because tactile encodings are combined with
+vision <em>at retrieval time</em>, no fusion training is needed &mdash; vision
+gives coarse object localization, touch gives fine-grained contact state.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> 2.5 hours (~42k filtered frames)
+    of task-agnostic teleoperated play for pre-training; 6 demos each for five
+    contact-rich downstream tasks &mdash; Joystick Movement, Bottle Opening,
+    Cup Unstacking, Bowl Unstacking, Book Opening. Tasks evaluated on new object
+    configurations inside a 10&times;15 cm box (convex hull of demonstrations).
+    Over 40 hours of robot evaluation total.</li>
+  <li><strong>Hardware / simulator:</strong> 6-DoF Kinova Jaco arm + 16-DoF
+    Allegro hand (four fingers). 15 XELA uSkin tactile sensors (720-D
+    uncalibrated tri-axial readings). Two 640&times;480 RealSense RGB cameras
+    (policies use only one). Real-world only; teleop via Oculus headset (Holo-Dex
+    framework) + Kinova joystick. Tactile at 100 Hz, image at 30 Hz, subsampled
+    to ~10 Hz.</li>
+  <li><strong>Baselines:</strong> Behavior Cloning (BC); NN-Image (vision-only
+    nearest neighbor, VINN); NN-Tactile (tactile-only NN, tactile encoder trained
+    on play); NN-Torque (NN on PD-controller output torques as a force proxy);
+    NN-Task (tactile encoder trained on the 6 task demos instead of play data).
+    Architecture ablations: ResNet-18, 3-layer CNN, Stacked CNN (channel-wise),
+    Shared CNN, Raw Tactile (720-D flatten), PCA.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: across five tasks T-DEX averages <strong>76%</strong> success,
+beating vision-only and torque-only models by an average of <strong>1.7&times;</strong>
+(Table I, success over the configuration box).</p>
+
+<table>
+  <tr><th>Method</th><th>Joystick</th><th>Cup</th><th>Bowl</th><th>Book</th><th>Bottle</th><th>Average</th></tr>
+  <tr><td>BC</td><td>0%</td><td>0%</td><td>0%</td><td>0%</td><td>0%</td><td>0%</td></tr>
+  <tr><td>NN-Image (VINN)</td><td>40%</td><td>0%</td><td>20%</td><td>50%</td><td>0%</td><td>22%</td></tr>
+  <tr><td>NN-Tactile</td><td>60%</td><td>0%</td><td>20%</td><td>0%</td><td>60%</td><td>28%</td></tr>
+  <tr><td>NN-Torque</td><td>70%</td><td>20%</td><td>40%</td><td>30%</td><td>30%</td><td>38%</td></tr>
+  <tr><td>NN-Task</td><td><strong>80%</strong></td><td>40%</td><td>30%</td><td>60%</td><td>30%</td><td>48%</td></tr>
+  <tr><td><strong>T-DEX (ours)</strong></td><td><strong>80%</strong></td><td><strong>80%</strong></td><td><strong>70%</strong></td><td><strong>90%</strong></td><td><strong>60%</strong></td><td><strong>76%</strong></td></tr>
+</table>
+
+<p>Key findings:</p>
+<ul>
+  <li><strong>BC collapses entirely (0% on all tasks)</strong> &mdash; quickly
+    leaves the demo distribution in the small-data regime, confirming why the
+    non-parametric retrieval design matters.</li>
+  <li><strong>Where it loses:</strong> T-DEX <em>ties</em> NN-Task and matches
+    NN-Torque on the easy Joystick task (80% vs 80%/70%); on Bottle Opening
+    NN-Tactile alone reaches 60% (equal to T-DEX), i.e. vision adds little there.
+    So the win is not uniform &mdash; it is concentrated on the heavily-occluded
+    tasks (Cup, Bowl, Book).</li>
+  <li><strong>Play vs task pre-training (Table I, &sect;V-D):</strong> NN-Task
+    (encoder trained only on the 6 demos) lags by ~28% on average; on Book Opening
+    and Cup Unstacking T-DEX shows +58% average improvement from play pre-training.
+    Fig 7: easy tasks (Book) hit 90% with just 20 min of play; hard tasks (Cup)
+    improve steadily with more play data, up to 80% at 150 min.</li>
+  <li><strong>Tactile architecture matters (Table II):</strong> T-DEX (spatial
+    AlexNet) gets 90%/80% on Book/Cup; ResNet-18 matches on Book (90%) but lags
+    on Cup (60%) at more compute; Stacked (channel-wise) drops to 50%/10%, Shared
+    to 20%/10%, Raw 720-D flatten to 50%/30%. Shuffling tactile-pad order tanks to
+    20%, proving the spatial layout is load-bearing. PCA on raw features = 40%.</li>
+  <li><strong>Unseen objects (Fig 8):</strong> T-DEX picks up 3/4 new bowls and
+    2/4 new cups; NN-Image succeeds on only 1 novel bowl and 0 novel cups.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Out-of-distribution success rate is still below the in-distribution
+    training rate.</li>
+  <li>The method is purely <strong>offline imitation</strong> &mdash; it cannot
+    learn from its own failures; online learning is flagged as future work.</li>
+  <li>Better tactile-data architectures and better tactile-vision fusion are
+    explicitly called out as open directions.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Tiny-N statistics.</strong> Each task success rate is out of just
+    <em>5 evaluation rollouts</em> (10% granularity), with no seeds or
+    confidence intervals. The headline 1.7&times; and the architecture-ablation
+    gaps rest on differences of 1&ndash;2 successful trials &mdash; far weaker
+    statistical footing than the prose implies.</li>
+  <li><strong>The encoder is frozen and never fine-tuned</strong> on tactile-task
+    contact; all downstream adaptation lives in the demo buffer. Whether the play
+    representation actually <em>captures contact-state semantics</em> (vs. just
+    coarse hand-configuration) is never directly probed &mdash; the Fig 6 neighbor
+    visualizations are suggestive but not quantitative.</li>
+  <li><strong>Uncalibrated, drift-prone sensors.</strong> Skipping calibration is
+    pragmatic, but the readings "can change when strong magnets or metals are in
+    the vicinity" and suffer hysteresis &mdash; reproducibility across sensor
+    instances / sessions is untested.</li>
+  <li><strong>No language, no symbolic abstraction, no compositionality.</strong>
+    The "policy" is a flat retrieval over single tasks; there is no chaining of
+    skills and no notion of a contact <em>predicate</em>. Generalization is over
+    object pose within a box, not over task structure.</li>
+  <li>The play-data scaling curves (Fig 7) cover only two tasks and plateau by
+    20 min on the easy one &mdash; it is unclear how much play is needed as the
+    task library grows.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely on-thesis for the batch's central claim: <strong>many
+manipulation predicates live in touch, not vision.</strong> T-DEX is the cleanest
+existence proof in the corpus that the modality BLADE's visual predicate
+classifiers cannot see &mdash; contact state under self-occlusion &mdash; is both
+<em>learnable self-supervised</em> and <em>decisive</em> for task success
+(BC and NN-Image collapse precisely on the occluded tasks where touch wins).
+Relative to my own
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+BLADE auto-derives PDDL operators with visual predicate classifiers and
+diffusion-policy bodies, then composes them via bi-level planning. T-DEX is the
+<em>opposite design</em> &mdash; no symbols, no planning, no language, no
+composition; just a frozen tactile encoder + nearest-neighbor retrieval on a
+single task. The value to me is the <strong>sensing layer</strong>, not the
+control architecture: T-DEX shows a route to a tactile feature space that a
+future BLADE-style predicate classifier (e.g. <code>is_grasped</code>,
+<code>is_inserted</code>, <code>is_in_contact</code>, <code>surface_is_rough</code>)
+could be trained <em>on top of</em>, replacing the visual crop with a tactile
+embedding. The honest gaps for my line: T-DEX has no compositional abstraction
+and no language grounding &mdash; the predicate-from-touch idea is mine to build,
+not something this paper offers off the shelf. Its BYOL-on-play recipe is also a
+direct ancestor of the visuo-tactile SSL line in
+<a href="sparsh_self_supervised_touch_representations.html">Sparsh</a> and the
+contrastive variants, which formalize exactly the tactile-representation question
+T-DEX opens.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  Current dexterous robots either use high-dimensional visual data or compact
+  states estimated from them. Both suffer significantly either when the task
+  requires reasoning about contact forces, or when the fingers occlude the object
+  being manipulated. In contrast to vision, tactile sensing provides rich contact
+  information while being unaffected by occlusions.
+  <span class="quote-cite">&mdash; &sect;I, Introduction / p.1&ndash;2</span>
+</blockquote>
+
+<blockquote>
+  Tactile data collected through this play is used to train tactile encoders
+  through standard self-supervised techniques, mitigating the need for exact
+  force calibration.
+  <span class="quote-cite">&mdash; &sect;I, Introduction / p.2</span>
+</blockquote>
+
+<blockquote>
+  We find that T-DEX combines the coarse-grained localization ability of NN-Image
+  along with the fine-grained manipulation of NN-Tactile, and results in the
+  strongest results across all tasks.
+  <span class="quote-cite">&mdash; &sect;V-C / p.7</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[23] Grill et al. 2020 &mdash; BYOL (Bootstrap Your Own Latent)</strong>
+    (NeurIPS) &mdash; the SSL backbone T-DEX adapts to tactile data. Foundational
+    dependency.</li>
+  <li><strong>[53] Pari et al. 2021 &mdash; VINN (The Surprising Effectiveness of
+    Representation Learning for Visual Imitation)</strong> &mdash; the
+    nearest-neighbor imitation policy T-DEX builds on.</li>
+  <li><strong>[3] Arunachalam et al. &mdash; Holo-Dex</strong> &mdash; the
+    immersive teleoperation framework used for data collection.</li>
+  <li><strong>[4] Arunachalam et al. &mdash; Dexterous Imitation Made Easy
+    (DIME)</strong> &mdash; the NN-based dexterous imitation predecessor.</li>
+  <li><strong>[39] Lee et al. 2019 &mdash; Making Sense of Vision and Touch</strong>
+    &mdash; multimodal contact-rich representation learning; close peer.
+    (Ingested this batch &mdash; see below.)</li>
+  <li><strong>[75] Young et al. 2021 &mdash; Playful Interactions for
+    Representation Learning</strong> &mdash; the play-data-for-SSL idea T-DEX
+    extends to touch.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a>
+    &mdash; the successor question done at scale: self-supervised tactile
+    representations as a reusable foundation model; T-DEX is its proof-of-concept
+    ancestor (SSL on tactile, frozen encoder, downstream tasks).</li>
+  <li><a href="t3_transferable_tactile_transformers.html">T3 (Transferable Tactile Transformers)</a>
+    and <a href="unit_data_efficient_tactile_representation.html">UniT</a>
+    &mdash; tactile-representation-learning peers that push the same
+    "pretrain-once, reuse-everywhere" agenda T-DEX opened.</li>
+  <li><a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>
+    and <a href="mvitac_visuotactile_contrastive_pretraining.html">MViTac</a>
+    &mdash; visuo-tactile SSL (unified / contrastive) that extends T-DEX's
+    vision+touch combination from retrieval-time fusion to learned fusion.</li>
+  <li><a href="see_to_touch_tactile_dexterity_visual_incentives.html">See to Touch</a>
+    &mdash; same authors' direct follow-up on tactile dexterity, using visual
+    incentives; the closest sibling.</li>
+  <li><a href="making_sense_of_vision_and_touch.html">Making Sense of Vision and Touch</a>
+    &mdash; multimodal self-supervised vision+touch representations for
+    contact-rich tasks; the conceptual predecessor T-DEX cites ([39]).</li>
+  <li><a href="mimictouch_human_tactile_demos.html">MimicTouch</a>
+    and <a href="kinedex_tactile_kinesthetic_teaching.html">KineDex</a>
+    &mdash; tactile-driven imitation-from-demos peers; same few-demo,
+    touch-conditioned regime as T-DEX.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Grounding Physical Concepts of Objects and Events Through Dynamic Visual Reasoning</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Chen, Mao, Wu, Wong, Tenenbaum, Gan">
+<meta name="year" content="2021">
+<meta name="venue" content="ICLR 2021">
+<meta name="arxiv_id" content="2103.16564">
+<meta name="url" content="https://arxiv.org/abs/2103.16564">
+<meta name="pdf" content="../../raw/papers/dynamic_concept_learner_physical_concepts_visual_reasoning.pdf">
+<meta name="tags" content="neuro-symbolic, concept-learning, temporal-reasoning, physical-reasoning, video-understanding, state-change, representation-learning, self-supervised-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-25">
+<meta name="source_prompt" content="related-work ingest: dynamic state-change concept grounding for manipulation">
+<!-- Off-genre adaptation: this is a vision-only video-QA / neuro-symbolic concept-learning paper, NOT a robot-manipulation paper. Body keeps the standard section order but reads "Setup" through a benchmark/dataset lens rather than a hardware lens. "Why I care" is framed as adjacent/contrast vs BLADE and the dynamic-state-change idea. -->
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1>Grounding Physical Concepts of Objects and Events Through Dynamic Visual Reasoning</h1>
+<p class="meta">
+  Zhenfang Chen, Jiayuan Mao, Jiajun Wu, Kwan-Yee K. Wong, Joshua B. Tenenbaum, Chuang Gan
+  &middot; HKU / MIT CSAIL / Stanford / MIT-IBM Watson AI Lab
+  &middot; ICLR 2021
+  &middot; <a href="https://arxiv.org/abs/2103.16564">arXiv:2103.16564</a>
+  &middot; <a href="../../raw/papers/dynamic_concept_learner_physical_concepts_visual_reasoning.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> The Dynamic Concept Learner (DCL) is a unified
+neuro-symbolic framework that grounds physical <em>object</em> concepts (color,
+shape, material, moving/stationary) and <em>event</em> concepts (collision,
+entering, leaving) in raw videos purely from video&ndash;question&ndash;answer
+supervision &mdash; no ground-truth attribute, mask, or collision labels &mdash;
+by combining object tracking, a learned dynamics predictor, and a differentiable
+symbolic program executor.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Video reasoning over dynamic scenes requires jointly representing objects over
+time, modeling their temporal/causal interactions, and grounding object and event
+concepts &mdash; all to answer descriptive, explanatory, predictive, and
+counterfactual questions (e.g., on the CLEVRER benchmark). Prior modular
+neuro-symbolic VQA (e.g., NS-CL / Mao et&nbsp;al. 2019) learns mainly
+<em>static</em> concepts in single images and does not handle temporal or causal
+structure. The strongest CLEVRER model at the time, NS-DR (Yi et&nbsp;al. 2020),
+combined symbolic execution with dynamics modeling but <strong>required dense
+annotations</strong> for visual attributes, object masks, and physical events
+&mdash; impractical or extremely labor-intensive in real scenes. DCL's thesis is
+that these dense annotations are unnecessary because the concept meanings are
+already implicitly encoded in the question&ndash;answer pairs paired with each
+video.</p>
+
+<h2>Method</h2>
+<p>DCL factorizes video perception and reasoning into five modules trained jointly
+in a shared latent space (Fig 2):</p>
+<p><strong>1. Object trajectory detector.</strong> A pretrained region-proposal
+network detects object proposals per frame; proposals are linked across connective
+frames into trajectories via a connection score (Eq 1) combining detection
+confidence, IoU, and a learned distance term, solved as linear-sum assignment
+(inspired by Gkioxari &amp; Malik). Each object is represented as a sequence of
+normalized boxes.</p>
+<p><strong>2. Video feature extractor.</strong> For each object/event it extracts
+three latent features: an <em>average visual feature</em> (for static attributes),
+a <em>temporal sequence feature</em> (for dynamic attributes like <em>moving</em>
+and for unary events like enter/leave), and an <em>interactive feature</em> over
+object pairs (for <em>collision</em> prediction).</p>
+<p><strong>3. Grounding object/event concepts.</strong> Each concept (e.g.,
+<em>moving</em>, <em>collision</em>) has a learnable embedding; DCL scores whether
+an object/pair has the concept via a shifted-and-scaled cosine similarity between
+the relevant feature (mapped by a linear transform into concept space) and the
+concept embedding. Static attributes, dynamic attributes, and events are all
+quantized the same way.</p>
+<p><strong>4. Dynamics predictor (PropNet).</strong> A Propagation Network over a
+directed graph of objects (vertices = box + cropped RGB patch over a short window;
+edges = relative-coordinate relations) does multi-step message passing to predict
+future locations and RGB patches autoregressively. For <em>counterfactual</em>
+scenes, the target object's vertex and edges are removed before rollout. Predicted
+patches are pasted into predicted locations and re-fed to the feature extractor, so
+QA pairs about predicted/counterfactual scenes optimize the concept embeddings
+<strong>with no explicit collision labels</strong> &mdash; the key contrast with
+NS-DR, which trains a collision classifier on dense event labels.</p>
+<p><strong>5. Language program parser + symbolic executor.</strong> A seq2seq
+parser with attention translates each question (and each choice, separately) into a
+compositional symbolic program (filter, belong_to, counterfact, negate, etc.). A
+fully differentiable neural-symbolic executor runs the program over the latent
+features of observed and predicted scenes, representing all object states/events
+probabilistically so gradients flow back to the feature extractor and concept
+embeddings.</p>
+<p><strong>Trajectory refinement / bootstrapping.</strong> A multi-step training
+curriculum lets the modules bootstrap each other: learned static attributes (motion-
+independent) are fed back as an extra term (Eq 2&ndash;3, <code>f_appear</code>) to
+refine and disambiguate trajectories when objects are close or fast-moving; refined
+trajectories then improve the dynamics predictor and downstream reasoning.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> <a href="../../raw/papers/clevrer_collision_events_video_representation_and_reasoning.pdf">CLEVRER</a>
+    (synthetic collision-event video reasoning; descriptive / explanatory /
+    predictive / counterfactual questions). Two new benchmarks derived from CLEVRER:
+    <strong>CLEVRER-Grounding</strong> (spatio-temporal object/event localization)
+    and <strong>CLEVRER-Retrieval</strong> (expression&harr;video retrieval). Also a
+    real <strong>block-tower video dataset</strong> (Lerer et&nbsp;al. 2016; 493
+    videos) with manually synthesized QA pairs to learn the new dynamic concept
+    <em>falling</em>.</li>
+  <li><strong>Hardware / simulator:</strong> <em>not reported</em> (vision-only;
+    CLEVRER videos are simulator-rendered, no robot embodiment).</li>
+  <li><strong>Baselines:</strong> CNN+MLP, CNN+LSTM, Memory, HCRN, MAC(V)/MAC(V+),
+    TVQA+, IEP(V), TbD-net(V), and the prior SOTA NS-DR / NS-DR(NE) (Yi et&nbsp;al.
+    2020). Grounding/retrieval baselines: WSSTG and HGR. Block tower: MAC(V).</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>On CLEVRER (Table 1), DCL &mdash; trained <strong>without</strong> attribute or
+event labels &mdash; reaches state of the art on all four question types,
+notably on the harder predictive and counterfactual categories:</p>
+<table>
+  <tr><th>Method</th><th>Labels</th><th>Descriptive</th><th>Predictive (per ques.)</th><th>Counterfactual (per ques.)</th></tr>
+  <tr><td>NS-DR</td><td>Attr+Prog</td><td>88.1</td><td>68.7</td><td>42.4</td></tr>
+  <tr><td>NS-DR (NE)</td><td>Attr+Prog</td><td>85.8</td><td>54.1</td><td>42.0</td></tr>
+  <tr><td><strong>DCL (ours)</strong></td><td>Prog only</td><td><strong>90.7</strong></td><td><strong>82.0</strong></td><td><strong>46.5</strong></td></tr>
+  <tr><td>DCL-Oracle (with labels)</td><td>Attr+Prog</td><td>91.4</td><td>82.1</td><td>46.9</td></tr>
+</table>
+<p>Gains over NS-DR are largest on predictive (+13.3 per-question) and
+counterfactual questions &mdash; the categories that most depend on the learned
+dynamics model. DCL also recognizes concepts well without concept labels (Table 2):
+static attributes 99+%, events (in/out/collision) 99.2 / 98.9 / 96.9%, with
+dynamic attributes slightly lower (moving 89.7, stationary 93.3) since slow-moving
+objects are rare in training. On the new tasks, DCL transfers <strong>without
+further training</strong>: CLEVRER-Grounding spatial accuracy 91.9 (obj) / 88.3
+(col) vs WSSTG's 34.4 / 10.3 (Table 3), and CLEVRER-Retrieval text-to-video mAP far
+above WSSTG and HGR (Table 4). On the real block-tower data it learns the new
+dynamic concept <em>falling</em> (91.8% accuracy) and beats MAC(V) on QA,
+especially counting questions (Tables 5&ndash;6).</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Needs a stronger long-term dynamics model to better handle some
+    counterfactual questions (the predictor is the bottleneck on the hardest
+    queries).</li>
+  <li>Extending beyond synthetic CLEVRER-style scenes to more general videos and to
+    human-centric action concepts is left as future work.</li>
+  <li>Dynamic attributes are harder to ground than static ones: objects that are
+    missing for most frames and move only slowly get misclassified as
+    <em>stationary</em>.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The "concepts" are entirely <strong>vision-grounded</strong> &mdash; collision
+    is read off RGB trajectories and an interactive feature; there is no
+    contact/force/audio signal, exactly where a real collision or boil event is most
+    saliently sensed.</li>
+  <li>Events are treated as instantaneous, atemporal predicates over a trajectory
+    (collision happened / object is moving). There is no notion of a continuous
+    <em>state transition</em> being monitored as it unfolds, nor a precondition/effect
+    structure &mdash; the symbolic layer is a query language, not a planning
+    abstraction.</li>
+  <li>Everything is passive recognition / question answering. The dynamics predictor
+    enables counterfactual "what if removed" rollouts, but nothing closes a loop onto
+    action or correction; DCL never decides to <em>do</em> anything based on a
+    grounded concept.</li>
+  <li>The grounding-from-QA-only result is strong evidence that dense event labels
+    are avoidable &mdash; but it leans on a clean synthetic domain (CLEVR objects,
+    known program space). How much survives real clutter, occlusion, and noisier
+    language is the open question the block-tower experiment only partially probes.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p><strong>Adjacent / contrast paper.</strong> DCL is the closest work in this batch
+on the <em>temporal-concept</em> axis: it genuinely grounds dynamic, change-oriented
+physical event concepts (<em>collision</em>, <em>moving</em>, enter/leave, and even a
+real <em>falling</em> concept) in video, from weak language supervision, inside a
+neuro-symbolic framework. That is exactly the kind of temporal/causal concept
+grounding the dynamic-state-change idea needs.</p>
+<p>But it covers only one axis of that idea and misses the rest:</p>
+<ul>
+  <li><strong>Temporal/dynamic concepts: yes.</strong> Collision and falling are
+    genuine event/state-transition concepts, grounded in trajectory dynamics rather
+    than single frames &mdash; the part most papers skip.</li>
+  <li><strong>Multimodal non-visual sensing: no.</strong> Pure vision. None of the
+    tactile / audio / thermal / force channels where "hot enough now", "boiling", or
+    "became slippery" actually live. This is the central gap relative to the idea.</li>
+  <li><strong>Closed-loop correction: no.</strong> Passive video-QA. No replanning,
+    no failure detection, no action &mdash; contrast with
+    <a href="reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>
+    and <a href="inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>.</li>
+  <li><strong>Symbolic predicates vs query programs.</strong> DCL's symbolic layer is
+    a differentiable question-program executor, not a PDDL-style abstraction with
+    preconditions/effects. So it grounds <em>what is true</em> but not <em>what an
+    action changes</em> &mdash; the precise complement to
+    <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+    operator structure.</li>
+</ul>
+<p><strong>Lineage tie.</strong> Co-authored by Jiayuan Mao and a direct descendant
+of her <a href="nscl_neuro_symbolic_concept_learner.html">NS-CL</a> (Neuro-Symbolic
+Concept Learner): DCL extends NS-CL's static-image concept grounding to dynamic
+video events. This is the same Mao concept-learning lineage that frames BLADE's and
+PARL's predicate-grounding thesis (BLADE-adjacent via the shared neuro-symbolic
+concept-learner ancestry). If BLADE wants its dynamic-state predicates grounded in
+weak supervision rather than per-frame labels, DCL is the vision-only proof of
+concept to point at &mdash; and the thing to push past by adding non-visual sensing
+and a precondition/effect (not query) symbolic layer.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We argue that such dense explicit video annotations are unnecessary for video
+  reasoning, since they are naturally encoded in the question answer pairs associated
+  with the videos.
+  <span class="quote-cite">&mdash; &sect;1, Introduction</span>
+</blockquote>
+<blockquote>
+  DCL achieves state-of-the-art performance on CLEVRER &hellip; even without
+  ground-truth attributes and collision labels from simulations for training.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  These tasks are of great importance in practical applications such as industrial
+  robot manipulation which requires AI systems with human-like physical common sense.
+  <span class="quote-cite">&mdash; &sect;2, Related Work</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that could be ingested next:</p>
+<ul>
+  <li><strong>Yi et&nbsp;al. 2020 &mdash; CLEVRER</strong> &mdash; the benchmark and
+    the NS-DR oracle DCL beats; the dense-label baseline DCL argues against.</li>
+  <li><strong>Li et&nbsp;al. 2019b &mdash; PropNet (Propagation Networks)</strong>
+    &mdash; the dynamics-prediction backbone DCL adopts for future/counterfactual
+    rollouts.</li>
+  <li><strong>Lerer et&nbsp;al. 2016 &mdash; block-tower physical intuition</strong>
+    &mdash; the real-video dataset DCL adapts to learn <em>falling</em>.</li>
+</ul>
+<p>Related already-ingested work:</p>
+<ul>
+  <li><a href="nscl_neuro_symbolic_concept_learner.html">NS-CL (Mao et&nbsp;al. ICLR 2019)</a>
+    &mdash; the static-image concept-learner DCL extends to dynamic video events;
+    same author, direct ancestor.</li>
+  <li><a href="neuro_symbolic_concepts_mao_2025.html">Neuro-Symbolic Concepts (Mao 2025)</a>
+    &mdash; the concept-centric thesis this line of work argues for.</li>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    and <a href="learning_planning_abstractions_from_language.html">PARL</a>
+    &mdash; the manipulation counterpart: grounded predicates with
+    precondition/effect structure for planning, vs DCL's grounded query concepts for
+    QA.</li>
+  <li><a href="look_for_the_change_object_states_state_modifying_actions.html">Look for the Change</a>
+    &mdash; the other temporal-concept (object states + state-modifying actions)
+    paper in this batch; complementary framing on real video.</li>
+  <li><a href="reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>
+    and <a href="inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>
+    &mdash; the closed-loop-correction axis DCL lacks.</li>
+</ul>
+
+</body>
+</html>

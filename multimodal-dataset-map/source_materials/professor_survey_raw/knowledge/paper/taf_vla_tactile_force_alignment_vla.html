@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Tactile-Force Alignment in Vision-Language-Action Models for Force-aware Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Huang, Lin, Li, Li, Li, Jiang, Xiao, Jiao">
+<meta name="year" content="2026">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2601.20321">
+<meta name="url" content="https://arxiv.org/abs/2601.20321">
+<meta name="pdf" content="../../raw/papers/taf_vla_tactile_force_alignment_vla.pdf">
+<meta name="tags" content="vision-language-action, vla, tactile-sensing, force-torque, force-control, contact-rich, visuo-tactile, vision-based-tactile, flow-matching, multimodal-dataset">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Tactile-Force Alignment in Vision-Language-Action Models for Force-aware Manipulation</h1>
+<p class="meta">
+  Yuzhe Huang*, Pei Lin*, Wanlin Li*, Daohan Li, Jiajun Li, Jiaming Jiang, Chenxi Xiao&dagger;, Ziyuan Jiao&dagger;
+  &middot; Beihang University / ShanghaiTech / BIGAI / HKU
+  &middot; 2026
+  &middot; <a href="https://arxiv.org/abs/2601.20321">arXiv:2601.20321</a>
+  &middot; <a href="../../raw/papers/taf_vla_tactile_force_alignment_vla.pdf">PDF</a>
+  &middot; <a href="https://peilin-666.github.io/projects/TaF-VLA/">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> TaF-VLA argues that feeding tactile images into a VLA as
+"more vision" is the wrong move &mdash; tactile observations should be grounded in the
+<em>physical force quantities</em> they represent &mdash; so it pretrains a contrastive
+adapter that aligns sequential vision-based-tactile (VBTS) images to 6-axis force/torque
+and matrix-pressure codes, then injects those force-aligned tokens into a flow-matching VLA,
+beating a tactile-vision-aligned baseline by ~22% on contact-rich tasks.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>VLAs are visually fluent but "force-blind": RGB cameras suffer occlusion and have no
+direct read on interaction forces, friction, or compliance, which are exactly what govern
+fragile-object handling, precise insertion, and tool use. The mainstream fix &mdash; treat
+vision-based tactile sensor (VBTS) frames as extra <em>visual</em> tokens aligned to scene
+images via a ViT (the authors call this "tactile-vision alignment") &mdash; aligns tactile
+data with <em>visual appearance</em> rather than <em>physical dynamics</em>. The paper's
+thesis is a paradigm shift: <em>tactile representations must be grounded in the physical
+quantities they represent</em>, i.e. tactile-<strong>force</strong> alignment, because a
+single static tactile frame can't disambiguate a stable grasp from incipient slip &mdash;
+that distinction is history-dependent and lives in the force trajectory. Three obstacles
+motivate the design (Q1) tactile&ndash;force paired data is scarce; (Q2) tactile is
+high-dimensional/geometric while force is low-dimensional/dynamic, so naive force regression
+generalizes poorly across sensors; (Q3) how to fuse the aligned representation into a VLA
+backbone without modality collapse.</p>
+
+<h2>Method</h2>
+<p>Three stages (Fig 1, Fig 3): a tactile&ndash;force data device, a contrastive
+<strong>TaF-Adapter</strong>, and integration into a flow-matching VLA.</p>
+
+<p><strong>1. TaF-Device &amp; TaF-Dataset (Q1).</strong> A 3D-printed
+(25&times;20&times;45 cm), Dynamixel-actuated rig with a Stewart-platform lower stage and a
+yaw/Z upper stage applies <em>identical</em> forces simultaneously to a VBTS and to a
+co-located ATI Axia80 6-axis F/T sensor + 12&times;12 piezoresistive matrix-force array, via
+mechanically coupled motor-gear DoF pairs that enforce kinematic coherence. A
+"press-and-perturb" protocol sweeps Z-pressure while driving roll/pitch/yaw to span static
+indentation through incipient slip. With swappable indenters (&gt;60 distinct: 40 rigid,
+20 deformable) and 6 different VBTS units (4 custom-built + 2 GelSight Mini), it yields
+~100K synchronized frames/hour and a final <strong>TaF-Dataset of &gt;10M synchronized
+visuotactile / 6-axis F/T / matrix-force tuples</strong>.</p>
+
+<p><strong>2. TaF-Adapter: tactile-force alignment (Q2).</strong> Raw force at step <code>i</code>
+is a tuple <code>F<sub>i</sub> = (F'<sub>i</sub>, F''<sub>i</sub>)</code> with
+<code>F' &isin; R<sup>12&times;12</sup></code> (pressure map) and <code>F'' &isin; R<sup>6</sup></code>
+(global wrench). Over a sliding window of length <code>N=5</code>, two MLP encoders project the
+pressure and wrench sequences to latents <code>z'</code>, <code>z''</code>, each
+<strong>vector-quantized against its own separate codebook</strong> (VQ-VAE), and concatenated
+into a force code <code>c* = concat((c')*, (c'')*)</code>. On the tactile side, per-frame ViT
+features over a window are aggregated by a <strong>causal Transformer</strong> with a learnable
+summary token <code>s</code> whose output <code>z*</code> is the holistic tactile embedding.
+A symmetric InfoNCE loss <code>L<sub>NCE</sub></code> pulls <code>z*</code> toward its paired
+force code <code>c*</code> and away from force codes at other timesteps; total loss adds
+quantization and reconstruction terms (<code>L = L<sub>NCE</sub> + &lambda;<sub>1</sub>L<sub>quant</sub> + &lambda;<sub>2</sub>L<sub>recon</sub></code>).
+The decoupled dual codebook, the temporal window, and the discrete quantization are the three
+load-bearing choices &mdash; quantization suppresses high-frequency noise and hardware-specific
+artifacts, and reconstruction prevents codebook collapse.</p>
+
+<p><strong>3. TaF-VLA policy integration (Q3).</strong> The frozen TaF-Adapter is implanted into
+the <code>&pi;<sub>0.5</sub></code> flow-matching backbone. A VLM encodes a third-person image,
+a wrist image, and the instruction into <code>&varphi;</code>; the adapter extracts a local
+tactile latent <code>z<sup>tac</sup></code> from a window of VBTS frames; both condition the
+flow-matching action expert <code>L<sub>FM</sub></code> (velocity field over noised actions
+<code>a<sub>t</sub><sup>&tau;</sup></code>, integrated from noise at inference). Crucially, the
+training demos use <strong>force-aware language instructions</strong> ("gently secure", "lift
+softly", "light controlled release") generated by an LLM via physics-informed
+chain-of-thought (Fig 9, Fig 10), supplying the directives that standard semantic-only datasets
+omit.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> TaF-Dataset (&gt;10M synchronized
+    tactile&ndash;force frames, 6 VBTS units, &gt;60 indenters) for adapter pretraining;
+    a curated force-aware manipulation dataset of &gt;10,000 real-world episodes across
+    20+ contact-rich tasks (master-puppet teleop, FR3-isomorphic exoskeleton) with
+    LLM-generated force-aware instructions for policy fine-tuning. Evaluation on a suite of
+    8 real-world force-critical tasks (Tube Insertion, Tweezer Weight Pick, Power Bank
+    Extraction, Whiteboard Erasing, Jelly Slicing, Heavy Part Lifting, Tongs Food Pick,
+    Chocolate Grasping); Table I reports 7.</li>
+  <li><strong>Hardware / simulator:</strong> Real robot only (no simulator). Franka Research 3
+    arm via a mechanically isomorphic exoskeleton teleop interface; VBTS = 4 custom GelSight-style
+    sensors (4&times;4 / 7&times;7 / 9&times;9 marker densities) + 2 GelSight Mini, at 30 Hz;
+    ATI Axia80 F/T + 12&times;12 piezoresistive matrix array. Inference on NVIDIA RTX 4090;
+    data device on a separate 3D-printed rig.</li>
+  <li><strong>Baselines:</strong> ACT (RGB + proprioception); FreeTacMan (tactile-vision
+    alignment on ACT, the key foil); ACT + TaF-Adapter; Diffusion Policy (DP); DP + TaF-Adapter;
+    <code>&pi;<sub>0.5</sub></code> (vision-only VLA backbone fine-tuned on the same data).</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (training cost / GPU-hours not given;
+    only that inference runs on a single RTX 4090).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: TaF-VLA averages <strong>64.8%</strong> success across 7 tasks vs 37.1% for
+the vision-only <code>&pi;<sub>0.5</sub></code> backbone, 42.8% for FreeTacMan, and 47.6%
+for the best ACT+adapter variant &mdash; roughly doubling vision-only and beating the
+tactile-vision baseline by ~22 points (Table I).</p>
+
+<table>
+  <tr><th>Task</th><th>ACT</th><th>FreeTacMan</th><th>+TaF-Adapt (ACT)</th><th>DP</th><th>+TaF-Adapt (DP)</th><th>&pi;<sub>0.5</sub></th><th>TaF-VLA</th></tr>
+  <tr><td>Tube Insertion</td><td>26.7</td><td>53.3</td><td>46.7</td><td>33.3</td><td>46.7</td><td>53.3</td><td><strong>66.7</strong></td></tr>
+  <tr><td>Tweezer Weight Pick</td><td>0.0</td><td>6.7</td><td>13.3</td><td>0.0</td><td>6.7</td><td>0.0</td><td><strong>33.3</strong></td></tr>
+  <tr><td>Power Bank Extraction</td><td>26.7</td><td>33.3</td><td>53.3</td><td>20.0</td><td>40.0</td><td>33.3</td><td><strong>66.7</strong></td></tr>
+  <tr><td>Whiteboard Erasing</td><td>13.3</td><td>26.7</td><td>33.3</td><td>20.0</td><td>33.3</td><td>33.3</td><td><strong>60.0</strong></td></tr>
+  <tr><td>Jelly Slicing</td><td>13.3</td><td>26.7</td><td>26.7</td><td>13.3</td><td>33.3</td><td>13.3</td><td><strong>53.3</strong></td></tr>
+  <tr><td>Heavy Part Lifting</td><td>40.0</td><td>66.7</td><td>73.3</td><td>46.7</td><td>66.7</td><td>53.3</td><td><strong>80.0</strong></td></tr>
+  <tr><td>Chocolate Grasping</td><td>66.7</td><td>86.7</td><td>86.7</td><td>73.3</td><td>86.7</td><td>73.3</td><td><strong>93.3</strong></td></tr>
+  <tr><td><strong>Average</strong></td><td>26.7</td><td>42.8</td><td>47.6</td><td>29.5</td><td>44.7</td><td>37.1</td><td><strong>64.8</strong></td></tr>
+</table>
+
+<p>Other findings:</p>
+<ul>
+  <li><strong>Plug-and-play.</strong> Bolting the adapter onto ACT and DP improves both
+    consistently (absolute +6.7% to +33.3%); ACT+TaF-Adapter even surpasses FreeTacMan on the
+    same backbone (+20.0% on Power Bank Extraction), arguing tactile-<em>force</em> alignment
+    beats tactile-<em>vision</em> alignment independent of backbone.</li>
+  <li><strong>Cross-sensor robustness (Table II).</strong> On an <em>unseen</em> VBTS,
+    TaF-Adapter holds ~60.3% mean while an explicit force-prediction (regression) baseline
+    collapses to 30.0%; on an unseen GelSight, 53.3% vs 23.3%. On seen sensors the adapter still
+    edges regression (75.0% vs 66.7% on Custom-built A). Latent contrastive alignment transfers;
+    pixel-to-force regression does not.</li>
+  <li><strong>Data efficiency (Fig 7).</strong> TaF-VLA at 100 demos matches vision-only
+    <code>&pi;<sub>0.5</sub></code> at 200 demos on Tongs Food Pick / Power Bank / Chocolate
+    Grasping &mdash; the force-aligned codebook acts as a structured physical prior, roughly
+    halving demo requirements.</li>
+  <li><strong>Where it doesn't win much:</strong> on geometry-dominated Tube Insertion,
+    vision-only baselines already do well (53.3%) and TaF-VLA's margin is small; on Chocolate
+    Grasping (lightweight, gentle) vision-only is competitive &mdash; force sensing is, by the
+    authors' own framing, task-dependent.</li>
+  <li><strong>Ablations (Table III).</strong> Removing history (<code>N=1</code>), shrinking the
+    codebook, merging the two codebooks into one shared codebook, or corrupting force labels with
+    noise each drops all three benchmark tasks sharply (e.g. Whiteboard Erasing 60.0 &rarr; 26.7
+    with no history, &rarr; 13.3 with a shared codebook). Temporal context + decoupled discrete
+    codebooks + clean force data are each necessary.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Most failures occur in the <em>pre-contact</em> phase &mdash; an "air gap" where the
+    manipulator stops millimeters short and never triggers the tactile&ndash;force loop
+    (esp. Tweezer Weight Pick); some failures are insufficient applied force (Fig 8).</li>
+  <li>Receding-horizon action output limits closed-loop correction frequency, hurting
+    high-frequency dynamic events (force spikes in Jelly Slicing); faster inference architectures
+    are needed.</li>
+  <li>Cross-sensor generalization is only shown across <em>visually-similar</em> VBTS units;
+    transfer to capacitive / magnetic / piezoresistive (non-visual) sensors is untested.</li>
+  <li>The 3D-printed, consumer-grade device injects fabrication-induced biases into ground-truth
+    force labels; direct-drive / CNC hardware could improve fidelity.</li>
+  <li>The adapter feeds the action expert only; humans also use touch to <em>update plans</em>
+    (e.g. "this is slippery, replan") &mdash; a fully unified vision-tactile-language-action
+    backbone is left to future (and would need data scaling beyond current limits).</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Success rates are count-of-15 (15 trials/task), so each cell moves in ~6.7%
+    quanta with no variance reported.</strong> Several headline gaps (e.g. Jelly Slicing 53.3 vs
+    33.3) are ~3 successful trials; no error bars or seeds means statistical confidence is weak
+    relative to BLADE's seed-averaged CALVIN table.</li>
+  <li>The central "tactile-force &gt; tactile-vision" claim rests almost entirely on the
+    FreeTacMan comparison &mdash; a single tactile-vision baseline reimplemented on ACT by these
+    authors. No independent tactile-vision VLA (e.g. an RGB-token-aligned <code>&pi;</code>) is
+    tested, so the comparison isn't fully apples-to-apples at the VLA tier.</li>
+  <li>The TaF-Dataset and the force-aware-instruction LLM annotation are arguably the biggest
+    contributions, but they're entangled: TaF-VLA gets <em>both</em> the force-aligned adapter
+    <em>and</em> force-aware language, while <code>&pi;<sub>0.5</sub></code> presumably gets
+    neither force tokens nor (clearly) the force-aware instructions &mdash; the ablations don't
+    isolate how much of the gain is the language rewriting vs the tactile tokens.</li>
+  <li>"&gt;10M frames" is impressive but it's a <em>tactile-force alignment</em> corpus on
+    indenters, not manipulation data; whether 10M indenter contacts is the right scale for the
+    adapter (vs overkill or insufficient diversity) is asserted, not ablated.</li>
+  <li>Force is treated as ground truth from the F/T sensor, yet the device couples sensor and
+    indenter mechanically &mdash; the "identical force" assumption depends on the compliant Z
+    element and gear coherence holding exactly; any drift would silently corrupt the alignment
+    target.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This paper is a direct, well-argued instance of the batch thesis that
+<strong>many manipulation predicates are not visually evaluable &mdash; they live in
+touch/force</strong>. Where <a href="../../raw/papers/learning_compositional_behaviors_from_demonstration_and_language.pdf">BLADE</a>
+learns <em>visual</em> predicate classifiers (<code>turned-on(faucet)</code>) and pushes all
+continuous force/parameter content down into the diffusion-policy <code>body</code>, TaF-VLA
+is essentially building the sensory substrate BLADE's "Why I care" flagged as a gap:
+<code>is_grasped</code>, <code>is_screwed_tight</code>, <code>grasp_is_stable_vs_slipping</code>
+are exactly the history-dependent, force-grounded states TaF-Adapter's contrastive codebook is
+designed to represent. The "static frame can't distinguish stable grasp from incipient slip"
+argument is the force-domain echo of BLADE's "every-frame vs first/last-frame" insight &mdash;
+both say the discriminative signal is in the <em>temporal trajectory</em>, not a snapshot.</p>
+<p>Two threads worth tracking forward into my own work: (1) <strong>force-aware language</strong>
+&mdash; the LLM rewriting of instructions into "gently secure / lift softly" is a cheap way to
+inject force-modulation directives, and it's a natural symbolic interface; one could imagine
+BLADE-style <em>force predicates</em> (e.g. <code>compliant-contact</code>,
+<code>grip-secure</code>) being learned exactly the way TaF-Adapter learns its codebook, then
+exposed to a planner. (2) The <strong>discrete force codebook as a predicate vocabulary</strong>
+&mdash; a quantized, decoupled latent over force/pressure is a stone's throw from a learned
+symbolic abstraction; the gap between "VQ codebook entry" and "planning predicate" is the same
+gap UniPred/InterPreT-style predicate-invention work is closing on the visual side. This is the
+force-grounded analogue of predicate invention. The paper is on-theme and useful as a sensory
+front-end for the long-horizon / planning-abstraction line, not a planning paper itself.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We argue that to be effective, tactile representations must be grounded in the physical
+  quantities they represent. This motivates us to propose a paradigm shift from tactile-vision
+  alignment to tactile-force alignment.
+  <span class="quote-cite">&mdash; &sect;I Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  Treating tactile data solely as "more vision" fails to extract the contact force information
+  critical for force-aware manipulation tasks.
+  <span class="quote-cite">&mdash; &sect;I Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  A single static frame cannot accurately represent dynamic force interactions. To capture such
+  dynamic forces, the TaF-Adapter aggregates historical observations to improve expressivity.
+  <span class="quote-cite">&mdash; &sect;II-D / p.4</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>FreeTacMan</strong> (Wu et al. 2025, arXiv:2506.01941) &mdash; the tactile-vision
+    alignment baseline TaF-VLA is positioned against; the direct foil for the central claim.</li>
+  <li><strong>&pi;<sub>0.5</sub></strong> (Physical Intelligence 2025, arXiv:2504.16054) &mdash;
+    the flow-matching VLA backbone TaF-VLA is built on; foundational dependency.</li>
+  <li><strong>ForceVLA</strong> (Yu et al. 2025, arXiv:2505.22159) &mdash; force-aware MoE VLA;
+    closest sibling in the C cluster (already a batch paper, see below).</li>
+  <li><strong>Octopi</strong> (Yu, Lin, Soh, RSS 2024) &mdash; tactile-language property reasoning;
+    a batch paper, cited here as tactile-LM context.</li>
+  <li><strong>Neural Discrete Representation Learning / VQ-VAE</strong> (van den Oord et al.
+    NeurIPS 2017) &mdash; the quantization machinery the TaF-Adapter codebooks rest on.</li>
+</ul>
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a> &mdash; nearest peer:
+    also injects 6-axis F/T into a VLA for contact-rich tasks, but via an explicit force-aware
+    MoE rather than a contrastive tactile-force codebook; clean architectural contrast.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a> &mdash; tactile
+    tokens for physical-knowledge generalization in a VLA; same C-cluster goal, different fusion.</li>
+  <li><a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a> and
+    <a href="vla_touch_dual_level_tactile_feedback.html">VLA-Touch</a> &mdash; other tactile/force
+    VLA policies; comparison points for how to wire touch into the language-action stream.</li>
+  <li><a href="favla_force_adaptive_fast_slow_vla.html">FAVLA</a> &mdash; force-adaptive fast/slow
+    VLA; relevant to TaF-VLA's stated inference-frequency limitation.</li>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">FuSe (Beyond Sight)</a>
+    &mdash; fuses heterogeneous sensors with language; the multisensory-VLA superset of TaF-VLA's
+    vision+force+language fusion.</li>
+  <li><a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive Diffusion Policy</a>
+    and <a href="tactile_conditioned_diffusion_policy_force_aware.html">Tactile-Conditioned
+    Diffusion Policy</a> &mdash; the DP-side analogues; TaF-VLA's DP+TaF-Adapter variant is the
+    bridge to this F-cluster line.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a> and
+    <a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a> &mdash; tactile
+    representation/foundation models; alternative pretrained tactile encoders to the TaF-Adapter.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation
+    Models (survey)</a> &mdash; the survey framing the whole force-aware-VLA push TaF-VLA sits in.</li>
+</ul>
+
+</body>
+</html>

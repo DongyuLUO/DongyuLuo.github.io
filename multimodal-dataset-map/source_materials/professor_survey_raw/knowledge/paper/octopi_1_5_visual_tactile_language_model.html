@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Demonstrating the Octopi-1.5 Visual-Tactile-Language Model</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Yu, Lin, Soh">
+<meta name="year" content="2025">
+<meta name="venue" content="RSS 2025 (Demonstration)">
+<meta name="arxiv_id" content="2507.09985">
+<meta name="url" content="https://arxiv.org/abs/2507.09985">
+<meta name="pdf" content="../../raw/papers/octopi_1_5_visual_tactile_language_model.pdf">
+<meta name="tags" content="tactile-language-model, visuo-tactile, retrieval-augmented, touch-language, gelsight, material-recognition, foundation-models, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Demonstrating the Octopi-1.5 Visual-Tactile-Language Model</h1>
+<p class="meta">
+  Samson Yu, Kelvin Lin, Harold Soh
+  &middot; National University of Singapore (Dept. of Computer Science / NUS Smart Systems Institute)
+  &middot; RSS 2025 (Demonstration track)
+  &middot; <a href="https://arxiv.org/abs/2507.09985">arXiv:2507.09985</a>
+  &middot; <a href="../../raw/papers/octopi_1_5_visual_tactile_language_model.pdf">PDF</a>
+  &middot; <a href="https://github.com/clear-nus/octopi-1.5">code</a>
+</p>
+
+<p><strong>One-liner.</strong> Octopi-1.5 is a Qwen2-VL-7B visual-tactile-language
+model that turns GelSight tactile-video frames into tokens, reasons about object
+properties (hardness, roughness, texture) in language, and adds a simple
+retrieval-augmented generation (RAG) module so it can recognize <em>unseen</em>
+objects on-the-fly &mdash; demonstrated live through a handheld UMI-style "Tactile
+Manipulation Interface" gripper, no robot required.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Touch carries object properties (softness, deformability, surface texture,
+hardness) that vision can't read, and matters most exactly when vision is occluded
+(e.g., an object grasped inside a closed hand). Recent visual-tactile-language
+models (VTLMs) like the authors' own <a href="../../raw/papers/octopi_object_property_reasoning_tactile_language.pdf">Octopi</a>,
+<a href="../../raw/papers/touch_vision_language_dataset_multimodal_alignment.pdf">TVL</a>,
+and <a href="../../raw/papers/binding_touch_to_everything_unitouch.pdf">UniTouch</a>
+fuse tactile, visual and language modalities, but they (a) are trained on limited
+data, (b) treat objects as single-part wholes, and (c) cannot incorporate new
+objects without retraining. This demonstration paper presents an improved model
+that processes tactile signals from multiple object <em>parts</em> and uses RAG
+to both boost performance and learn new tactile-object pairings at inference time.</p>
+
+<h2>Method</h2>
+<p>Octopi-1.5 has three pieces: a fine-tuned VLM backbone, a tactile encoder, and a
+retrieval module (architecture in Fig 2A).</p>
+
+<p><strong>Backbone.</strong> The model is built on <code>Qwen2-VL 7B</code>, an
+open-source VLM (the previous Octopi used Llama). Word, vision, and tactile inputs
+are each turned into tokens and processed by the decoder transformer.</p>
+
+<p><strong>Tactile encoder.</strong> Tactile frames from a GelSight Mini sensor are
+translated into tokens by a fine-tuned <code>CLIP (L/14)</code> module augmented
+with a projection layer. To save compute, only the top-10 <em>salient</em> frames
+are processed &mdash; selected by a heuristic that picks the frames with the largest
+differences from their preceding frame (i.e., the moments of greatest tactile
+change). The CLIP module is pre-trained with two heads (Fig 2B): a
+<strong>contrastive</strong> loss (distinguishing tactile inputs of the same
+object/part &mdash; positive class &mdash; from other objects/parts; positive and
+negative classes sampled from the same GelSight pad type, marker or markerless, for
+consistency) and a <strong>regression</strong> loss predicting human-annotated
+hardness and roughness scores. Annotators score hardness and roughness on a 0/5/10
+scale with anchor examples (Table II: cotton ball / foam mattress / rock for
+hardness; ice / jeans / toothbrush bristles for roughness).</p>
+
+<p><strong>Two-stage training.</strong> First the CLIP module inside the tactile
+encoder is trained (30 epochs, best encoder chosen on validation); then the CLIP
+module is frozen and the projection layers are trained alongside the decoder via
+end-to-end fine-tuning. Decoder training uses <strong>Visual Prompt Tuning (VPT)</strong>
+on <em>describe-and-rank</em> tasks (Fig 3): the model is asked to describe and rank
+multiple parts of an object (and multiple objects) in decreasing hardness/roughness
+&mdash; this multi-part supervision is what lets Octopi-1.5 handle objects with
+distinct parts (e.g., a hairbrush handle vs. its bristles), unlike its predecessor.</p>
+
+<p><strong>RAG module.</strong> A deliberately simple text-retrieval scheme. For a
+new set of salient tactile images, compute their average embedding via the tactile
+encoder, do a cosine-similarity search over an existing dataset of tactile
+embeddings to find the top-5 most similar objects, aggregate unique objects ranked
+by number of retrieved samples, and append their labels + tactile descriptions to
+the prompt as a prioritized list of matches (example in Fig 4, augmentation shown
+in blue). Crucially this database can be <em>extended on-the-fly</em> ("teaching"):
+new object samples are added to the database without retraining the VLTM, enabling
+new-object recognition at inference time.</p>
+
+<p><strong>Tactile Manipulation Interface (TMI).</strong> A modified
+<a href="../../raw/papers/beyond_sight_fuse_heterogeneous_sensors_language.pdf">UMI</a>-style
+(Universal Manipulation Interface) handheld gripper (Fig 5) with one finger carrying
+a GelSight Mini (high-res optical tactile imaging) and the other a TAC-02
+piezoresistive sensor (64 taxels, lower resolution but 1 kHz sampling, captures
+static and dynamic pressure directly). The demo runs Octopi-1.5 on a remote
+workstation; users interact through a chat interface, grasping objects with the TMI
+to feed tactile data (no visual input during grasping).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Training data (Table I) combines
+    PhysiCLeAR-Plain (100 objects, 2689 tactile videos), PhysiCLeAR-Dotted (68
+    objects, 1939 videos), Hardness (210 objects, 1860 videos), and ObjectFolder-Real
+    (100 objects, 3550 videos) &mdash; an expanded PhysiCLeAR including both marker and
+    markerless GelSight pads, plus hardness [15] and
+    <a href="../../raw/papers/objectfolder_benchmark_neural_real.pdf">ObjectFolder</a> [13]
+    datasets. Demo evaluation uses three object categories: balls (baseball, plush ball,
+    tennis ball), fruits (apple, partially-ripe kiwi, orange), and completely unseen
+    objects (hairbrush bristles, hairbrush handle, microfiber cloth).</li>
+  <li><strong>Hardware / simulator:</strong> GelSight Mini (optical) + TAC-02
+    (piezoresistive, 64 taxels, 1 kHz) tactile sensors mounted on a UMI-derived TMI
+    handheld gripper; GoPro camera for vision; laptop + remote workstation/server at
+    NUS. No robot &mdash; this is a human-held tactile interface. Portable, assembled
+    in under 15 minutes.</li>
+  <li><strong>Baselines:</strong> Encoder-1.5 (non-VLM baseline using cosine
+    similarity of tactile embeddings only); Octopi-1 (7B); +-Octopi-1 (13B);
+    Octopi-1.5 (8B) without RAG; Octopi-1.5 (8B) with RAG (and with teaching).</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (CLIP module trained 30 epochs;
+    full training-compute figures not given).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: on the Guessing-Game object-identification task (Table III, accuracy %,
+averaged over 25 ball samples / 26 fruit samples / 41 unseen samples), RAG +
+teaching is decisive.</p>
+
+<table>
+  <tr><th>Method</th><th>RAG</th><th>Balls</th><th>Fruits</th><th>Unseen</th><th>Unseen (teaching)</th></tr>
+  <tr><td>Encoder-1.5</td><td>&ndash;</td><td>80.00</td><td>100.00</td><td>N/A</td><td>89.02</td></tr>
+  <tr><td>Octopi-1 (7B)</td><td>No</td><td>44.00</td><td>42.31</td><td>43.90</td><td>N/A</td></tr>
+  <tr><td>+-Octopi-1 (13B)</td><td>No</td><td>48.00</td><td>34.62</td><td>53.66</td><td>N/A</td></tr>
+  <tr><td>Octopi-1.5 (8B)</td><td>No</td><td>56.00</td><td>57.69</td><td>41.46</td><td>N/A</td></tr>
+  <tr><td><strong>Octopi-1.5 (8B)</strong></td><td><strong>Yes</strong></td><td><strong>96.00</strong></td><td><strong>100.00</strong></td><td><strong>73.17</strong></td><td><strong>95.12</strong></td></tr>
+</table>
+
+<ul>
+  <li>Octopi-1.5 (no RAG) already beats both Octopi-1 variants on balls (56 vs 44/48)
+    and fruits (57.69 vs 42.31/34.62), though it slightly trails the 13B Octopi-1 on
+    unseen objects (41.46 vs 53.66) &mdash; a place it <em>loses</em> without RAG.</li>
+  <li>Adding RAG lifts seen-object accuracy to 96&ndash;100% and unseen to 73.17%;
+    enabling teaching (adding samples to the DB) pushes unseen to 95.12%.</li>
+  <li>The non-VLM Encoder-1.5 baseline is strong on familiar objects (80% balls,
+    100% fruits) but offers no out-of-the-box handling of unseen items without
+    database updates &mdash; the VLM's value is commonsense reasoning + on-the-fly
+    learning, not raw embedding matching.</li>
+  <li>Sorting task: Octopi-1.5 sorts balls (100%) and fruits (93.18%) by hardness
+    well but struggles on unseen objects (43.33%); sorting by roughness "remains
+    error-prone."</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Work-in-progress; general improvements needed on several tasks (e.g., sorting
+    by roughness remains error-prone). Larger base LLMs might help but cost compute.</li>
+  <li>RAG is based <em>solely on text retrieval</em>; retrieving tactile <em>embeddings</em>
+    directly may help but it's unclear what information is best to retrieve cheaply.</li>
+  <li>Octopi-1.5 only outputs text tokens &mdash; no direct link to manipulation
+    actions. A Vision-Tactile-Language-Action (VTLA) model is under development.</li>
+  <li>Whisper speech-to-text was unreliable with soft-speaking participants in noisy
+    environments, so may be dropped from the live demo.</li>
+  <li>Practical TMI issues: sensor wear-and-tear, annotation difficulty, variability
+    across different tactile sensors.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>This is a <strong>demonstration paper</strong>, not a controlled benchmark
+    study: Table III numbers come from "preliminary tests" over modest sample counts
+    (25/26/41) on a handful of objects per category &mdash; no seeds, no variance, no
+    held-out test protocol. The gains are suggestive, not statistically established.</li>
+  <li>The headline 95&ndash;100% accuracies hinge on RAG over a curated database; with
+    teaching, the model has effectively <em>seen</em> the object's tactile signature,
+    so "unseen (teaching)" is closer to nearest-neighbor retrieval than zero-shot
+    generalization. The honest zero-shot number is the 41.46% (no RAG) / 73.17% (RAG,
+    no teaching) column.</li>
+  <li>The salient-frame heuristic (top-10 by frame difference) is unvalidated &mdash;
+    no ablation on how many frames, or whether max-difference frames are the most
+    informative tactile moments.</li>
+  <li>The TAC-02 piezoresistive sensor is integrated in hardware but the model
+    "primarily" uses GelSight (more training data); multi-sensor fusion is aspirational
+    here, not demonstrated quantitatively.</li>
+  <li>Hardness/roughness ground truth is human-annotated on a coarse 0/5/10 scale &mdash;
+    a noisy regression target that bounds how fine-grained the learned property
+    estimates can be.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This sits squarely on the thesis that <strong>many manipulation predicates are not
+visually evaluable</strong> &mdash; <code>surface_is_rough</code>, <code>is_hard</code>,
+<code>is_ripe</code>, <code>is_deformable</code> live in touch, not pixels. Octopi-1.5
+is a concrete instance of grounding such property predicates in tactile signals and
+exposing them through language &mdash; exactly the kind of perceptual classifier
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+learns for its predicates, but for properties BLADE's <em>visual</em> open-vocabulary
+classifiers fundamentally cannot read. Two threads connect:</p>
+<ul>
+  <li><strong>Predicate grounding via touch.</strong> BLADE learns
+    <code>f<sub>&theta;</sub>(p): O &rarr; {T,F}</code> over RGB-D observations; an
+    Octopi-style tactile encoder could supply the same interface for touch-dependent
+    predicates, extending BLADE's abstraction layer to contact-rich/occluded states.
+    The multi-part description capability is also relevant &mdash; predicates often
+    attach to object parts (handle vs. bristles).</li>
+  <li><strong>RAG-as-predicate-extension.</strong> The on-the-fly "teaching" idea
+    (add a tactile exemplar, recognize a new object without retraining) is a lightweight
+    answer to BLADE's flagged predicate-<em>invention</em> gap: rather than inventing a
+    new symbol, attach a new grounded exemplar. Worth thinking about whether
+    retrieval-augmented grounding could let a planning system acquire new perceptual
+    predicates incrementally.</li>
+</ul>
+<p>Caveat on relevance: Octopi-1.5 is a <em>perception/description</em> model with no
+action layer (the authors note VTLA is future work), so it is upstream of BLADE's
+planning concerns, not a planning paper. The connection is the predicate-grounding
+substrate, not composition.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Compared to its predecessor, Octopi-1.5 introduces the ability to process tactile
+  signals from multiple object parts and employs a simple retrieval-augmented
+  generation (RAG) module to perform various tasks and potentially learn new objects
+  on-the-fly.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  With RAG enabled, accuracy scores for Octopi-1.5 are high (96-100%) for the seen
+  objects (Balls, Fruits) with good performance (73%) for unseen objects. Once
+  teaching is enabled, performance rises to (95%).
+  <span class="quote-cite">&mdash; &sect;IV-A, Guessing Game / p.5</span>
+</blockquote>
+<blockquote>
+  Octopi-1.5 only outputs text tokens. Directly linking Octopi-1.5 to manipulation
+  tasks is a key area of future work. We are in the process of training a
+  Vision-Tactile-Language-Action (VTLA) model.
+  <span class="quote-cite">&mdash; &sect;V, Limitations / p.6</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[3] Yu, Lin, Xiao, Duan, Soh 2024 &mdash; Octopi</strong> &mdash; the
+    direct predecessor; PhysiCLeAR dataset + first tactile-LM.
+    <a href="../../raw/papers/octopi_object_property_reasoning_tactile_language.pdf">PDF</a></li>
+  <li><strong>[4] Fu et al. ICML 2024 &mdash; TVL (Touch-Vision-Language Dataset)</strong>
+    &mdash; 44k+ paired tactile-visual samples with language; the dataset peer.
+    <a href="../../raw/papers/touch_vision_language_dataset_multimodal_alignment.pdf">PDF</a></li>
+  <li><strong>[5] Yang et al. CVPR 2024 &mdash; UniTouch (Binding Touch to Everything)</strong>
+    &mdash; unified multimodal tactile representations.
+    <a href="../../raw/papers/binding_touch_to_everything_unitouch.pdf">PDF</a></li>
+  <li><strong>[13] Gao et al. CoRL 2021 &mdash; ObjectFolder</strong> &mdash; training
+    dataset source (ObjectFolder-Real).
+    <a href="../../raw/papers/objectfolder_benchmark_neural_real.pdf">PDF</a></li>
+  <li><strong>[1] Yuan, Dong, Adelson 2017 &mdash; GelSight</strong> &mdash; the optical
+    tactile sensor underlying the tactile encoder.
+    <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">PDF</a></li>
+  <li><strong>[2] Lambeta et al. 2020 &mdash; DIGIT</strong> &mdash; low-cost compact
+    tactile sensor (related hardware line).
+    <a href="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">PDF</a></li>
+  <li><strong>[8] Chi et al. RSS 2024 &mdash; UMI</strong> &mdash; the Universal
+    Manipulation Interface the TMI gripper is modified from.</li>
+  <li><strong>[7] Gao et al. 2023 &mdash; RAG survey</strong> &mdash; the retrieval
+    paradigm Octopi-1.5's RAG module draws on.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+    &mdash; the predecessor model; same authors, same PhysiCLeAR data, no RAG / no
+    multi-part / Llama backbone. The before-picture.</li>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL</a>
+    &mdash; the largest touch-vision-language dataset; closest data-side peer and a
+    candidate training source.</li>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a>
+    &mdash; binds touch into a shared multimodal embedding space; the
+    representation-learning alternative to Octopi's VLM-decoder approach.</li>
+  <li><a href="touch100k_touch_language_vision_dataset.html">Touch100k</a>
+    and <a href="tlv_touch_language_vision_dataset.html">TLV</a>
+    &mdash; other touch-language-vision datasets in the same cluster.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a>
+    &mdash; self-supervised tactile representations; the encoder-side counterpart to
+    Octopi's contrastive CLIP tactile encoder.</li>
+  <li><a href="objectfolder_benchmark_neural_real.html">ObjectFolder</a>
+    &mdash; multisensory object dataset used in Octopi-1.5's training mix.</li>
+  <li><a href="bridging_language_and_action_survey.html">Bridging Language and Action (survey)</a>
+    and <a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+    &mdash; situate VTLMs / the promised VTLA model within language-conditioned and
+    force-aware robot foundation models.</li>
+</ul>
+
+</body>
+</html>

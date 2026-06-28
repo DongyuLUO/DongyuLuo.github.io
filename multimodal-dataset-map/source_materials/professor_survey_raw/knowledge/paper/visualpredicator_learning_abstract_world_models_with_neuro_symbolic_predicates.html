@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VisualPredicator: Learning Abstract World Models with Neuro-Symbolic Predicates for Robot Planning</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Yichao Liang, Nishanth Kumar, Hao Tang, Adrian Weller, Joshua B. Tenenbaum, Tom Silver, Joao F. Henriques, Kevin Ellis">
+<meta name="year" content="2024">
+<meta name="venue" content="arXiv 2024 (CoRL 2024 submission)">
+<meta name="arxiv_id" content="2410.23156">
+<meta name="url" content="https://arxiv.org/abs/2410.23156">
+<meta name="pdf" content="../../raw/papers/visualpredicator_learning_abstract_world_models_with_neuro_symbolic_predicates.pdf">
+<meta name="tags" content="neuro-symbolic, predicate-invention, world-models, online-learning, planning-abstractions, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-05-28">
+<meta name="source_prompt" content="user batch ingest 2026-05-28 targeted search">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1>VisualPredicator: Learning Abstract World Models with Neuro-Symbolic Predicates for Robot Planning</h1>
+<p class="meta">
+  Yichao Liang, Nishanth Kumar, Hao Tang, Adrian Weller, Joshua B. Tenenbaum,
+  Tom Silver, Jo&atilde;o F. Henriques, Kevin Ellis
+  &middot; Cambridge / MIT / Cornell / Princeton / Oxford / Alan Turing Institute
+  &middot; arXiv 2024 (also published at ICLR 2025 per header)
+  &middot; <a href="https://arxiv.org/abs/2410.23156">arXiv:2410.23156</a>
+  &middot; <a href="../../raw/papers/visualpredicator_learning_abstract_world_models_with_neuro_symbolic_predicates.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> VisualPredicator introduces <em>Neuro-Symbolic
+Predicates</em> (NSPs) &mdash; first-order predicates implemented as Python
+snippets that can crop images and call VLMs &mdash; plus an online algorithm
+that interleaves VLM-driven predicate proposal, classification-accuracy-based
+predicate selection, and an extended <em>cluster &amp; intersect</em>
+high-level-action learner, producing abstract world models that solve
+out-of-distribution long-horizon tasks across five simulated robot domains
+with near-Oracle sample efficiency.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Robot planning needs state abstractions that are simultaneously
+<em>perceptually rich</em> (e.g., "the spatula is greasy", "the jug is
+inside the coffee machine") and <em>logically rich</em> (e.g., "the number
+of blocks on each side of the balance is equal"). Traditional symbolic TAMP
+uses hand-coded predicates that can't adapt to new environments, while prior
+predicate-invention work (<a href="predicate_invention_for_bilevel_planning.html">Silver
+et al. 2023</a>, Konidaris 2018) restricts predicates to functions over
+hand-engineered object features &mdash; expressive enough for block-stacking
+but not for "is the jug inside the coffee machine" (an occlusion-heavy
+perceptual question) or "are the platters balanced" (a logical aggregation
+over counts). The paper argues for an abstraction language that is at once
+visually grounded (anything a VLM can perceive) and computationally rich
+(anything expressible in Python).</p>
+
+<h2>Method</h2>
+<p>Three contributions: (i) NSPs as a representation, (ii) an online
+algorithm that invents them, (iii) an extended operator learner.</p>
+
+<p><strong>1. Neuro-Symbolic Predicates (NSPs).</strong> An NSP is a Python
+function that returns a Boolean over a raw state and a tuple of objects.
+Two flavors:</p>
+<ul>
+  <li><strong>Primitive NSPs</strong> evaluate directly on the raw
+    observation. Their bodies can call a small Python API:
+    <code>get_object(type)</code>, <code>get(obj, feature)</code> for
+    proprioceptive/object-pose features (Appendix A),
+    <code>crop_to_objects([o1, o2, ...])</code> to focus the image on the
+    relevant objects, and <code>evaluate_simple_assertion(text, image)</code>
+    to query a VLM with a natural-language assertion. Example:
+    <code>Holding(block)</code> first checks gripper-fingers proprioception,
+    then crops to the robot and block and asks the VLM "the block is held by
+    the robot" (Fig 2).</li>
+  <li><strong>Derived NSPs</strong> are computed from the truth values of
+    other NSPs (analogous to PDDL axioms / derived predicates).
+    <code>OnPlate(block, plate)</code> recursively checks if a block is
+    <code>DirectlyOnPlate</code> or transitively on another block that is on
+    the plate (Fig 2). Derived NSPs never appear in HLA postconditions
+    because they can be re-evaluated from primitive truth values.</li>
+</ul>
+
+<p><strong>VLM accuracy boosters.</strong> Two tricks to improve primitive
+NSP precision: (a) condition VLM queries on the <em>previous action,
+previous image, and previous truth value</em> of the queried ground atom
+&mdash; resolves cases like "is the gripper holding the jug or merely next
+to it" by leveraging the prior <code>Pick(jug)</code> action (Appendix B.1);
+(b) overlay numeric ID labels on each object in the image (set-of-mark
+prompting, Yang et al. 2023) so the VLM can disambiguate "block2" from
+"block5".</p>
+
+<p><strong>2. Online predicate-invention loop (Algorithm 1).</strong> The
+agent receives an environment <em>E</em>, training tasks <em>T</em>,
+initial (largely empty) predicate set <em>&Psi;<sub>0</sub></em>, initial
+HLA set <em>&Omega;<sub>0</sub></em>, and an empty interaction dataset. For
+up to <em>n<sub>max_iter</sub></em> rounds it: (1) <strong>Explore</strong>
+&mdash; runs the current planner/abstractions on training tasks until
+solved or planning budget <em>n<sub>abstract</sub></em> exhausted,
+collecting positive transitions from successful skill executions and
+negative <em>(state, action, FAIL)</em> tuples from skill failures, plus
+satisficing plans when achieved. (2) Track best-so-far solve rate
+<em>&rho;<sub>best</sub></em> and best (lowest) number of infeasible plans
+<em>&nu;<sub>best</sub></em>. If solve rate is stagnant, run
+<strong>Propose</strong> (&sect;5.2), <strong>Select</strong> (&sect;5.3),
+and <strong>Learn HLAs</strong> (&sect;5.4).</p>
+
+<p><strong>3. Predicate proposal (three VLM-prompting strategies,
+&sect;5.2).</strong> (a) <em>Discrimination</em>: show the VLM pairs of
+states where a skill succeeded vs. failed and ask it to write Python that
+predicts skill applicability &mdash; targets useful preconditions.
+(b) <em>Transition modeling</em>: show before/after snapshots of successful
+executions, ask for code describing what changed &mdash; targets
+postconditions. (c) <em>Unconditional generation</em>: ask the VLM for
+logical extensions (conjunctions, recursions) of existing predicates with
+no data conditioning &mdash; creates derived NSPs.</p>
+
+<p><strong>4. Predicate selection (&sect;5.3).</strong> Most VLM proposals
+are low-precision, and overfitting to a too-large set is the failure mode.
+The authors define a novel objective: score a candidate set <em>&Psi;</em>
+by (i) first learning HLAs &Omega; for &Psi; via the extended operator
+learner, then (ii) measuring how accurately those HLAs classify
+transitions, plus a syntactic-simplicity bias. Greedy best-first search
+(GBFS) over predicate subsets, starting from goal predicates, takes minutes
+on a single CPU. After "enough" satisficing plans are collected, switch to
+the planning-efficiency-based objective from Silver et al. 2023.</p>
+
+<p><strong>5. Extended operator learner (&sect;5.4 + Appendix B.2).</strong>
+Builds on Chitnis et al. 2022 <em>cluster &amp; intersect</em> but replaces
+the restrictive "intersect over all feasible states" precondition with a
+<em>minimum-complexity</em> precondition that softly penalizes syntactic
+complexity:
+<em>J(&omega;.PRE) = (positive coverage + negative exclusion) /
+|D| + &alpha; &middot; |&omega;.PRE|</em>. This produces
+<em>optimistically loose</em> preconditions, which the authors argue are
+essential for online exploration &mdash; restrictive preconditions inherited
+from demonstration-based learners prevent the planner from trying
+potentially-feasible skills it hasn't yet observed succeed.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Domains (5, PyBullet, Fig 3):</strong>
+    <em>Cover</em> (pick &amp; place blocks onto target regions; train
+    2 blocks / 2 targets, test 3/3);
+    <em>Blocks</em> (build tower with Pick/Stack/PlaceOnTable; train 3-4
+    blocks, test 5-6);
+    <em>Coffee</em> (jug-into-machine, MakeCoffee, Pour into cups; jug may
+    need rotation; 5 skills; train 1 cup, test 2 or 3);
+    <em>Cover Heavy</em> (Cover variant with white marble blocks that are
+    physically too heavy &mdash; "impossible tasks" that the agent must
+    detect as unreachable);
+    <em>Balance</em> (PressButton activates a machine only when blocks on
+    both sides of a balance beam are equal; train 2 or 4 blocks, test 4 or
+    6).</li>
+  <li><strong>Training:</strong> 5 training tasks per domain (10 in Cover
+    Heavy and Balance, 20 in Blocks). Planning budget
+    <em>n<sub>abstract</sub></em> = 8 (100 for Coffee). 5 random seeds.</li>
+  <li><strong>Baselines (6):</strong>
+    <em>MAPLE</em> (HRL, Nasiriany 2022 &mdash; learns Q function over
+    behavior primitives, no explicit predicates; tested only on training
+    distribution because it can't generalize to more objects);
+    <em>ViLa</em> (Hu et al. 2023, zero-shot VLM action plans, open-loop);
+    <em>Sym. pred.</em> (same online loop but predicates restricted to
+    object-feature functions; closest in representation to
+    <a href="interpret_interactive_predicate_learning_from_language_feedback.html">Interpret</a>
+    (Han et al. 2024) but learns from interaction, not human instruction);
+    <em>Ablate op.</em> (no min-complexity preconditions, plain
+    cluster-&amp;-intersect);
+    <em>No invent</em> (use only the initial under-specified abstractions);
+    <em>Oracle</em> (manually designed predicates and operators).</li>
+  <li><strong>Compute:</strong> single CPU for most baselines; MAPLE uses
+    a GPU.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline (Fig 4, mean over 5 seeds): VisualPredicator <em>matches the
+Oracle</em> across Cover, Blocks, Coffee, Cover Heavy, and Balance &mdash;
+near-perfect solve rate on test tasks that involve more objects /
+out-of-distribution goal counts than training. Specific findings:</p>
+<ul>
+  <li><strong>Q1 (vs. HRL/VLM):</strong> MAPLE struggles even on
+    in-distribution tasks under matched interaction budget; ViLa generates
+    infeasible plans (e.g., picks a jug without considering orientation,
+    repeatedly tries to pick already-held blocks) consistent with the
+    LLM-planning critique of <a href="../../raw/papers/kambhampati_2024.pdf">Kambhampati
+    et al. 2024</a> (cited; not yet ingested).</li>
+  <li><strong>Q2 (vs. Oracle and No-invent):</strong> VisualPredicator
+    decisively beats <em>No invent</em>, showing predicate invention is
+    necessary; matches <em>Oracle</em>, showing the invented abstractions
+    are as effective as manually-designed ones.</li>
+  <li><strong>Q3 (vs. Sym. pred.):</strong> Plain symbolic predicates
+    over object features handle simple Cover but fail in Coffee
+    (can't determine <code>JugInMachine</code> from object poses alone &mdash;
+    occlusion), Cover Heavy (can't perceive "too heavy"), and Balance
+    (can't reason about block counts without derived predicates). This is
+    the central evidence that NSPs' VLM-querying + Python-logic combination
+    is doing real work.</li>
+  <li><strong>Q4 (vs. Ablate op.):</strong> Without the min-complexity
+    operator learner the system overfits early (e.g., requires
+    <code>JugInMachine</code> as a precondition of <code>Pour</code>),
+    yielding good train but poor test performance. The extended operator
+    learner is what enables exploration-based learning to generalize.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors</em> (Appendix B.5, &sect;8 Conclusion):</p>
+<ul>
+  <li>No recovery mechanism for failed plans &mdash; an obvious extension
+    flagged in the conclusion.</li>
+  <li>Exploration efficiency could be improved.</li>
+  <li>Scaling to partially observable and real-world domains is future
+    work; all five experiment domains are fully observed simulation.</li>
+  <li>Relaxing the assumption of pre-given skills (using RL or policy
+    synthesis, citing Liang 2024, Ma 2023, Huang 2024) is open.</li>
+  <li>VLM accuracy is not 100% on simple primitive queries; the
+    previous-action / set-of-mark tricks help but don't eliminate failures.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The min-complexity precondition objective is a small but important
+    methodological contribution that deserves emphasis &mdash; it's the
+    online-learning analog of <em>cluster &amp; intersect</em> and may
+    transfer to other operator-learning settings.</li>
+  <li>VLM cost per predicate query is not reported (number of VLM calls
+    per training round, per skill, per task) &mdash; relevant for assessing
+    whether NSPs are tractable at larger predicate counts.</li>
+  <li>Predicate <em>names</em> are still VLM-proposed in code; how often
+    semantically-equivalent predicates are proposed (synonyms,
+    near-duplicates) and how the system deduplicates is not detailed.</li>
+  <li>All experiments are fully observed; the same VLM-conditioning trick
+    (previous action + previous image) hints at how to extend to partial
+    observability but isn't tested under occlusion regimes harder than
+    Coffee.</li>
+  <li>Comparison to demonstration-based predicate invention (BLADE,
+    Migimatsu &amp; Bohg) is implicit only &mdash; the paper positions
+    itself in the <em>online-from-interaction</em> regime, not
+    demonstration-from-language, leaving a clean axis for future
+    head-to-head comparison.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is the <strong>direct predecessor to ExoPredicator</strong> &mdash;
+same first author Yichao Liang, same Cambridge/MIT/Cornell crew, same NSP
+representation, same online predicate-invention paradigm.
+<a href="exopredicator_learning_abstract_models_of_dynamic_worlds.html">ExoPredicator</a>
+extends VisualPredicator from purely <em>endogenous</em> world models
+(robot effects only) to handle <em>exogenous</em> processes (boiling water,
+machines that change state on their own). Reading VisualPredicator is
+prerequisite to understanding what ExoPredicator inherits vs. extends.</p>
+<p>Other connections worth tracking:</p>
+<ul>
+  <li><strong>Cluster sibling to BLADE</strong>
+    (<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>):
+    both auto-invent first-order abstractions for bilevel planning, but
+    BLADE learns from language-annotated demonstrations while
+    VisualPredicator learns from online exploration with no demos.
+    The two paradigms (demo-from-language vs. interaction-from-scratch)
+    are direct alternatives &mdash; a topic page comparing their
+    trade-offs would be high-value. Notably, BLADE's biggest stated
+    limitation is precisely <em>predicate invention</em>, which
+    VisualPredicator solves &mdash; if the two could be married, the
+    result would invent predicates from demos + online interaction
+    rather than picking one.</li>
+  <li><strong>Methodological lineage:</strong> builds directly on
+    <a href="predicate_invention_for_bilevel_planning.html">Silver et al.
+    2023 predicate invention</a> (the predicate-set scoring framework),
+    Chitnis et al. 2022 <em>cluster &amp; intersect</em> (operator
+    learning &mdash; extended here with the min-complexity objective).</li>
+  <li><strong>Sibling work (same first author)</strong>:
+    <a href="poe_world_compositional_world_modeling_with_products_of_programmatic_experts.html">PoE-World</a>
+    &mdash; another Liang+Tenenbaum+Ellis line on program-structured
+    world models, complementary perspective on how to organize learned
+    abstractions.</li>
+  <li><strong>Pixels-to-predicates lineage:</strong>
+    <a href="from_pixels_to_predicates_learning_symbolic_world_models_via_vlms.html">From
+    Pixels to Predicates</a> works the same axis &mdash; VLMs as the
+    perceptual back-end for symbolic abstractions &mdash; useful for the
+    topic page on VLM-grounded predicate learning.</li>
+  <li><strong>For my own work:</strong> the min-complexity precondition
+    objective and the three predicate-proposal strategies
+    (discrimination / transition modeling / unconditional generation)
+    are reusable methodological primitives. The discrimination strategy
+    in particular looks generically useful for any "what makes this skill
+    apply" learning problem.</li>
+</ul>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  Broadly intelligent agents should form task-specific abstractions that
+  selectively expose the essential elements of a task, while abstracting
+  away the complexity of the raw sensorimotor space.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  The core of our approach is to learn an abstract model of the
+  environment in terms of <em>Neuro-Symbolic Predicates (NSPs)</em>,
+  which are snippets of Python code that can invoke vision-language models
+  (VLMs) for querying perceptual properties, and further algorithmically
+  manipulate those properties using Python, in the spirit of ViperGPT and
+  VisProg.
+  <span class="quote-cite">&mdash; &sect;1, Introduction</span>
+</blockquote>
+
+<blockquote>
+  Our precondition learner ensures that each data in the transition
+  dataset is modeled by one and only one high-level action and minimizes
+  the syntactic complexity of the HLA to encourage optimistic world
+  models.
+  <span class="quote-cite">&mdash; &sect;5.4, Learning High-Level Actions</span>
+</blockquote>
+
+<blockquote>
+  While [Sym. pred.] performs well in simple domains like Cover, it
+  struggles to invent predicates that require grounding on perceptual
+  cues not explicitly encoded in object features. For instance, in
+  Coffee, it cannot reliably determine if a jug is inside a coffee
+  machine based on object poses &mdash; a key precondition for the
+  <code>TurnMachineOn</code> action.
+  <span class="quote-cite">&mdash; &sect;6, Results and Discussion (Q3)</span>
+</blockquote>
+
+<h2>Related</h2>
+<ul>
+  <li><a href="exopredicator_learning_abstract_models_of_dynamic_worlds.html">ExoPredicator</a>
+    &mdash; direct follow-on by the same first author; extends NSPs from
+    endogenous to exogenous world dynamics.</li>
+  <li><a href="from_pixels_to_predicates_learning_symbolic_world_models_via_vlms.html">From
+    Pixels to Predicates</a> &mdash; sibling on VLM-grounded predicate
+    learning; complementary representation choices.</li>
+  <li><a href="predicate_invention_for_bilevel_planning.html">Predicate
+    Invention for Bilevel Planning (Silver et al. 2023)</a> &mdash;
+    methodological foundation; provides the predicate-set scoring
+    framework VisualPredicator extends.</li>
+  <li><a href="poe_world_compositional_world_modeling_with_products_of_programmatic_experts.html">PoE-World</a>
+    &mdash; same first author; alternative angle on programmatic /
+    compositional world models.</li>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    (Liu et al. 2024) &mdash; cluster sibling: auto-invented first-order
+    abstractions for bilevel planning, but from
+    demonstration-plus-language rather than online interaction. Direct
+    paradigm comparison.</li>
+  <li><strong>Chitnis et al. 2022</strong> &mdash; <em>cluster &amp;
+    intersect</em> operator learning, directly extended here.</li>
+  <li><strong>Konidaris et al. 2018</strong> &mdash; "From Skills to
+    Symbols", foundational predicate-learning reference.</li>
+  <li><strong>ViperGPT (Sur&iacute;s et al. 2023), VisProg (Gupta &amp;
+    Kembhavi 2022)</strong> &mdash; cited as the spiritual inspirations
+    for code-with-VLM-calls as a representation.</li>
+  <li><strong>Hu et al. 2023 &mdash; ViLa</strong> &mdash; VLM-planning
+    baseline.</li>
+  <li><strong>Han et al. 2024 &mdash; Interpret</strong> &mdash; closest
+    representational sibling to the <em>Sym. pred.</em> baseline; learns
+    from human instruction rather than interaction.</li>
+  <li><strong>Tang, Key, Ellis 2024 &mdash; WorldCoder</strong> &mdash;
+    cited for the model-based-LLM-agent paradigm; builds world models by
+    writing code and interacting.</li>
+</ul>
+
+</body>
+</html>

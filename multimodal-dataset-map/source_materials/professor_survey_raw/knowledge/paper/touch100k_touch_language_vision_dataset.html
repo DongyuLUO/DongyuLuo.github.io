@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Touch100k: A Large-Scale Touch-Language-Vision Dataset for Touch-Centric Multimodal Representation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Cheng, Guan, Gao, Wang, Li, Meng, Zhou, Fang, Xu, Han">
+<meta name="year" content="2024">
+<meta name="venue" content="arXiv preprint (under review)">
+<meta name="arxiv_id" content="2406.03813">
+<meta name="url" content="https://arxiv.org/abs/2406.03813">
+<meta name="pdf" content="../../raw/papers/touch100k_touch_language_vision_dataset.pdf">
+<meta name="tags" content="multimodal-dataset, touch-language, visuo-tactile, tactile-representation, representation-learning, gelsight, vision-based-tactile, contrastive-learning, multimodal-binding, tactile-sensing">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Touch100k: A Large-Scale Touch-Language-Vision Dataset for Touch-Centric Multimodal Representation</h1>
+<p class="meta">
+  Ning Cheng, Changhao Guan, Jing Gao, Weihao Wang, You Li, Fandong Meng,
+  Jie Zhou, Bin Fang, Jinan Xu, Wenjuan Han
+  &middot; Beijing Jiaotong Univ. / WeChat AI, Tencent / BUPT
+  &middot; 2024 &middot; arXiv preprint (under review)
+  &middot; <a href="https://arxiv.org/abs/2406.03813">arXiv:2406.03813</a>
+  &middot; <a href="../../raw/papers/touch100k_touch_language_vision_dataset.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Touch100k is the first ~100k-scale paired
+touch&ndash;language&ndash;vision dataset where GelSight tactile observations are
+annotated with GPT-4V-generated <em>multi-granularity</em> language (full sentences
+plus key-feature phrases), and the companion method TLV-Link uses curriculum
+learning to "grow" a tactile encoder out of a frozen vision encoder &mdash; the
+practical payoff being that touch becomes a language-queryable modality for material
+and grasp reasoning instead of a bag of classification labels.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Tactile perception is underexplored relative to vision and audio, and the language
+that <em>does</em> accompany existing tactile datasets is almost always a flat
+classification label (e.g., "rough", "metal"). That impoverished language signal caps
+how richly touch can be cross-modally associated &mdash; you cannot ground "fine clay,
+hard, rough, abrasive to the hand" if your supervision is a single class token. The
+authors argue tactile research needs (i) a dataset at real scale with (ii) descriptive,
+multi-granularity natural language tied to (iii) the paired vision, so that a tactile
+encoder can be aligned to language the way CLIP aligned images to text. Touch100k is
+positioned as the first dataset combining tactile + multi-granularity language + vision
+at 100k scale (Table 1 contrasts it against TLV, TVL, ObjectFolder Real/2.0/1.0,
+SSVTP, Touch-and-Go (TAG), YCB-Slide, VisGel, ViTac Cloth, Data_ICRA18, GelFabric,
+Feel &mdash; Touch100k is the only one checking every column including multi-granularity
+language and &ge;100k size).</p>
+
+<h2>Method</h2>
+<p>The paper has two halves: building the dataset, and the TLV-Link pretraining method.</p>
+
+<p><strong>Dataset construction (Fig 1, three stages).</strong></p>
+<ul>
+  <li><strong>Stage I &mdash; Data collection.</strong> Foundational vision-touch data is
+    curated from two existing GelSight datasets: <em>Touch-and-Go (TAG)</em> (91,982
+    observations, already has classification labels) and <em>VisGel</em> (10,000
+    observations; lacks textual labels, so the authors manually label the touched-object
+    names). Total: 101,982 paired visual-tactile observations.</li>
+  <li><strong>Stage II &mdash; Multi-granularity description generation.</strong> GPT-4V
+    (gpt-4-turbo, April/May 2024) is prompted with the <em>visual</em> image to generate
+    two description levels: <em>sentence-level</em> (rich, high-level expressions
+    including contextual and dynamic relationships) and <em>phrase-level</em> (key tactile
+    features). A prompt pool is sampled randomly per item to diversify outputs (prompt
+    pools in Appendix B).</li>
+  <li><strong>Stage III &mdash; Multi-step quality enhancement.</strong> (1) Pattern
+    filtering + machine correction: regex-based filtering of bad patterns
+    (multilanguage confusion, special markers, semantic redundancy), re-fed to GPT-4V for
+    correction. (2) Consistency assessment: Gemini 1.0 Pro acts as a referee comparing
+    image vs. description; hired workers correct inconsistencies. (3) Completeness
+    assessment: human evaluation that descriptions cover touch-point locations, texture
+    features, etc. After filtering, <strong>100,147</strong> valid touch-language-vision
+    entries remain.</li>
+</ul>
+
+<p><strong>TLV-Link pretraining (Fig 2).</strong> The goal is a tactile encoder for the
+GelSight sensor aligned to language. Two stages:</p>
+<p><strong>1. Curriculum representation for tactile encoding (&sect;4.1).</strong> A
+teacher&ndash;student curriculum: the pretrained <em>vision</em> encoder is the teacher,
+the <em>touch</em> encoder is the student (tactile images are treated as RGB). The
+"curriculum representation" is a weighted blend
+<code>x = &beta;<sub>i</sub> x<sup>(v)</sup> + (1 &minus; &beta;<sub>i</sub>) x<sup>(t)</sup></code>
+(Eq. 1). Early in training the weak student leans on the strong visual teacher (large
+<code>&beta;<sub>1</sub></code>); <code>&beta;<sub>i</sub></code> linearly decays toward
+<code>&beta;<sub>min</sub> = 0</code> over <code>N</code> steps
+(<code>&beta;<sub>i</sub> = &beta;<sub>1</sub> &minus; (i/N)(&beta;<sub>1</sub> &minus; &beta;<sub>min</sub>)</code>,
+Eq. 2), handing control to the maturing touch encoder.</p>
+<p><strong>2. Modality alignment (&sect;4.2).</strong> Multi-granularity descriptions are
+encoded by a <em>frozen</em> OpenCLIP-large text encoder; sentence- and phrase-level
+features are fused into a final text feature <code>y</code>. The blended tactile
+representation <code>x</code> is aligned to <code>y</code> via an InfoNCE contrastive loss
+(Eq. 3). The touch encoder is fully trained; the vision encoder is LoRA fine-tuned; the
+text encoder stays frozen. Both encoders are 24-layer 1024-dim ViTs (patch 14)
+initialized from OpenCLIP-large. The authors call the focus on adapting a visual encoder
+into the touch domain "touch-centric multimodal representation learning".</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Pretraining on Touch100k (100,147 entries,
+    sourced from TAG + VisGel). Downstream: <em>material property identification</em> on
+    the three TAG test sets &mdash; material classification (20 labels, multi-class),
+    hard/soft (binary), rough/smooth (binary); <em>robot grasping prediction</em> on the
+    <em>Feel</em> ("The Feeling of Success") dataset, predicting grasp success from before/after
+    tactile observations of left/right sensors, split by objects 8:1:1.</li>
+  <li><strong>Hardware / simulator:</strong> No robot run by the authors &mdash; this is a
+    dataset/representation paper. All tactile data is GelSight (vision-based tactile sensor);
+    grasping is evaluated offline on the Feel dataset's parallel-gripper tactile records.</li>
+  <li><strong>Baselines:</strong> Chance; supervised ImageNet features; and SOTA tactile
+    representation models VT CMC (TAG's method), MViTac, UniTouch, VIT-LENS-2. Evaluated
+    under linear probing (for vision/touch-only encoders) and zero-shot (for language-capable
+    encoders: UniTouch, VIT-LENS-2, TLV-Link).</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: TLV-Link pretrained on Touch100k sets new SOTA on most subtasks under both
+linear probing and zero-shot (Table 2). Accuracy (%):</p>
+
+<table>
+  <tr><th>Setting / Model</th><th>Train data</th><th>Material</th><th>Hard/Soft</th><th>Rough/Smooth</th><th>Robot Grasping</th></tr>
+  <tr><td>Chance</td><td>&mdash;</td><td>5.0</td><td>50.0</td><td>50.0</td><td>50.0</td></tr>
+  <tr><td><em>Linear probe:</em> VT CMC</td><td>TAG</td><td>54.7</td><td>77.3</td><td>79.4</td><td>78.1</td></tr>
+  <tr><td>UniTouch</td><td>TAG, Feel, YCB-Slide, OF2.0</td><td>61.3</td><td>&mdash;</td><td>&mdash;</td><td><u>82.3</u></td></tr>
+  <tr><td>VIT-LENS-2</td><td>TAG</td><td>63.0</td><td>92.0</td><td><strong>85.1</strong></td><td>&mdash;</td></tr>
+  <tr><td><strong>TLV-Link (ours)</strong></td><td>Touch100k</td><td><strong>67.2</strong></td><td><strong>93.1</strong></td><td>84.7</td><td><strong>94.5</strong></td></tr>
+  <tr><td><em>Zero-shot:</em> UniTouch</td><td>TAG, Feel, YCB-Slide, OF2.0</td><td>52.7</td><td>&mdash;</td><td>&mdash;</td><td><u>65.5</u></td></tr>
+  <tr><td>VIT-LENS-2</td><td>TAG</td><td>65.8</td><td><u>74.7</u></td><td><u>63.8</u></td><td>&mdash;</td></tr>
+  <tr><td><strong>TLV-Link (ours)</strong></td><td>Touch100k</td><td><strong>70.0</strong></td><td><strong>79.3</strong></td><td><strong>77.8</strong></td><td>65.4</td></tr>
+</table>
+
+<ul>
+  <li><strong>Where it wins:</strong> robot grasping linear-probe 94.5 (+12.2 over
+    suboptimal UniTouch 82.3); material 67.2 (+4.2); hard/soft 93.1. Zero-shot material 70.0
+    (+4.2), hard/soft 79.3 (+4.6), rough/smooth 77.8 (+14.0).</li>
+  <li><strong>Where it loses / ties:</strong> linear-probe rough/smooth, where VIT-LENS-2
+    edges it (85.1 vs 84.7); and zero-shot robot grasping (65.4 vs UniTouch 65.5).</li>
+  <li><strong>Dataset-vs-dataset (Table 3):</strong> holding the method fixed (VT CMC +
+    Touch-Text Contrastive Learning), Touch100k beats TAG on every subtask (e.g., material
+    64.1 vs 60.8; grasping 61.3 vs 43.4) &mdash; isolating the dataset's contribution from
+    the method's.</li>
+  <li><strong>Scale (Table 4):</strong> 25%&rarr;100% of Touch100k improves linear-probe and
+    especially zero-shot (e.g., grasping zero-shot 44.7&rarr;65.4) &mdash; more data helps,
+    with the larger gains in zero-shot.</li>
+  <li><strong>Ablation (Table 5):</strong> removing the multi-stage curriculum representation
+    drops every subtask; the cliff is zero-shot grasping &minus;21.2 (65.4&rarr;44.2),
+    arguing the curriculum is what gives the touch encoder generalization, not just the data.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The dataset and method are specifically designed for GelSight; transfer to other
+    tactile sensors (DIGIT, GelSlim) is an open question and explicit future work.</li>
+  <li>t-SNE analysis (Fig 3) shows TLV-Link separates the binary tasks (hard/soft,
+    rough/smooth) cleanly but degrades on multi-class material classification and on
+    grasping &mdash; they flag tactile multi-classification and manipulation as not yet robust.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>The language supervision is image-derived, not touch-derived.</strong>
+    Descriptions are generated by GPT-4V from the <em>visual</em> image, not from the tactile
+    signal. So the "touch-language" alignment is really "vision-implied-touch-language" &mdash;
+    any tactile property not visible in the RGB image (true compliance, temperature,
+    sub-surface texture) cannot be in the label, capping the ceiling of what touch can learn.</li>
+  <li><strong>Quality control leans on other black-box models.</strong> GPT-4V generates,
+    Gemini referees, humans correct &mdash; reproducibility and bias of this pipeline aren't
+    quantified (e.g., what fraction of entries each correction stage touched, inter-rater
+    agreement). The 100,147/101,982 retention implies ~1.8% hard-filtered, but consistency/
+    completeness correction rates aren't reported.</li>
+  <li><strong>Downstream is all classification.</strong> "Robot grasping prediction" is
+    offline success classification on the Feel dataset, not a closed-loop policy &mdash; the
+    paper demonstrates representation quality, not control. No manipulation rollouts.</li>
+  <li><strong>Inherited-data ceiling.</strong> 90% of the data is TAG; the dataset's diversity
+    is bounded by TAG's object/scene coverage. The "100k scale" is multi-granularity
+    <em>language</em> over largely pre-existing tactile observations.</li>
+  <li>Curriculum weight schedule is linear and hand-set (<code>&beta;<sub>1</sub></code>,
+    <code>&beta;<sub>min</sub>=0</code>); no sensitivity analysis over the schedule shape.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely on the thesis behind the 2026-06-24 batch: many manipulation predicates
+&mdash; <code>surface_is_rough</code>, <code>is_hard</code>, <code>material_is_metal</code>,
+<code>grasp_is_stable</code> &mdash; are <em>not</em> reliably visually evaluable; they live in
+touch. <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+learns visual predicate classifiers <code>f<sub>&theta;</sub>(p): O &rarr; {T,F}</code>, but
+several of the most useful manipulation predicates would need a tactile <code>O</code>.
+Touch100k + TLV-Link is exactly the missing ingredient: a tactile encoder aligned to
+<em>language</em>, so a touch observation could in principle feed a language-named predicate
+classifier the way BLADE feeds an RGB crop. The robot-grasping result (94.5 linear-probe) is
+direct evidence that touch carries a clean <code>grasp_is_stable</code>-style signal.</p>
+<p>Two honest caveats keep this <em>adjacent</em> rather than core to BLADE. First, the language
+labels are GPT-4V-on-vision, so this dataset can't yet ground the genuinely
+non-visual predicates (compliance, temperature) that are the strongest argument for touch &mdash;
+it's a first rung, not the full ladder. Second, it's a representation/dataset paper with no
+planning or closed-loop control. The value to my line of work is: (i) it's a concrete recipe for
+a language-queryable tactile encoder that a BLADE-style predicate layer could call, and (ii) its
+curriculum trick (grow touch out of a frozen vision encoder via decaying blend weight) is a cheap
+way to bootstrap a new sensory modality's predicate classifiers from a vision-pretrained
+backbone &mdash; useful if I want to add touch predicates without collecting touch-scale data
+from scratch.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Despite many works involving language, the language presentation of these works is often in the
+  form of textual classification labels.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  To the best of our knowledge, Touch100k is the first dataset to encompass tactile,
+  multi-granularity language, and visual modalities at a scale of 100k.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.2</span>
+</blockquote>
+<blockquote>
+  Initially, the curriculum representation relies heavily on the teacher model due to the limited
+  capacity of the student model. As pretraining progresses, the student model improves, allowing
+  for a gradual decrease in the teacher's influence.
+  <span class="quote-cite">&mdash; &sect;1 / p.2 (TLV-Link overview)</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[33] Radford et al. &mdash; CLIP</strong> &mdash; the vision-language
+    contrastive backbone this whole alignment paradigm inherits.</li>
+  <li><strong>[16] Girdhar et al. &mdash; ImageBind</strong> &mdash; six-modality binding to an
+    image-centric space; the cross-modal-binding precedent
+    (<a href="../../raw/papers/imagebind_one_embedding_space.pdf">expected slug: imagebind_one_embedding_space</a>).</li>
+  <li><strong>[51] Zhu et al. &mdash; LanguageBind</strong> &mdash; language-centric binding
+    framework; direct philosophical sibling
+    (<a href="../../raw/papers/languagebind_language_anchored.pdf">expected slug: languagebind_language_anchored</a>).</li>
+  <li><strong>[43] Yang et al. &mdash; Touch-and-Go (TAG)</strong> &mdash; the 90%-of-data source
+    + a downstream benchmark
+    (<a href="../../raw/papers/touch_and_go_human_collected_vision_touch.pdf">expected slug: touch_and_go_human_collected_vision_touch</a>).</li>
+  <li><strong>[28] / VisGel</strong> &mdash; the second data source (visual-tactile, GelSight).</li>
+  <li><strong>[5] Cheng et al. &mdash; TLV (Touch-Language-Vision Dataset)</strong> &mdash; the
+    authors' own predecessor dataset
+    (<a href="../../raw/papers/tlv_touch_language_vision_dataset.pdf">expected slug: tlv_touch_language_vision_dataset</a>).</li>
+  <li><strong>[12] Fu et al. &mdash; TVL (A Touch, Vision, and Language Dataset)</strong> &mdash;
+    the closest competing touch-language-vision dataset
+    (<a href="../../raw/papers/touch_vision_language_dataset_multimodal_alignment.pdf">expected slug: touch_vision_language_dataset_multimodal_alignment</a>).</li>
+  <li><strong>[13,14,15] Gao et al. &mdash; ObjectFolder 1.0 / Benchmark / 2.0</strong> &mdash;
+    multisensory object datasets compared in Table 1
+    (<a href="../../raw/papers/objectfolder_dataset_implicit_representations.pdf">objectfolder_dataset_implicit_representations</a>,
+    <a href="../../raw/papers/objectfolder_benchmark_neural_real.pdf">objectfolder_benchmark_neural_real</a>,
+    <a href="../../raw/papers/objectfolder_2_multisensory_sim2real.pdf">objectfolder_2_multisensory_sim2real</a>).</li>
+  <li><strong>[4] Calandra et al. &mdash; The Feeling of Success (Feel)</strong> &mdash; the
+    grasp-prediction downstream dataset.</li>
+  <li><strong>[42] UniTouch &mdash; Binding Touch to Everything</strong> &mdash; the main
+    language-capable baseline
+    (<a href="../../raw/papers/binding_touch_to_everything_unitouch.pdf">expected slug: binding_touch_to_everything_unitouch</a>).</li>
+  <li><strong>[3] Bengio et al. &mdash; Curriculum Learning</strong> &mdash; origin of the CL
+    idea TLV-Link adapts to modality alignment.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="tlv_touch_language_vision_dataset.html">TLV (Touch-Language-Vision Dataset)</a>
+    &mdash; same authors' earlier, smaller touch-language-vision dataset; Touch100k is its
+    100k-scale, multi-granularity successor.</li>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL</a>
+    &mdash; the closest peer touch-vision-language dataset + alignment method; the head-to-head
+    comparison in Table 1.</li>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a>
+    &mdash; the language-capable tactile-binding baseline TLV-Link beats on material and edges on
+    grasping; same "touch into a CLIP-aligned space" family.</li>
+  <li><a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+    &mdash; tactile-language model for object-property reasoning; the LLM-reasoning counterpart to
+    Touch100k's contrastive-representation framing of touch-language grounding.</li>
+  <li><a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>
+    &mdash; unified visuo-tactile representation across sensors; directly addresses Touch100k's
+    main limitation (GelSight-only transfer).</li>
+  <li><a href="touch_and_go_human_collected_vision_touch.html">Touch-and-Go</a>
+    &mdash; the vision-touch dataset supplying ~90% of Touch100k's observations.</li>
+  <li><a href="imagebind_one_embedding_space.html">ImageBind</a> and
+    <a href="languagebind_language_anchored.html">LanguageBind</a>
+    &mdash; the multimodal-binding anchors whose contrastive-alignment paradigm Touch100k
+    instantiates for the touch modality.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,453 @@
+{
+  "generated_at": "2026-06-28T07:15:59.103Z",
+  "matched_count": 5,
+  "missing_count": 46,
+  "matched": [
+    {
+      "datasets_bot_slug": "robocasa",
+      "datasets_bot_name": "RoboCasa",
+      "local_id": "robocasa_large_scale_simulation_everyday_tasks",
+      "local_title": "RoboCasa: Large-Scale Simulation of Everyday Tasks for Generalist Robots"
+    },
+    {
+      "datasets_bot_slug": "droid",
+      "datasets_bot_name": "DROID",
+      "local_id": "droid_large_scale_in_the_wild_robot_manipulation",
+      "local_title": "DROID: A Large-Scale In-The-Wild Robot Manipulation Dataset"
+    },
+    {
+      "datasets_bot_slug": "rh20t",
+      "datasets_bot_name": "RH20T",
+      "local_id": "rh20t_comprehensive_robotic_dataset_one_shot",
+      "local_title": "RH20T: A Comprehensive Robotic Dataset for Learning Diverse Skills in One-Shot"
+    },
+    {
+      "datasets_bot_slug": "open-x-embodiment",
+      "datasets_bot_name": "Open X-Embodiment (OXE)",
+      "local_id": "open_x_embodiment_robotic_learning_datasets_rtx",
+      "local_title": "Open X-Embodiment: Robotic Learning Datasets and RT-X Models"
+    },
+    {
+      "datasets_bot_slug": "bridgedata-v2",
+      "datasets_bot_name": "BridgeData V2",
+      "local_id": "bridgedata_v2_robot_learning_at_scale",
+      "local_title": "BridgeData V2: A Dataset for Robot Learning at Scale"
+    }
+  ],
+  "missing": [
+    {
+      "slug": "molmoact-dataset",
+      "name": "MolmoAct Dataset",
+      "year": 2026,
+      "source_name": "Allen Institute for AI (Ai2)",
+      "paper_url": "https://arxiv.org/abs/2605.02881",
+      "homepage_url": "https://allenai.org/blog/molmoact",
+      "download_url": "https://huggingface.co/datasets/allenai/MolmoAct2-MolmoAct-Dataset-Household"
+    },
+    {
+      "slug": "molmoact2-so100-101",
+      "name": "MolmoAct2 SO-100/SO-101 Dataset",
+      "year": 2026,
+      "source_name": "Allen Institute for AI (Ai2)",
+      "paper_url": "https://arxiv.org/abs/2605.02881",
+      "homepage_url": "https://allenai.org/blog/molmoact",
+      "download_url": "https://huggingface.co/datasets/allenai/MolmoAct2-SO100_101-Dataset"
+    },
+    {
+      "slug": "molmoact2-bimanual-yam",
+      "name": "MolmoAct2 Bimanual YAM Dataset",
+      "year": 2026,
+      "source_name": "Allen Institute for AI (Ai2)",
+      "paper_url": "https://arxiv.org/abs/2605.02881",
+      "homepage_url": "https://allenai.org/blog/molmoact",
+      "download_url": "https://huggingface.co/datasets/allenai/MolmoAct2-BimanualYAM-Dataset"
+    },
+    {
+      "slug": "lerobot-folding",
+      "name": "LeRobot Shirt-Folding Dataset",
+      "year": 2026,
+      "source_name": "LeRobot (Hugging Face)",
+      "paper_url": null,
+      "homepage_url": "https://huggingface.co/spaces/lerobot/robot-folding",
+      "download_url": "https://huggingface.co/datasets/lerobot/full_folding"
+    },
+    {
+      "slug": "ftp-1-dataset",
+      "name": "FTP-1 Dataset",
+      "year": 2026,
+      "source_name": "FTP-1 (Yuan et al.)",
+      "paper_url": "https://arxiv.org/abs/2606.13102",
+      "homepage_url": "https://ftp1-policy.github.io/",
+      "download_url": "https://www.modelscope.cn/datasets/Eureka1064/FTP-1-Dataset"
+    },
+    {
+      "slug": "dreamdojo",
+      "name": "DreamDojo GR-1 Post-Training",
+      "year": 2026,
+      "source_name": "NVIDIA",
+      "paper_url": "https://arxiv.org/abs/2602.06949",
+      "homepage_url": "https://dreamdojo-world.github.io/",
+      "download_url": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-Teleop-GR1"
+    },
+    {
+      "slug": "bitrobot-hiw-500",
+      "name": "HIW-500: Humanoids In-the-Wild",
+      "year": 2026,
+      "source_name": "BitRobot",
+      "paper_url": null,
+      "homepage_url": "https://bitrobot-foundation.github.io/humanoids-in-the-wild-500-hours/",
+      "download_url": "https://huggingface.co/datasets/BitRobot/HIW-500"
+    },
+    {
+      "slug": "agibot-world",
+      "name": "AgiBot World 2026",
+      "year": 2026,
+      "source_name": "AgiBot (Zhiyuan Robotics)",
+      "paper_url": "https://arxiv.org/abs/2503.06669",
+      "homepage_url": "https://agibot-world.com",
+      "download_url": "https://huggingface.co/datasets/agibot-world/AgiBotWorld2026"
+    },
+    {
+      "slug": "abc-130k",
+      "name": "ABC-130k",
+      "year": 2026,
+      "source_name": "UC Berkeley / MIT / Amazon FAR / CMU / XDOF",
+      "paper_url": null,
+      "homepage_url": "https://abc.bot/",
+      "download_url": "https://huggingface.co/datasets/XDOF/ABC-130k"
+    },
+    {
+      "slug": "maniparena",
+      "name": "ManipArena",
+      "year": 2026,
+      "source_name": "ManipArena (SYSU x MBZUAI)",
+      "paper_url": "https://arxiv.org/abs/2603.28545",
+      "homepage_url": "https://maniparena.com/",
+      "download_url": "https://huggingface.co/datasets/ManipArena/maniparena-dataset"
+    },
+    {
+      "slug": "nvidia-gr00t-n1-x-embodiment-sim",
+      "name": "NVIDIA GR00T X-Embodiment Sim",
+      "year": 2025,
+      "source_name": "NVIDIA (GEAR Lab / Isaac)",
+      "paper_url": "https://arxiv.org/abs/2505.12705",
+      "homepage_url": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-X-Embodiment-Sim",
+      "download_url": "https://huggingface.co/datasets/nvidia/PhysicalAI-Robotics-GR00T-X-Embodiment-Sim"
+    },
+    {
+      "slug": "humanoid-everyday",
+      "name": "Humanoid Everyday",
+      "year": 2025,
+      "source_name": "USC Physical Superintelligence Lab",
+      "paper_url": "https://arxiv.org/abs/2510.08807",
+      "homepage_url": "https://humanoid-everyday.github.io/",
+      "download_url": "https://huggingface.co/datasets/USC-PSI-Lab/humanoid-everyday"
+    },
+    {
+      "slug": "galaxea-open-world",
+      "name": "Galaxea Open-World Dataset",
+      "year": 2025,
+      "source_name": "Galaxea AI",
+      "paper_url": "https://arxiv.org/abs/2509.00576",
+      "homepage_url": "https://opengalaxea.github.io/GalaxeaVLA/",
+      "download_url": "https://huggingface.co/datasets/OpenGalaxea/Galaxea-Open-World-Dataset"
+    },
+    {
+      "slug": "egodex",
+      "name": "EgoDex",
+      "year": 2025,
+      "source_name": "Apple",
+      "paper_url": "https://arxiv.org/abs/2505.11709",
+      "homepage_url": "https://machinelearning.apple.com/research/egodex-learning-dexterous-manipulation",
+      "download_url": "https://ml-site.cdn-apple.com/datasets/egodex/part1.zip"
+    },
+    {
+      "slug": "airoa-moma",
+      "name": "AIRoA MoMa Dataset",
+      "year": 2025,
+      "source_name": "AIRoA (AI Robot Association)",
+      "paper_url": "https://arxiv.org/abs/2509.25032",
+      "homepage_url": "https://huggingface.co/datasets/airoa-org/airoa-moma",
+      "download_url": "https://huggingface.co/datasets/airoa-org/airoa-moma"
+    },
+    {
+      "slug": "tartandrive-2",
+      "name": "TartanDrive 2.0",
+      "year": 2024,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://arxiv.org/abs/2402.01913",
+      "homepage_url": "https://theairlab.org/TartanDrive2/",
+      "download_url": "https://github.com/castacks/tartan_drive_2.0"
+    },
+    {
+      "slug": "tartanaviation",
+      "name": "TartanAviation",
+      "year": 2024,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://arxiv.org/abs/2403.03372",
+      "homepage_url": "https://theairlab.org/tartanaviation/",
+      "download_url": "https://github.com/castacks/TartanAviation"
+    },
+    {
+      "slug": "tartanair-v2",
+      "name": "TartanAir V2",
+      "year": 2024,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://arxiv.org/abs/2003.14338",
+      "homepage_url": "https://www.tartanair.org/",
+      "download_url": "https://www.tartanair.org/"
+    },
+    {
+      "slug": "subt-mrs",
+      "name": "SubT-MRS",
+      "year": 2024,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://arxiv.org/abs/2307.07607",
+      "homepage_url": "https://theairlab.org/subt-mrs/",
+      "download_url": "https://superodometry.com/datasets"
+    },
+    {
+      "slug": "mobile-aloha",
+      "name": "Mobile ALOHA",
+      "year": 2024,
+      "source_name": "Stanford University",
+      "paper_url": "https://arxiv.org/abs/2401.02117",
+      "homepage_url": "https://mobile-aloha.github.io/",
+      "download_url": "https://www.tensorflow.org/datasets/catalog/aloha_mobile"
+    },
+    {
+      "slug": "humanplus",
+      "name": "HumanPlus",
+      "year": 2024,
+      "source_name": "Stanford University",
+      "paper_url": "https://arxiv.org/abs/2406.10454",
+      "homepage_url": "https://humanoid-ai.github.io/",
+      "download_url": "https://drive.google.com/drive/folders/1i3eGTd9Nl_tSieoE0grxuKqUAumBr2EV"
+    },
+    {
+      "slug": "fmb-functional-manipulation-benchmark",
+      "name": "FMB (Functional Manipulation Benchmark)",
+      "year": 2024,
+      "source_name": "UC Berkeley (RAIL / Robotic AI & Learning Lab)",
+      "paper_url": "https://arxiv.org/abs/2401.08553",
+      "homepage_url": "https://functional-manipulation-benchmark.github.io/",
+      "download_url": "https://functional-manipulation-benchmark.github.io/dataset/index.html"
+    },
+    {
+      "slug": "dexmimicgen",
+      "name": "DexMimicGen",
+      "year": 2024,
+      "source_name": "NVIDIA Research (with UT Austin and UC San Diego)",
+      "paper_url": "https://arxiv.org/abs/2410.24185",
+      "homepage_url": "https://dexmimicgen.github.io/",
+      "download_url": "https://huggingface.co/datasets/MimicGen/dexmimicgen_datasets/tree/main"
+    },
+    {
+      "slug": "wit-uas",
+      "name": "WIT-UAS (Wildland-fire Infrared Thermal UAS Dataset)",
+      "year": 2023,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://arxiv.org/abs/2312.09159",
+      "homepage_url": null,
+      "download_url": "https://github.com/castacks/WIT-UAS-Dataset"
+    },
+    {
+      "slug": "roboset",
+      "name": "RoboSet (RoboAgent)",
+      "year": 2023,
+      "source_name": "Carnegie Mellon University and Meta AI",
+      "paper_url": "https://arxiv.org/abs/2309.01918",
+      "homepage_url": "https://robopen.github.io/",
+      "download_url": "https://huggingface.co/datasets/jdvakil/RoboSet-Teleoperation/tree/main"
+    },
+    {
+      "slug": "mimicgen",
+      "name": "MimicGen",
+      "year": 2023,
+      "source_name": "NVIDIA (with The University of Texas at Austin)",
+      "paper_url": "https://arxiv.org/abs/2310.17596",
+      "homepage_url": "https://mimicgen.github.io/",
+      "download_url": "https://huggingface.co/datasets/amandlek/mimicgen_datasets"
+    },
+    {
+      "slug": "maniskill2",
+      "name": "ManiSkill2",
+      "year": 2023,
+      "source_name": "UC San Diego (Hao Su Lab / SAPIEN)",
+      "paper_url": "https://arxiv.org/abs/2302.04659",
+      "homepage_url": "https://maniskill2.github.io/",
+      "download_url": "https://huggingface.co/datasets/haosulab/ManiSkill2"
+    },
+    {
+      "slug": "furniture-bench",
+      "name": "FurnitureBench",
+      "year": 2023,
+      "source_name": "CLVR Lab, KAIST",
+      "paper_url": "https://arxiv.org/abs/2305.12821",
+      "homepage_url": "https://clvrai.github.io/furniture-bench/",
+      "download_url": "https://drive.google.com/drive/folders/1j59vFmgBsatu1PZK52HWX_9o5BCh_XDt?usp=sharing"
+    },
+    {
+      "slug": "ego-exo4d",
+      "name": "Ego-Exo4D",
+      "year": 2023,
+      "source_name": "Meta FAIR (Project Aria) and 15+ university partners",
+      "paper_url": "https://arxiv.org/abs/2311.18259",
+      "homepage_url": "https://ego-exo4d-data.org/",
+      "download_url": "https://ego4d.dev/request/ego-exo4d"
+    },
+    {
+      "slug": "aloha-bimanual",
+      "name": "ALOHA Static",
+      "year": 2023,
+      "source_name": "Stanford",
+      "paper_url": null,
+      "homepage_url": null,
+      "download_url": null
+    },
+    {
+      "slug": "tartandrive",
+      "name": "TartanDrive",
+      "year": 2022,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://arxiv.org/abs/2205.01791",
+      "homepage_url": "https://theairlab.org/tartandrive-dataset/",
+      "download_url": "https://github.com/castacks/tartan_drive"
+    },
+    {
+      "slug": "rt-1-fractal20220817",
+      "name": "RT-1 Robot Action Dataset",
+      "year": 2022,
+      "source_name": "Google (Robotics at Google / Everyday Robots)",
+      "paper_url": "https://arxiv.org/abs/2212.06817",
+      "homepage_url": "https://research.google/blog/rt-1-robotics-transformer-for-real-world-control-at-scale/",
+      "download_url": "https://www.tensorflow.org/datasets/catalog/fractal20220817_data"
+    },
+    {
+      "slug": "language-table",
+      "name": "Language-Table",
+      "year": 2022,
+      "source_name": "Robotics at Google / Google Research",
+      "paper_url": "https://arxiv.org/abs/2210.06407",
+      "homepage_url": "https://interactive-language.github.io/",
+      "download_url": "https://github.com/google-research/language-table"
+    },
+    {
+      "slug": "epic-kitchens-100",
+      "name": "EPIC-KITCHENS-100",
+      "year": 2022,
+      "source_name": "University of Bristol (with University of Catania and University of Toronto)",
+      "paper_url": "https://arxiv.org/abs/2006.13256",
+      "homepage_url": "https://epic-kitchens.github.io/",
+      "download_url": "https://data.bris.ac.uk/data/dataset/2g1n6qdydwa9u22shpxqzp0t8m"
+    },
+    {
+      "slug": "ego4d",
+      "name": "Ego4D",
+      "year": 2022,
+      "source_name": "Meta AI (Facebook AI Research) and academic consortium",
+      "paper_url": "https://arxiv.org/abs/2110.07058",
+      "homepage_url": "https://ego4d-data.org/",
+      "download_url": "https://ego4d-data.org/docs/start-here/"
+    },
+    {
+      "slug": "calvin",
+      "name": "CALVIN",
+      "year": 2022,
+      "source_name": "University of Freiburg",
+      "paper_url": "https://arxiv.org/abs/2112.03227",
+      "homepage_url": "https://github.com/mees/calvin",
+      "download_url": "https://github.com/mees/calvin/blob/main/dataset/README.md"
+    },
+    {
+      "slug": "trajair",
+      "name": "TrajAir",
+      "year": 2021,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://arxiv.org/abs/2109.15158",
+      "homepage_url": "https://theairlab.org/trajair/",
+      "download_url": "https://kilthub.cmu.edu/ndownloader/articles/14866251/versions/1"
+    },
+    {
+      "slug": "robomimic",
+      "name": "robomimic",
+      "year": 2021,
+      "source_name": "Stanford Vision and Learning Lab / ARISE Initiative",
+      "paper_url": "https://arxiv.org/abs/2108.03298",
+      "homepage_url": "https://robomimic.github.io/",
+      "download_url": "https://huggingface.co/datasets/amandlek/robomimic"
+    },
+    {
+      "slug": "dexycb",
+      "name": "DexYCB",
+      "year": 2021,
+      "source_name": "NVIDIA (with University of Washington)",
+      "paper_url": "https://arxiv.org/abs/2104.04631",
+      "homepage_url": "https://dex-ycb.github.io/",
+      "download_url": "https://dex-ycb.github.io/"
+    },
+    {
+      "slug": "cmu-airlab-uav-energy-dataset",
+      "name": "In-flight Positional and Energy-Use Dataset of Package-Delivery Quadcopter UAVs",
+      "year": 2021,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://www.nature.com/articles/s41597-021-00930-x",
+      "homepage_url": "https://theairlab.org/energy-dataset/",
+      "download_url": "https://doi.org/10.1184/R1/12683453"
+    },
+    {
+      "slug": "tartanair",
+      "name": "TartanAir",
+      "year": 2020,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://arxiv.org/abs/2003.14338",
+      "homepage_url": "https://theairlab.org/tartanair-dataset/",
+      "download_url": "https://github.com/castacks/tartanair_tools"
+    },
+    {
+      "slug": "robotic-interestingness-subtf",
+      "name": "Robotic Interestingness Dataset (SubTF)",
+      "year": 2020,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://arxiv.org/abs/2005.08829",
+      "homepage_url": "https://theairlab.org/interestingness/",
+      "download_url": "https://theairlab.org/dataset/interestingness"
+    },
+    {
+      "slug": "alfa-airlab-failure-anomaly",
+      "name": "ALFA (AirLab Failure and Anomaly Dataset)",
+      "year": 2020,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://arxiv.org/abs/1907.06268",
+      "homepage_url": "https://theairlab.org/alfa-dataset/",
+      "download_url": "https://doi.org/10.1184/R1/12707963"
+    },
+    {
+      "slug": "robonet",
+      "name": "RoboNet",
+      "year": 2019,
+      "source_name": "UC Berkeley (BAIR), Stanford, UPenn GRASP, Google Brain",
+      "paper_url": "https://arxiv.org/abs/1910.11215",
+      "homepage_url": "https://www.robonet.wiki/",
+      "download_url": "https://www.tensorflow.org/datasets/catalog/robonet"
+    },
+    {
+      "slug": "ycor-yamaha-cmu-offroad",
+      "name": "Yamaha-CMU Off-Road Dataset (YCOR)",
+      "year": 2018,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://link.springer.com/chapter/10.1007/978-3-319-67361-5_22",
+      "homepage_url": "https://theairlab.org/yamaha-offroad-dataset/",
+      "download_url": "https://cmu.box.com/s/3fngoljhcwhqf2z5cbepufh331qtesxt"
+    },
+    {
+      "slug": "airlab-wire-detection",
+      "name": "Wire Detection Dataset",
+      "year": 2017,
+      "source_name": "CMU AirLab",
+      "paper_url": "https://publications.ri.cmu.edu/storage/publications/2017/08/root.pdf",
+      "homepage_url": "https://theairlab.org/wire-detection/",
+      "download_url": "https://drive.google.com/file/d/1VXak_nKDszabQvDQQ1AG2bvmBlU7p18J/view?usp=sharing"
+    }
+  ]
+}

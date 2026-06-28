@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Towards Comprehensive Multimodal Perception: Introducing the Touch-Language-Vision Dataset</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Cheng, Li, Gao, Fang, Xu, Han">
+<meta name="year" content="2024">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2403.09813">
+<meta name="url" content="https://arxiv.org/abs/2403.09813">
+<meta name="pdf" content="../../raw/papers/tlv_touch_language_vision_dataset.pdf">
+<meta name="tags" content="multimodal-dataset, touch-language, visuo-tactile, tactile-representation, tactile-sensing, multimodal-binding, gelsight, representation-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Towards Comprehensive Multimodal Perception: Introducing the Touch-Language-Vision Dataset</h1>
+<p class="meta">
+  Ning Cheng, You Li, Jing Gao, Bin Fang, Jinan Xu, Wenjuan Han
+  &middot; Beijing Jiaotong University / BUPT
+  &middot; 2024 &middot; arXiv preprint
+  &middot; <a href="https://arxiv.org/abs/2403.09813">arXiv:2403.09813</a>
+  &middot; <a href="../../raw/papers/tlv_touch_language_vision_dataset.pdf">PDF</a>
+  &middot; <a href="https://xiaoen0.github.io/touch.page/">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> TLV is the first touch&ndash;language&ndash;vision
+dataset with <em>sentence-level</em> (not just lexical-label) tactile
+descriptions &mdash; ~20K GelSight-touch / RGB-vision pairs auto-captioned by
+GPT-4V via a human-machine cascade &mdash; paired with STLV-Align, a LoRA recipe
+that aligns touch, language, and vision in one embedding space by tuning only
+1% of parameters.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Tactile-multimodal research has fixated on the visual&ndash;tactile pair and,
+where language enters at all, kept it at the <em>lexical</em> level &mdash; words
+or class labels used purely for classification (e.g.,
+<a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a>,
+"Connecting look and feel"). Lexical labels carry thin semantics; richer
+sentence-level captions could convey object identity, contact location,
+material, and texture/softness jointly, but annotating lengthy tactile text by
+hand is expensive and slow. The authors argue that modern image-to-text models
+(GPT-4V, Gemini) now make long-form tactile annotation feasible at scale, and
+that binding touch to language at the sentence level (in the spirit of
+<a href="imagebind_one_embedding_space.html">ImageBind</a> /
+<a href="languagebind_language_anchored.html">LanguageBind</a> extending the joint
+space to new modalities) is the missing piece for &ldquo;comprehensive&rdquo;
+tactile perception.</p>
+
+<h2>Method</h2>
+<p>The contribution is two-part: a <strong>dataset</strong> (TLV) built by a
+three-stage human-machine cascade, and a <strong>training recipe</strong>
+(STLV-Align). The dataset construction pipeline is Fig 1.</p>
+
+<p><strong>Stage I &mdash; Touch and vision collection.</strong> Paired
+tactile/visual frames are drawn from <code>VisGel</code> [26], a large
+vision&ndash;touch dataset where a robot arm touches objects while a
+<code>GelSight</code> [22] sensor and an RGB camera record synchronized,
+timestamped video. From 10,000 synchronized videos, for each video they extract
+two paired frame sets: a <em>touched</em> set and an <em>untouched</em> set. The
+first frame (arm away from objects) is the background; <em>frame differencing</em>
+[40] against it gives the frame of maximum difference as the touch frame; the
+40th frame is uniformly taken as the no-contact frame.</p>
+
+<p><strong>Stage II &mdash; Touch localization.</strong> Human annotators draw a
+red bounding box around the touched object in the visual image and give it an
+<em>open-ended</em> name (no fixed vocabulary). Untouched frames are skipped.
+Data that can't be cleanly annotated (occluded object, no real interaction) is
+filtered out. The box plus name is the "data-specific prompt" handed to the next
+stage.</p>
+
+<p><strong>Stage III &mdash; Tactile labeling.</strong> GPT-4V is prompted with
+the boxed visual image and a carefully designed data-specific prompt instructing
+it to describe the touched object's name, contact location, material at the point
+of contact, and texture/softness-hardness. For untouched frames, a fixed string
+&mdash; <em>"No object is being touched."</em> &mdash; is used instead of an LLM
+call. Treating touch and vision as "two views of the same semantics" is what
+licenses captioning the tactile signal from the visual image.</p>
+
+<p><strong>STLV-Align (the model, Fig 2).</strong> Three OpenCLIP encoders &mdash;
+touch, text, vision. The touch modality is processed as an RGB image (GelSight
+frames look like images), so both the touch and vision encoders are instantiated
+as OpenCLIP ViT [9] vision encoders; the text encoder is the OpenCLIP text
+encoder. Rather than the large-scale pretraining of the prior approach
+(ViT-LENS-2 [25]), they use <strong>LoRA</strong> [18]: the base weight
+<code>W&#8320;</code> stays frozen and only a low-rank update
+<code>BA</code> is learned, so <code>f(x) = W&#8320;x + BAx</code> with
+<code>B&isin;&#8477;<sup>d&times;r</sup></code>,
+<code>A&isin;&#8477;<sup>r&times;k</sup></code> (Eq 1). During <strong>joint
+training</strong> the text encoder is frozen (OpenCLIP text already generalizes
+well); only the touch and vision encoders update, and the vision update exists
+mainly to <em>assist</em> the touch update. Three contrastive losses
+(Eq 2) bind the pairs &mdash; touch&harr;language
+<code>L<sub>T,L</sub></code>, vision&harr;language <code>L<sub>V,L</sub></code>,
+touch&harr;vision <code>L<sub>T,V</sub></code> &mdash; combined as a symmetric
+joint loss <code>(L<sub>T,L</sub>+L<sub>L,T</sub>) + &alpha;(L<sub>V,L</sub>+L<sub>L,V</sub>) + &beta;(L<sub>T,V</sub>+L<sub>V,T</sub>)</code>,
+with both <code>&alpha;</code> and <code>&beta;</code> set to 0.1 (vision is
+auxiliary).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> TLV itself &mdash; 19,834 annotated
+    entries (9,834 touched pairs after filtering + 10,000 untouched pairs), all
+    sourced from VisGel [26]. Downstream zero-shot evaluation on the
+    <a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a> [36]
+    dataset across three tactile-classification tasks: material, hard/soft,
+    rough/smooth (cross-domain &mdash; TLV is train, Touch and Go is test).</li>
+  <li><strong>Hardware / simulator:</strong> No new robot. Tactile data is
+    GelSight [22] camera-based touch imagery inherited from VisGel; visual data
+    is RGB camera frames. The robot arm and capture rig are VisGel's.</li>
+  <li><strong>Baselines:</strong> ViT-LENS-2 [25] (SOTA omni-modal model, anchored
+    by images "(I)" and by images+text "(I+T)"), with its foundation ImageBind
+    [14]; OpenCLIP-large [19] as STLV-Align's own foundation.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (only the 1% parameter-tuning
+    ratio and the LoRA design are given).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: with only 19,843 unlabeled training pairs and 1% tuned parameters,
+STLV-Align (Large) lifts its OpenCLIP foundation by +8.3% on material and by more
+than 30% on both hard/soft (+32.9%) and rough/smooth (+31.9%) zero-shot accuracy
+on Touch and Go (Table 1). It does <em>not</em> beat the absolute numbers of the
+heavily-pretrained ViT-LENS-2 (I+T), which hits 65.8% material; the claim is
+parameter-/data-efficiency, not SOTA.</p>
+
+<table>
+  <tr><th>Model</th><th>Size</th><th>Material</th><th>Hard/Soft</th><th>Rough/Smooth</th></tr>
+  <tr><td>ImageBind</td><td>Base</td><td>24.2</td><td>65.7</td><td>69.8</td></tr>
+  <tr><td>ViT-LENS-2 (I)</td><td>Large</td><td>31.2 (+7.0)</td><td>74.3 (+8.6)</td><td>78.2 (+8.4)</td></tr>
+  <tr><td>ViT-LENS-2 (I+T)</td><td>Large</td><td><strong>65.8 (+41.6)</strong></td><td>74.7 (+9.0)</td><td>63.8 (&minus;6.0)</td></tr>
+  <tr><td>OpenCLIP</td><td>Large</td><td>17.7</td><td>32.2</td><td>42.7</td></tr>
+  <tr><td><strong>STLV-Align</strong></td><td>Large</td><td>26.0 (+8.3)</td><td>65.1 (+32.9)</td><td>74.6 (+31.9)</td></tr>
+</table>
+
+<p>Where it loses: STLV-Align's <em>absolute</em> material accuracy (26.0) trails
+ViT-LENS-2 (I+T)'s 65.8 by a wide margin, and even its hard/soft and rough/smooth
+sit below ViT-LENS-2 (I). The efficiency comparison (Table 2) is the real
+selling point: STLV-Align is unsupervised, uses 19,843 vs ViT-LENS-2's 91,982
+training items, tunes 1% vs 100% of parameters, and supports cross-domain
+evaluation.</p>
+
+<p><strong>Ablation (Table 3).</strong> Aligning <em>both</em> touch and text with
+vision helps hard/soft (65.1) and rough/smooth (74.6); aligning only one of them
+with vision hurts. Curiously, removing vision entirely (&minus;TV&amp;VL) gives the
+<em>best</em> material score (32.5 vs 26.0) &mdash; so vision is a net positive on
+texture/softness but a net negative on material classification.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The method "may apply to specific scenarios, but there is room for
+    improvement in terms of performance" &mdash; they concede STLV-Align is not
+    competitive on absolute accuracy.</li>
+  <li>They intend to extend TLV to more tasks to fully exploit its potential
+    (i.e., current task coverage is narrow: three binary/material classifications).</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>The "tactile" captions are generated from vision, not from touch.</strong>
+    GPT-4V never sees the GelSight image &mdash; it captions the boxed RGB image,
+    and material/softness claims are inferred from <em>visual appearance</em>.
+    This risks systematically wrong tactile labels (a matte plastic that looks
+    like metal) and undercuts the premise that the text encodes genuine tactile
+    semantics. The whole dataset's tactile grounding hinges on the "two views of
+    the same semantics" assumption, which is exactly where it's weakest.</li>
+  <li><strong>No human verification of GPT-4V captions is reported.</strong> No
+    annotation-quality audit, inter-annotator agreement, or caption-accuracy
+    study. For a dataset paper, that's the missing experiment.</li>
+  <li><strong>The frame-selection heuristics are crude.</strong> "40th frame =
+    no-contact" and "max frame-difference = contact" are blunt; mislabeled
+    contact frames would propagate silently into training.</li>
+  <li>The ablation showing vision <em>hurts</em> material classification is left
+    unexplained, yet vision-as-auxiliary is the paper's design thesis &mdash; a
+    real tension that isn't reconciled.</li>
+  <li>No per-class or per-seed variance is reported on the classification tables;
+    single accuracy numbers only.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This sits squarely on the batch thesis that many manipulation predicates
+&mdash; <code>surface_is_rough</code>, <code>is_soft</code>,
+<code>material_is_metal</code> &mdash; are <em>not visually evaluable</em> and
+live in touch. TLV is an attempt to attach <em>sentence-level language</em> to
+those tactile properties, which is exactly the substrate
+<a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+would need if it ever wanted to learn touch-grounded predicate classifiers
+(BLADE today learns only <em>visual</em> predicate classifiers). The
+appeal: a touch&harr;language embedding space could let an LLM name a tactile
+predicate and have it grounded in GelSight readings rather than pixels.</p>
+<p>But the caveat is sharp and worth flagging for my own future work: <strong>TLV's
+"tactile" captions are produced from the visual image, so the language is not
+actually grounded in touch.</strong> If I cite TLV in a related-work section, it
+should be framed as an <em>early, vision-captioned</em> touch&ndash;language
+dataset &mdash; a motivating proof-of-concept, not a clean tactile-grounding
+benchmark. The genuinely touch-grounded successors in this batch (TVL, Octopi,
+UniTouch, Touch100k) are the ones to lean on for grounded predicate learning.
+TLV is adjacent-but-flawed relative to BLADE: it shares the
+language-grounds-perception ambition but does not deliver true touch grounding,
+and it has no planning/manipulation component at all.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  Beyond vocabulary, sentence-level descriptions contain richer semantics. Based
+  on this, we construct a touch-language-vision dataset named TLV
+  (Touch-Language-Vision) by human-machine cascade collaboration, featuring
+  sentence-level descriptions for multimode alignment.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+
+<blockquote>
+  The two modalities of touch and vision can be regarded as different views
+  containing the same semantics.
+  <span class="quote-cite">&mdash; &sect;3.2 Touch Localization / p.5</span>
+</blockquote>
+
+<blockquote>
+  To our knowledge, this is the first touch-language-vision dataset with
+  sentence-level descriptions.
+  <span class="quote-cite">&mdash; &sect;3.4 Dataset Statistics / p.5</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited here that are worth ingesting next:</p>
+<ul>
+  <li><strong>[26] Li et al. 2019 &mdash; Connecting touch and vision via
+    cross-modal prediction (VisGel)</strong> (CVPR) &mdash; the source dataset
+    TLV is entirely built on; the direct predecessor.</li>
+  <li><strong>[36] Yang et al. 2022 &mdash;
+    <a href="../../raw/papers/touch_and_go_human_collected_vision_touch.pdf">Touch and Go</a></strong>
+    (NeurIPS) &mdash; the human-collected vision-touch dataset used as the
+    cross-domain test set. Already in the batch cross-ref list.</li>
+  <li><strong>[25] Lei et al. 2023 &mdash; ViT-LENS-2</strong> &mdash; the SOTA
+    omni-modal baseline STLV-Align positions itself against.</li>
+  <li><strong>[14] Girdhar et al. 2023 &mdash;
+    <a href="../../raw/papers/imagebind_one_embedding_space.pdf">ImageBind</a></strong>
+    &mdash; foundation of the binding paradigm; in this batch.</li>
+  <li><strong>[41] Zhu et al. 2024 &mdash;
+    <a href="../../raw/papers/languagebind_language_anchored.pdf">LanguageBind</a></strong>
+    &mdash; the language-centered alignment strategy TLV's framing builds on.</li>
+  <li><strong>[12] Gao et al. 2021 &mdash;
+    <a href="../../raw/papers/objectfolder_2_multisensory_sim2real.pdf">ObjectFolder 2.0</a></strong>
+    and <strong>[13] ObjectFolder Benchmark</strong> &mdash; multisensory datasets
+    cited as prior tactile datasets; in this batch.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL (A Touch, Vision, and Language Dataset)</a>
+    &mdash; the close sibling and the stronger version of this idea: human-labeled
+    <em>tactile</em> captions (grounded in the GelSight signal, not inferred from
+    vision) plus a touch-vision-language model. Read TLV and TVL together; TVL
+    fixes TLV's core grounding flaw.</li>
+  <li><a href="touch100k_touch_language_vision_dataset.html">Touch100k</a>
+    &mdash; same touch-language-vision framing at much larger scale; the natural
+    follow-on dataset.</li>
+  <li><a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+    and <a href="octopi_1_5_visual_tactile_language_model.html">Octopi-1.5</a>
+    &mdash; tactile-language models that <em>reason</em> over object properties
+    from touch; the downstream-capability counterpart to TLV's alignment.</li>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a>
+    &mdash; binds touch into a shared multimodal space (ImageBind-style); the
+    representation-learning peer to STLV-Align, with broader binding.</li>
+  <li><a href="imagebind_one_embedding_space.html">ImageBind</a> and
+    <a href="languagebind_language_anchored.html">LanguageBind</a>
+    &mdash; the binding/anchoring anchors STLV-Align inherits its contrastive
+    multi-encoder recipe from.</li>
+  <li><a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a> and
+    <a href="t3_transferable_tactile_transformers.html">T3</a>
+    &mdash; tactile representation/foundation models; the encoder-side direction
+    STLV-Align's frozen-foundation-plus-LoRA approach is a lightweight alternative to.</li>
+</ul>
+
+</body>
+</html>

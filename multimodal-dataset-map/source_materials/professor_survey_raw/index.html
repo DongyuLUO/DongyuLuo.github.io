@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Grounding Dynamic Manipulation Concepts on Multimodal Sensing — Shared Package</title>
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.1em; margin-top: 1.6em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .note { color: #777; font-size: 0.92em; }
+  .big { font-size: 1.05em; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.95em; }
+</style>
+</head>
+<body>
+<h1>Grounding Dynamic Manipulation Concepts on Multimodal Sensing</h1>
+<p class="note">Curated from Weiyu's research knowledge base &middot; shared 2026-06-25</p>
+
+<p class="big"><strong>Start here &rarr;</strong>
+  <a href="knowledge/brainstorm/grounding_dynamic_state_change_concepts_multimodal.html">Grounding Dynamic State-Change Concepts on Multimodal Sensing for Closed-Loop Manipulation</a></p>
+<p>The research-idea brainstorm. Core thesis: existing work grounds <em>static properties</em>
+(hardness, material) on non-visual sensing and uses them for one-shot <em>selection</em>; manipulation is
+<em>transformation</em>, so the concepts that matter are <em>dynamic</em> &mdash; object state and
+state-<em>transitions</em> (&ldquo;hot enough now&rdquo;, &ldquo;became slippery after wetting&rdquo;,
+&ldquo;coming to a boil&rdquo;) &mdash; and the signal that reveals them often lives in a non-visual modality
+(thermal, acoustic, tactile/friction). The proposal: ground named, learned, transferable
+state-<em>change</em> concepts on multimodal non-visual sensing, monitor them over time, and use their value
+to drive reasoned closed-loop correction.</p>
+
+<p>The doc includes: a four-type taxonomy of dynamic concepts; the BLADE connection (ground the
+<em>effects/verbs</em>, not the <em>properties/adjectives</em>); three framing spines (planner-predicates /
+policy-correction / perception-benchmark); a novelty-landscape table positioning against the closest prior
+work; a <strong>task &times; modality &times; annotation catalog</strong> (the design matrix across all
+sensory modalities, with single-sensor vs. inferred tagging and a grounded/novel coverage map); five hero
+benchmark tasks; and open research questions.</p>
+
+<h2>What's in this folder</h2>
+<ul>
+  <li><strong>The brainstorm:</strong> <a href="knowledge/brainstorm/grounding_dynamic_state_change_concepts_multimodal.html">knowledge/brainstorm/grounding_dynamic_state_change_concepts_multimodal.html</a></li>
+  <li><strong>91 paper summaries</strong> in <code>knowledge/paper/</code> &mdash; everything the brainstorm and the survey reference: the language + multimodal-sensing corpus (tactile / audio / force / thermal for manipulation) plus the dynamic-state-change / closed-loop-correction related-work anchors.</li>
+  <li><strong>91 source PDFs</strong> in <code>raw/papers/</code> &mdash; linked from each summary's header.</li>
+  <li><strong>1 literature survey</strong> in <code>knowledge/search/</code> &mdash; the
+    <a href="knowledge/search/language_multimodal_sensing_manipulation_2026_06_24.html">language + multimodal (non-visual) sensing for robotic manipulation</a> targeted search: the full 73-candidate landscape (10 clusters) the corpus was built from, with per-paper metadata and arXiv links.</li>
+</ul>
+
+<h2>How to read it</h2>
+<ul>
+  <li>Read the brainstorm top-to-bottom; every concept and paper mention links to the relevant summary.</li>
+  <li>Each summary follows the same shape: one-liner, problem &amp; motivation, method, setup, results,
+    limitations &amp; open questions, why-it-matters, quotable lines, and related papers.</li>
+  <li>The survey checklist is browsable by cluster (touch&ndash;language, tactile foundation models,
+    multisensory VLAs, audio/acoustic, audio-visual anchors, force/proprioception, thermal, binding LMs,
+    datasets/sims, surveys); its paper links go to arXiv.</li>
+</ul>
+
+<p class="note">Paper-to-paper links within this set resolve. A few links in the brainstorm's
+&ldquo;Related&rdquo; sections and in summary footers point to papers or index pages outside this curated
+package and will not open. Summary text is faithful to each source; where a value was not reported in a
+paper it is marked <em>not reported</em> rather than guessed.</p>
+</body>
+</html>

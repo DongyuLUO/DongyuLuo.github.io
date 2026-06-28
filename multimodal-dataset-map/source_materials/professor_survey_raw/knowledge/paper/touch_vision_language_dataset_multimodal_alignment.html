@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>A Touch, Vision, and Language Dataset for Multimodal Alignment</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Fu, Datta, Huang, Panitch, Drake, Ortiz, Mukadam, Lambeta, Calandra, Goldberg">
+<meta name="year" content="2024">
+<meta name="venue" content="ICML 2024">
+<meta name="arxiv_id" content="2402.13232">
+<meta name="url" content="https://arxiv.org/abs/2402.13232">
+<meta name="pdf" content="../../raw/papers/touch_vision_language_dataset_multimodal_alignment.pdf">
+<meta name="tags" content="touch-language, visuo-tactile, multimodal-dataset, tactile-language-model, representation-learning, digit, multimodal-binding, vision-based-tactile, self-supervised-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>A Touch, Vision, and Language Dataset for Multimodal Alignment</h1>
+<p class="meta">
+  Letian Fu*, Gaurav Datta*, Huang Huang*, William Chung-Ho Panitch*,
+  Jaimyn Drake*, Joseph Ortiz, Mustafa Mukadam, Mike Lambeta, Roberto Calandra,
+  Ken Goldberg
+  &middot; UC Berkeley / Meta AI / TU Dresden
+  &middot; ICML 2024
+  &middot; <a href="https://arxiv.org/abs/2402.13232">arXiv:2402.13232</a>
+  &middot; <a href="../../raw/papers/touch_vision_language_dataset_multimodal_alignment.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> TVL builds the first <em>open-vocabulary</em>
+touch&ndash;vision&ndash;language dataset (44K in-the-wild DIGIT&ndash;webcam pairs,
+10% human-labeled and 90% GPT-4V pseudo-labeled), then trains a tactile encoder
+into CLIP's latent space via <em>pairwise</em> contrastive alignment across all
+three modalities &mdash; showing that touch carries semantic content that pure
+vision-language models miss (+29% tactile classification, +12% over GPT-4V on a
+new tactile-description benchmark).</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Touch is a core human sensing modality but is essentially absent from
+multimodal generative language models. Two obstacles: (1) natural-language
+labels for tactile data are scarce, and (2) aligning tactile readings with
+<em>both</em> vision and language is hard. Prior tactile datasets use
+<em>closed</em>-vocabulary human annotations (e.g., 40-way material
+classification) collected in controlled lab settings; the authors say they are
+aware of no tactile dataset with open-vocabulary language labels. The paper's
+thesis is that the tactile modality "captures <em>more</em> than
+tactile-visual associations" &mdash; it has diverse semantic content and deep
+integration with language &mdash; so binding touch directly to language (not just
+to vision, as ImageBind does) should yield richer representations.</p>
+
+<h2>Method</h2>
+<p><strong>1. Data collection (TVL dataset).</strong> A handheld 3D-printed
+device (Fig 2) co-mounts a <code>DIGIT</code> vision-based tactile sensor and a
+Logitech BRIO webcam, recording synchronized vision+tactile at 30 Hz while a
+human presses and slides across surfaces "in the wild". TVL amalgamates two
+sub-datasets: <strong>SSVTP</strong> (Kerr et al. 2023, 4,587 robot-collected
+image&ndash;touch pairs; UR5 captures a top-down image then presses DIGIT onto
+the prearranged location) and the newly-collected <strong>HCT</strong>
+(Human-Collected Tactile): 39,154 in-contact pairs + 169,292 out-of-contact
+pairs from 5 humans over 20 hours, across 1,486 touch trajectories. Visual data
+are captured at an oblique angle so the sensor and contact point stay in the
+camera's field of view, preserving touch&ndash;vision synchronicity.</p>
+
+<p><strong>2. Labeling.</strong> SSVTP (strong visual-tactile alignment) is
+<em>human</em>-labeled: annotators pick up to 5 adjectives from a 400-word
+tactile vocabulary (ajbarnett 2023). HCT in-contact frames are
+<em>pseudo-labeled</em> by <code>GPT-4V</code>, prompted with the full image plus
+a crop centered on the contact point (the crop aligns GPT-4V's outputs with
+human ones). Trajectories where GPT-4V refuses (motion blur, low light) are
+backfilled from other in-contact frames in the same trajectory, else dropped.
+Net: 4,587 human + 39,154 pseudo-labeled = 43,741 labeled image&ndash;touch pairs;
+254 unique tactile adjectives; 99%/1% train/test split with the test set (402
+pairs) human-labeled.</p>
+
+<p><strong>3. Tactile encoder (contrastive).</strong> In contrast to ImageBind,
+which binds <em>every</em> modality only to vision, TVL computes contrastive loss
+between <em>each pair</em> of modalities &mdash; tactile&ndash;text,
+tactile&ndash;vision, and vision&ndash;text &mdash; per batch (Fig 4, left). The
+tactile encoder is a ViT (Tiny 5.7M / Small 22M / Base 86M) trained with InfoNCE;
+vision and text encoders are the frozen OpenCLIP encoders, and the projectors are
+removed so the tactile encoder projects directly into CLIP's shared latent space.
+To fight overfitting on the small 44K set, a fraction <code>&gamma; = 10%</code>
+of training data are out-of-contact frames labeled "background", and words in
+each tactile description are randomly shuffled/subsampled.</p>
+
+<p><strong>4. TVL-LLaMA (generative model).</strong> Following ImageBind-LLM /
+LLaMA-Adapter, they swap ImageBind's encoders for the TVL encoders, average the
+tactile and vision latents into a single token, and finetune LLaMA-2 7B with a
+zero-initialized gate + LoRA to generate tactile descriptions from vision+tactile
+inputs (Fig 4, right). Trained on TVL + Alpaca + LLaVA 150K to avoid the model
+refusing to answer tactile questions (a safety-finetuning artifact).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> TVL dataset (44K pairs = SSVTP 4,587
+    + HCT 39,154 in-contact); 254 tactile adjectives; 99%/1% split (402-pair
+    human-labeled test set). New <strong>TVL Benchmark</strong>: open-vocabulary
+    402-way tactile classification (top-1/top-5, tactile&ndash;vision and
+    tactile&ndash;language) + a tactile-semantic description task scored 1&ndash;10
+    by text-only GPT-4 against human ground truth.</li>
+  <li><strong>Hardware / simulator:</strong> DIGIT vision-based tactile sensor +
+    Logitech BRIO webcam on a 3D-printed handheld rig (HCT); UR5 robot for SSVTP.
+    No simulator.</li>
+  <li><strong>Baselines:</strong> Encoder &mdash; OpenCLIP (vision-text) and SSVTP
+    pretrained tactile-vision encoder. Generative &mdash; LLaVA-1.5 7B/13B,
+    ViP-LLaVA 7B/13B, LLaMA-Adapter, BLIP-2 OPT-6.7b, InstructBLIP 7B/13B, GPT-4V,
+    and SSVTP-LLaMA (an ablation trained on SSVTP tactile+vision encoders only,
+    no language alignment).</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (encoder sizes given:
+    ViT-Tiny 5.7M, ViT-Small 22M, ViT-Base 86M; LLM is LLaMA-2 7B + LoRA).</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Tactile encoder (Table 1).</strong> The TVL ViT-Tiny encoder reaches
+36.7% / 70.3% top-1/top-5 on tactile&ndash;text and 79.5% / 95.7% on
+tactile&ndash;vision. OpenCLIP cannot do tactile&ndash;text at all, and the SSVTP
+encoder &mdash; trained on the small in-lab set &mdash; collapses on the in-the-wild
+TVL test set (0.2% / 0.3% tactile&ndash;vision), motivating the need to scale
+tactile&ndash;vision data. The TVL encoder inherits OpenCLIP's vision&ndash;text
+score (28.4% / 64.9%) unchanged.</p>
+
+<p><strong>TVL Benchmark generation (Table 2, GPT-4-scored 1&ndash;10, mean over
+SSVTP/HCT/TVL test).</strong></p>
+<table>
+  <tr><th>Model</th><th>Pretrain modalities</th><th>SSVTP</th><th>HCT</th><th>TVL</th></tr>
+  <tr><td>GPT-4V</td><td>V, L</td><td>5.02</td><td>4.42</td><td>4.49</td></tr>
+  <tr><td>LLaVA-1.5 13B</td><td>V, L</td><td>3.55</td><td>3.63</td><td>3.62</td></tr>
+  <tr><td>SSVTP-LLaMA</td><td>V, T</td><td>2.58</td><td>3.67</td><td>3.54</td></tr>
+  <tr><td><strong>TVL-LLaMA (ViT-Tiny)</strong></td><td>V, T, L</td><td>6.09</td><td>4.79</td><td>4.94</td></tr>
+  <tr><td><strong>TVL-LLaMA (ViT-Base)</strong></td><td>V, T, L</td><td><strong>6.16</strong></td><td><strong>4.89</strong></td><td><strong>5.03</strong></td></tr>
+</table>
+<p>All TVL-LLaMA variants beat GPT-4V (the label-generating teacher) by
+&ge;+12% on the overall TVL score, and beat open-source VLMs by larger margins,
+all statistically significant (paired t-test vs GPT-4V, p &lt; 0.05). The
++29% headline is the encoder's tactile classification gain over visual-tactile /
+generic vision-language encoders.</p>
+
+<p><strong>Where it loses / nuances.</strong> The "+29%" claim is about the
+encoder, but the student/teacher dynamic flips by metric: ViT-Base has the best
+<em>validation</em> accuracy yet ViT-Small/Tiny win on the <em>test</em> set
+because the GPT-4V training labels are less detailed/accurate than the
+human-annotated test labels (Table 3a) &mdash; a distribution shift the authors
+flag explicitly. On synchronized tactile&ndash;vision data, ViT-Base does win
+(81.7% vs 79.5%). Ablations (Table 3): disabling the tactile-text loss
+(ImageBind-style) drops tactile-text accuracy 36.3% &rarr; 20.3% (Table 3b);
+dropping vision modality during contrastive training drops tactile-text to 29.9%
+and tactile-vision to 1.0% (Table 3c); adding 10% out-of-contact data and prompt
+formatting give only marginal gains (3d, 3e); and the GPT-4V-pseudo-labeled HCT
+alone gives comparable performance to full supervision (Table 3f), supporting the
+self-supervised/pseudo-label scaling story.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The "distinct nature of touch compared to vision" limits the accuracy of
+    tactile labels derived <em>solely from vision</em> (GPT-4V) &mdash; the teacher
+    is fundamentally blind to touch.</li>
+  <li>The data-collection hardware may not give the camera an unoccluded view of
+    the contacted surface (the sensor itself occludes it), increasing
+    touch&ndash;vision alignment difficulty and degrading pseudo-label quality.</li>
+  <li>The dataset is small (44K); they call for scaling touch-vision-language data
+    to improve multimodal alignment.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The whole supervision signal is bounded by a vision-only teacher. GPT-4V
+    cannot perceive touch, so "soft/plush/cushioned" is inferred from <em>looks</em>,
+    not feel &mdash; the mislabeled examples in Fig 3 (e.g., screwdriver labeled
+    "hard, smooth, reflective" with no compliance info) show the ceiling here.
+    The model can only learn the visually-correlated slice of tactile semantics.</li>
+  <li>The benchmark is graded by GPT-4 (text-only) for descriptive overlap against
+    human adjectives &mdash; an LLM-as-judge metric on a small 402-pair test set.
+    Beating GPT-4V on a benchmark whose ground truth is partly GPT-4V-derived needs
+    care; the human-labeled SSVTP portion is the cleaner signal and is where
+    TVL-LLaMA's margin is largest (6.16 vs 5.02).</li>
+  <li>DIGIT is a single sensor type with a deformable gel; "tactile" here is
+    high-resolution <em>surface texture/geometry from one sensor</em>, not force,
+    compliance, temperature, or slip. The semantic richness claim is real but
+    narrower than "touch" in general.</li>
+  <li>Encoder scaling is non-monotonic on the test set (Tiny &gt; Base) purely
+    because of teacher-label noise &mdash; a caution for anyone hoping to scale
+    tactile encoders on pseudo-labeled data without better labels.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely on the batch thesis that many manipulation predicates
+(<code>surface_is_rough</code>, <code>is_deformable</code>,
+<code>material_is_compliant</code>) are <em>not visually evaluable</em> &mdash;
+they live in touch. TVL is the dataset/encoder backbone that makes
+"tactile&ndash;language" a thing: it shows touch can be projected into the same
+CLIP latent space as vision and language, which is exactly the substrate a
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>-style
+predicate classifier would need if the predicate were tactile rather than visual.
+In BLADE, predicate classifiers <em>f<sub>&theta;</sub>(p): O &rarr; {T,F}</em>
+crop the RGB observation to the relevant object; TVL is the proof-of-concept that
+the same move works on a tactile observation, with language as the supervision
+channel. The honest caveat is that TVL is a <em>perception/representation</em>
+paper, not a manipulation or planning paper &mdash; there is no robot policy, no
+long-horizon task, no precondition/effect reasoning. Its relevance to my line is
+upstream: it is the touch-grounding layer that a future tactile-predicate
+extension of BLADE would build on. The GPT-4V-as-teacher limitation also rhymes
+with BLADE's reliance on an LLM for symbolic structure &mdash; in both cases the
+LLM/VLM injects a semantic prior that is only as good as what it can perceive,
+which for touch is a hard ceiling.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  To the best of our knowledge, this work presents the first open-vocabulary
+  tactile-vision-language dataset and we train 1) a vision-language aligned tactile
+  encoder and 2) a tactile-vision-language model (TVLM) for describing tactile
+  sensations.
+  <span class="quote-cite">&mdash; Fig 1 caption / p.1</span>
+</blockquote>
+<blockquote>
+  Instead of binding all modalities to vision, we train a tactile encoder on this
+  dataset by performing pairwise contrastive learning among all three modalities.
+  <span class="quote-cite">&mdash; &sect;2.1 / p.2</span>
+</blockquote>
+<blockquote>
+  The distinct nature of touch compared to visual perception suggests a limit to
+  the accuracy of tactile labels derived solely from vision.
+  <span class="quote-cite">&mdash; &sect;6 Discussion / p.8</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>Kerr et al. 2023 &mdash; SSVTP</strong>
+    (<a href="../../raw/papers/dexterity_from_touch_self_supervised_pretraining.pdf">self-supervised visuo-tactile pretraining</a>) &mdash;
+    the robot-collected sub-dataset and tactile-encoder predecessor TVL builds on
+    and ablates against (SSVTP-LLaMA).</li>
+  <li><strong>Girdhar et al. 2023 &mdash; ImageBind</strong>
+    (<a href="../../raw/papers/imagebind_one_embedding_space.pdf">one embedding space to bind them all</a>) &mdash;
+    the bind-everything-to-vision baseline TVL improves on with pairwise alignment;
+    direct architectural foil.</li>
+  <li><strong>Lambeta et al. 2020 &mdash; DIGIT</strong>
+    (<a href="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">low-cost compact tactile sensor</a>) &mdash;
+    the sensor used for all tactile data; foundational hardware dependency.</li>
+  <li><strong>Yang et al. 2024 &mdash; UniTouch</strong>
+    (<a href="../../raw/papers/binding_touch_to_everything_unitouch.pdf">Binding Touch to Everything</a>) &mdash;
+    concurrent work binding touch to vision for open-vocabulary classification;
+    the closest competitor in framing.</li>
+  <li><strong>Han et al. 2023 &mdash; ImageBind-LLM</strong> &mdash; the
+    multimodal-LLM finetuning recipe TVL-LLaMA adapts.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+    and <a href="octopi_1_5_visual_tactile_language_model.html">Octopi-1.5</a>
+    &mdash; same cluster (touch&ndash;language grounding); tactile-language models
+    that reason about object properties, the closest siblings to TVL-LLaMA.</li>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a> &mdash;
+    concurrent touch-binding model; direct comparison on open-vocabulary tactile
+    classification.</li>
+  <li><a href="touch100k_touch_language_vision_dataset.html">Touch100k</a> and
+    <a href="tlv_touch_language_vision_dataset.html">TLV</a> &mdash; later/parallel
+    touch-language-vision datasets; TVL is the open-vocabulary precursor they scale.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a> and
+    <a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a> &mdash;
+    self-supervised / unified tactile representation models; the
+    representation-learning neighbors that drop the language-alignment objective TVL
+    centers.</li>
+  <li><a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a> and
+    <a href="objectfolder_dataset_implicit_representations.html">ObjectFolder</a>
+    &mdash; prior human-collected / multisensory vision-touch datasets TVL extends
+    toward open-vocabulary language.</li>
+</ul>
+
+</body>
+</html>

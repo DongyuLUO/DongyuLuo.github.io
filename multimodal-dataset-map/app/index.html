@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Multimodal Dataset Map</title>
+    <link rel="stylesheet" href="./styles.css">
+  </head>
+  <body>
+    <header class="site-header">
+      <a class="brand" href="./">
+        <span>multimodal</span><strong>.map</strong><i aria-hidden="true"></i>
+      </a>
+      <nav>
+        <a href="#catalog">Catalog</a>
+        <a href="#matrix">Matrix</a>
+        <a href="../reports/gap_analysis.md" target="_blank" rel="noreferrer">Report</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero">
+        <p class="kicker">Grounding language in multimodal perception for manipulation</p>
+        <h1><span id="paperTotal">91</span> surveyed papers, mapped by data, modality, annotation, and openness.</h1>
+        <div class="hero-stats">
+          <div><strong id="dataRelevantTotal">0</strong><span>with dataset evidence</span></div>
+          <div><strong id="introducedTotal">0</strong><span>new data artifacts</span></div>
+          <div><strong id="openTotal">0</strong><span>open or partial</span></div>
+          <div><strong id="languageTotal">0</strong><span>language-annotated</span></div>
+          <div><strong id="nonvisualTotal">0</strong><span>multimodal non-visual</span></div>
+        </div>
+        <form class="search-row" id="searchForm">
+          <input id="searchInput" type="search" aria-label="Search papers" placeholder="Search papers, datasets, modalities, annotations...">
+          <button type="submit">Search</button>
+        </form>
+      </section>
+
+      <section class="layout" id="catalog">
+        <aside class="filters">
+          <div class="filter-head">
+            <span>Filters</span>
+            <button id="resetButton" type="button">Reset</button>
+          </div>
+          <div id="sourceFilters" class="filter-group"></div>
+          <div id="roleFilters" class="filter-group"></div>
+          <div id="opennessFilters" class="filter-group"></div>
+          <div id="modalityFilters" class="filter-group"></div>
+          <div id="supervisionFilters" class="filter-group"></div>
+          <div id="languageFilters" class="filter-group"></div>
+          <div id="taskFilters" class="filter-group"></div>
+          <div id="conceptFilters" class="filter-group"></div>
+          <div id="environmentFilters" class="filter-group"></div>
+          <div class="filter-group">
+            <button class="accordion" type="button" aria-expanded="true">Year</button>
+            <div class="accordion-body">
+              <select id="yearFilter" aria-label="Filter by year">
+                <option value="all">All years</option>
+              </select>
+            </div>
+          </div>
+        </aside>
+
+        <section class="results">
+          <div class="toolbar">
+            <div>
+              <strong id="resultCount">0</strong>
+              <span>papers</span>
+            </div>
+            <label>
+              <span>Sort</span>
+              <select id="sortSelect" aria-label="Sort catalog">
+                <option value="role">Dataset role</option>
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="name">Name A-Z</option>
+                <option value="open">Open data first</option>
+              </select>
+            </label>
+          </div>
+
+          <section class="quick-charts">
+            <article>
+              <h2>Dataset Roles</h2>
+              <div id="roleChart" class="bar-chart"></div>
+            </article>
+            <article>
+              <h2>Open Data Status</h2>
+              <div id="openChart" class="bar-chart"></div>
+            </article>
+            <article>
+              <h2>Language Annotations</h2>
+              <div id="languageChart" class="bar-chart"></div>
+            </article>
+            <article>
+              <h2>Modality Coverage</h2>
+              <div id="modalityChart" class="bar-chart"></div>
+            </article>
+          </section>
+
+          <section class="matrix-panel" id="matrix">
+            <div class="panel-title">
+              <div>
+                <h2>Gap Matrix</h2>
+                <span id="matrixSubtitle">Research-space coverage across the full catalog</span>
+              </div>
+              <div class="matrix-controls">
+                <label>
+                  <span>View</span>
+                  <select id="matrixPreset" aria-label="Gap matrix view">
+                    <option value="task_modality">Task x modality</option>
+                    <option value="task_supervision">Task x data supervision</option>
+                    <option value="concept_modality">Concept x modality</option>
+                    <option value="environment_supervision">Environment x data supervision</option>
+                    <option value="modality_openness">Modality x open data</option>
+                    <option value="task_language_open">Task x language/open data</option>
+                    <option value="language_modality">Language annotation x modality</option>
+                    <option value="dynamic_language">Dynamic concept x language annotation</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Scope</span>
+                  <select id="matrixScope" aria-label="Gap matrix scope">
+                    <option value="all">Full catalog</option>
+                    <option value="filtered">Current filters</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <div id="gapMatrix" class="matrix"></div>
+          </section>
+
+          <section id="cardGrid" class="card-grid"></section>
+        </section>
+      </section>
+    </main>
+
+    <dialog id="detailDialog">
+      <form method="dialog">
+        <button class="close-button" aria-label="Close">x</button>
+      </form>
+      <div id="detailBody"></div>
+    </dialog>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

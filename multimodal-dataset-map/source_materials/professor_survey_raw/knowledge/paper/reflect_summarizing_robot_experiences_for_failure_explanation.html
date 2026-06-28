@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>REFLECT: Summarizing Robot Experiences for Failure Explanation and CorrecTion</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Zeyi Liu, Arpit Bahety, Shuran Song">
+<meta name="year" content="2023">
+<meta name="venue" content="CoRL 2023">
+<meta name="arxiv_id" content="2306.15724">
+<meta name="url" content="https://arxiv.org/abs/2306.15724">
+<meta name="pdf" content="../../raw/papers/reflect_summarizing_robot_experiences_for_failure_explanation.pdf">
+<meta name="tags" content="llm-planning, robot-learning, online-replanning, long-horizon-manipulation, planning-abstractions, failure-explanation, multimodal-perception">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-04">
+<meta name="source_prompt" content="batch ingest from papers_APIVOT">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; } h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0; padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; } a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px; font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  ul { padding-left: 1.4em; }
+  li { margin-bottom: 0.3em; }
+</style>
+</head>
+<body>
+
+<h1>REFLECT: Summarizing Robot Experiences for Failure Explanation and CorrecTion</h1>
+
+<p class="meta">
+  Zeyi Liu, Arpit Bahety, Shuran Song &nbsp;&middot;&nbsp;
+  Columbia University &nbsp;&middot;&nbsp;
+  CoRL 2023 &nbsp;&middot;&nbsp;
+  arXiv 2306.15724 &nbsp;&middot;&nbsp;
+  <a href="https://arxiv.org/abs/2306.15724">arxiv.org/abs/2306.15724</a> &nbsp;&middot;&nbsp;
+  <a href="../../raw/papers/reflect_summarizing_robot_experiences_for_failure_explanation.pdf">PDF</a> &nbsp;&middot;&nbsp;
+  <a href="https://robot-reflect.github.io/">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> REFLECT converts raw multisensory robot observations (RGB-D, audio, proprioception) into a three-level hierarchical text summary, then queries an LLM progressively to detect, localize, and explain failures — and optionally generate a correction plan — without any task-specific training.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Long-horizon robot tasks fail inevitably. Current systems either dump low-level execution logs (unreadable to humans and LLMs alike) or rely on task-specific failure detectors. The gap: no general framework existed that (1) converts unstructured, multimodal robot sensory data into a form an LLM can reason over, and (2) systematically asks the LLM "what went wrong and when" before proposing a fix. REFLECT addresses this gap with a domain-general, training-free pipeline built on the observation that a good robot summary must be both <em>multisensory</em> (visual, audio, contact each reveal different failure modes) and <em>hierarchical</em> (coarse subgoal-level alignment check first, fine-grained event-level detail on demand).</p>
+
+<h2>Method</h2>
+<p>The framework has three modules:</p>
+
+<h3>1. Hierarchical Robot Summary (§3.1)</h3>
+<p>Three abstraction levels are constructed from raw sensory streams:</p>
+<ul>
+  <li><strong>L0 — Sensory-Input Summary.</strong> Each RGB-D frame is processed with an object detector (MDETR) to produce a 3-D semantic point cloud; object states are identified via CLIP cosine similarity; spatial relations (inside, on top of, near, …) are computed heuristically. These are assembled into a <em>task-informed scene graph</em> containing only task-relevant objects and their neighbors. Audio sub-clips are classified against a label bank via AudioCLIP embeddings. The result is one scene graph + audio label per timestep.</li>
+  <li><strong>L1 — Event-Based Summary.</strong> Key frames are selected when the scene graph changes, an audio event fires, or a subgoal ends. Each key frame is rendered as a structured text caption: <code>[timestep] Action: … Visual: obj [state], … obj is [relation] obj … Auditory: …</code>. This is the detailed evidence layer the LLM reads when explaining a failure.</li>
+  <li><strong>L2 — Subgoal-Based Summary.</strong> One caption per subgoal (the end-frame state), used to quickly verify whether each subgoal was achieved before diving into details.</li>
+</ul>
+
+<h3>2. Progressive Failure Explanation (§3.2)</h3>
+<p>The LLM (GPT-4) is queried in two stages:</p>
+<ol>
+  <li><strong>Success verification.</strong> For each subgoal, the LLM is given the L2 summary and asked "Is the subgoal satisfied?" (Yes/No). This quickly localizes the failure to a subgoal.</li>
+  <li><strong>Failure explanation.</strong>
+    <ul>
+      <li>If a subgoal fails: retrieve the L1 event-based summary up to that timestep and ask the LLM to explain what happened and what caused it (execution failure path).</li>
+      <li>If all subgoals pass but the task still fails: provide the original robot plan + final environment state and ask what is wrong with the plan (planning failure path).</li>
+    </ul>
+  </li>
+</ol>
+<p>The progressive structure means expensive detailed context is only loaded when needed, and the LLM's temporal reasoning is anchored to a structured representation rather than raw video.</p>
+
+<h3>3. Failure Correction Planner (§3.3)</h3>
+<p>Given the failure explanation and final state, the LLM generates a high-level correction plan (list of action primitives). Each generated action is mapped to its closest executable primitive via sentence-embedding similarity (following Huang et al. SayCan), making the plan directly executable.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Dataset:</strong> <em>RoboFail</em> — created alongside the paper. Simulation: 100 failure scenarios in AI2THOR across 10 tasks (execution and planning failures, including wrong action order, missing actions, ambiguous references, perception errors). Real-world: 30 failure scenarios with a UR5e arm across 11 tasks, with Intel RealSense D415 (RGB-D) and RODE VideoMic Pro+ (audio).</li>
+  <li><strong>Hardware / simulator:</strong> AI2THOR for simulation; UR5e robot arm in a toy kitchen for real world.</li>
+  <li><strong>Perception:</strong> MDETR (object detection), CLIP (object state + audio-language matching), AudioCLIP / Wav2CLIP (audio classification), GPT-4 (LLM).</li>
+  <li><strong>Baselines:</strong> BLIP2 caption (replace scene graphs with BLIP2 image captions), w/o sound, w/o progressive (open-ended Socratic query, no hierarchical structure), subgoal only (L2 only, no L1), LLM summary (LLM summarizes L0 text directly), w/o explanation (correct without explaining).</li>
+  <li><strong>Compute:</strong> <em>not reported</em></li>
+</ul>
+
+<h2>Results</h2>
+<p>Three metrics: <strong>Exp</strong> (human-judged explanation correctness &amp; informativeness), <strong>Loc</strong> (failure timestep localization accuracy), <strong>Co-plan</strong> (correction plan task success rate).</p>
+
+<p><strong>Simulation (Table 1):</strong> REFLECT achieves Exp=88.4, Loc=96.0, Co-plan=79.1 on execution failures and Exp=84.2, Loc=80.7, Co-plan=80.7 on planning failures — best across all conditions. The next-best single ablation is "Subgoal only" (Exp~76, Co-plan~75). Removing the explanation step ("w/o explanation") drops Co-plan to 41.9 / 56.1, demonstrating that explanation causally aids correction. Removing audio drops Exp and Loc by ~20 pp on execution failures.</p>
+
+<p><strong>Real world (Table 2):</strong> REFLECT: Exp=68.8, Loc=93.8. Performance is slightly lower than simulation, attributed to perception noise (object detection, state classification errors). BLIP2 caption is the worst baseline (Exp=6.25 simulation, 35.7 real), since BLIP2 captions lack spatial relations and object states that are critical for failure identification (Fig. 5 contrast).</p>
+
+<p><strong>Key ablation findings:</strong></p>
+<ul>
+  <li>Audio is crucial: "w/o sound" loses ~20 pp Exp on execution failures because dropped objects and toggled appliances are easier to detect auditorily than visually.</li>
+  <li>Progressive querying helps: "w/o progressive" drops Loc substantially — flat open-ended queries don't anchor the LLM to specific timesteps.</li>
+  <li>Hierarchical structure matters: "Subgoal only" misses intermediate events (e.g., detecting a drop mid-subgoal), so L1 detail is essential for execution failures.</li>
+  <li>LLM-generated flat summaries lose information: "LLM summary" condition omits key failure-relevant details (e.g., "fridge was closed") that the structured L1 caption preserves.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<ul>
+  <li>Scene graph heuristics may fail in more complex, cluttered environments — spatial reasoning trained on robotics data or fine-tuned VLMs could replace the hand-crafted rules.</li>
+  <li>Object state detection requires a predefined candidate list; a free-form LLM query for possible states would be more flexible.</li>
+  <li>The environment is assumed to be mostly static during execution; dynamic environments or moving objects would break the point-cloud aggregation.</li>
+  <li>Low-level control failures (joint slip, grasp force errors) are not captured — richer proprioceptive or tactile sensing would be needed.</li>
+  <li>Localization for planning failures is harder (no single failure timestamp), and accuracy drops compared to execution failures.</li>
+  <li>Open question: can the hierarchical summary structure be learned end-to-end rather than engineered?</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This paper directly addresses how to make LLM planners <em>self-correcting</em> — a key ingredient for long-horizon manipulation. The progressive explanation algorithm is a clean example of structured prompting with hierarchical context retrieval that avoids flooding the LLM with irrelevant low-level detail. The task-informed scene graph is related to the planning-abstraction representations (symbolic state, object relations) that underpin BLADE and predicate-learning work. The RoboFail dataset is a rare evaluation resource for failure-mode diversity in manipulation. For Weiyu's work on online replanning and correction, REFLECT's three-level summary architecture is a concrete design to compare against or build on.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  "We hypothesize that an effective failure reasoning framework requires several key components: first, a component to summarize 'what happened' by converting <em>unstructured, multimodal</em> robot sensory data into a <em>structured, unified</em> format; second, a component to reason 'what was wrong' by inferring from the summary whether expected outcomes of the robot plan were achieved; and finally, the ability to plan 'what to do' based on the failure reasoning to correct the failure and complete the task."
+  <span class="quote-cite">— §1 Introduction, p.1</span>
+</blockquote>
+
+<h2>Related</h2>
+<ul>
+  <li><a href="../../raw/papers/reflect_summarizing_robot_experiences_for_failure_explanation.pdf">PDF</a> — source document</li>
+</ul>
+
+</body>
+</html>

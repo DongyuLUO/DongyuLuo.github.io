@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Multimodal Detection and Identification of Robot Manipulation Failures (FINO-Net)</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Inceoglu, Aksoy, Sariel">
+<meta name="year" content="2023">
+<meta name="venue" content="arXiv (extends IROS 2021 FINO-Net)">
+<meta name="arxiv_id" content="2305.04639">
+<meta name="url" content="https://arxiv.org/abs/2305.04639">
+<meta name="pdf" content="../../raw/papers/fino_net_multimodal_manipulation_failure_detection.pdf">
+<meta name="tags" content="failure-detection, multimodal, audio-sensing, sensory-fusion, manipulation, closed-loop, process-monitoring, acoustic-sensing, state-change">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-25">
+<meta name="source_prompt" content="related-work ingest: dynamic state-change concept grounding for manipulation">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1>Multimodal Detection and Identification of Robot Manipulation Failures</h1>
+<p class="meta">
+  Arda Inceoglu, Eren Erdal Aksoy, Sanem Sariel
+  &middot; 2023
+  &middot; arXiv (journal-style extension of the IROS 2021 FINO-Net paper)
+  &middot; <a href="https://arxiv.org/abs/2305.04639">arXiv:2305.04639</a>
+  &middot; <a href="../../raw/papers/fino_net_multimodal_manipulation_failure_detection.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> FINO-Net is a deep sensor-fusion network that
+fuses egocentric RGB, depth, and audio over the course of a tabletop
+manipulation action to detect <em>whether</em> the execution failed and
+classify <em>which</em> failure type occurred (collision / miss / overflow /
+spill / overturn) end-to-end from raw signals, with no hand-crafted features
+and no symbolic state.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Service robots in unstructured environments cannot perfectly predict the
+outcomes of manipulation actions: misaligned grasps, underestimated container
+contents, or wrong self-model assumptions lead to accidents (knocked-over
+objects, spilled liquids). For situation awareness &mdash; maintaining
+integrity, recovering short-term, and learning to avoid failures long-term
+&mdash; executions must be <em>continuously monitored</em> and failures
+detected and identified. The authors stress two phases (Fig. 1): the
+<em>manipulation phase</em> (end-effector in contact, where proprioception
+helps) and the <em>post-manipulation phase</em> (contact has ended, no
+proprioception available, so exteroceptive environmental monitoring is
+required to catch e.g. a secondary object overturning after a push). Prior
+failure detection was mostly addressed at the symbolic level, on single
+actions (usually grasping), and on robot&ndash;primary-object interactions
+only; there was no public multimodal robot-failure dataset. This work targets
+data-driven monitoring across a <em>set</em> of primitive actions, covering
+both primary and secondary objects.</p>
+
+<h2>Method</h2>
+<p>Failure detection and classification are cast as supervised classification
+over multimodal observation <em>sequences</em>. For detection, target
+<em>y &isin; {success, fail}</em>; for classification, <em>y &isin; {success,
+collision, miss, overflow, spill, overturn}</em>. A recording is the set of
+synchronized modality streams over one action; the goal is a function
+&Phi;(&middot;) mapping the per-modality feature extractors' outputs to a
+label.</p>
+
+<p>The FINO-Net architecture (Fig. 3) has two branches with a fusion head:</p>
+<ul>
+  <li><strong>Vision branch (&phi;<sub>I</sub>).</strong> RGB and depth are
+    <em>early-fused</em> by stacking (<em>x<sup>I</sup> = x<sup>C</sup> &cup;
+    x<sup>D</sup></em>). Preprocessing samples 8 RGB/depth frame pairs spanning
+    the execution: self-occluded frames are removed by depth thresholding, the
+    sequence is roughly segmented into <em>approach</em>, <em>manipulate</em>,
+    <em>retreat</em> phases, and 4 frames are drawn from approach and retreat.
+    Three blocks, each = two 3&times;3 conv layers + a convolutional-LSTM
+    (convLSTM) layer (LSTM with convolution operators replacing the fully
+    connected gates) to capture spatio-temporal structure, with max pooling,
+    batch norm, and dropout.</li>
+  <li><strong>Audio branch (&phi;<sub>A</sub>).</strong> Single-channel 16 kHz
+    audio is windowed into 32 ms frames, STFT &rarr; Mel filterbank &rarr; 20
+    MFCCs; window count fixed by padding/clipping. Two conv layers (64 filters,
+    size 32) + max pooling. (Earlier work by the authors classified MFCCs into
+    symbolic states drop/collision/idle/ego-noise via SVMs; FINO-Net instead
+    maps MFCCs directly to execution states.)</li>
+  <li><strong>Late fusion (&Phi;).</strong> The two unimodal latent vectors are
+    concatenated and passed to two fully connected layers:
+    <em>y = &Phi;(&phi;<sub>I</sub>(&middot;) &oplus; &phi;<sub>A</sub>(&middot;))</em>.
+    So RGB+D fuse early; vision+audio fuse late.</li>
+</ul>
+<p>Two deployment modes for classification are studied: <em>stand-alone</em>
+(one 6-way head jointly detects and classifies, including the success class)
+and <em>cascaded</em> (a 5-way failure classifier triggered only after the
+detector flags a failure; trained on failed samples only).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> The authors' open-source
+    <strong>FAILURE</strong> dataset, here extended with 99 new multimodal
+    recordings and annotated with failure types. Total 324 recordings across
+    five actions (push, pick&amp;place, pour, put-in-container, stack-a-tower):
+    152 successes, 172 failures spread over collision (77), miss (22), overflow
+    (25), spill (20), overturn (28) (Tables I&ndash;II). Split 70% train / 10%
+    val / 20% test. Data augmentation: per-sequence color jitter (p=0.2) and
+    vertical flip (p=0.5).</li>
+  <li><strong>Hardware / simulator:</strong> Real Baxter humanoid with a
+    parallel gripper, head-mounted Asus Xtion Pro RGB-D camera, and a PSEye
+    microphone on the lower torso (Fig. 2). Egocentric, onboard, real-time
+    sensing &mdash; no external instrumentation.</li>
+  <li><strong>Baselines:</strong> Internal modality ablations &mdash;
+    FINO-Net-RGB, -D, -RGB-D, -A, -RGB-D-A (the full model). No external
+    method baseline is reported; comparison is against the authors' own
+    earlier hand-crafted-feature / symbolic-MFCC pipelines in prose.</li>
+  <li><strong>Compute:</strong> 250 epochs, Adam, learning rate 1e&minus;5,
+    early stopping on validation. Wall-clock / GPU <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Full multimodal fusion clearly wins (Table III, test set):</p>
+<table>
+  <tr><th>Model</th><th>Detection F1</th><th>Classification F1</th></tr>
+  <tr><td>FINO-Net-RGB</td><td>0.762</td><td>0.655</td></tr>
+  <tr><td>FINO-Net-D</td><td>0.683</td><td>0.687</td></tr>
+  <tr><td>FINO-Net-RGB-D</td><td>0.769</td><td>0.680</td></tr>
+  <tr><td>FINO-Net-A</td><td>0.664</td><td>0.679</td></tr>
+  <tr><td><strong>FINO-Net-RGB-D-A</strong></td><td><strong>0.866</strong></td><td><strong>0.796</strong></td></tr>
+</table>
+<p>Adding audio to RGB-D lifts detection F1 from 0.769 to 0.866 and
+classification F1 from 0.680 to 0.796 &mdash; the headline evidence that the
+modalities are complementary (audio catches drops/collisions that vision
+misses under occlusion). Confusion matrices (Figs. 4&ndash;5) show the main
+errors come from <em>post-manipulation scene similarity</em>: overflow vs spill
+both leave particles on the table; collision vs overturn both displace the
+primary object. A real-time analysis (Fig. 6) shows predictions become
+reliable in the second half of execution as failure indicators appear, yet the
+model can still predict on partial sequences. A frame-sampling sensitivity
+study (Table IV, averages of 50 samplings) confirms RGB-D-A &gt; RGB-D for both
+tasks. A qualitative compound scenario (Fig. 7: successful pour &rarr;
+successful put-in-container &rarr; failed push) exposes the audio failure mode
+&mdash; a benign container-collision sound during put-in-container fools the
+RGB-D-A model into predicting a collision failure.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Audio is hard: environmental and robot ego-noise degrade performance, and
+    nearly every object interaction emits a sound regardless of success, so
+    sound presence alone is a weak failure cue (the Fig. 7 false positive).</li>
+  <li>Post-manipulation scenes for distinct failure types look alike, capping
+    classification accuracy.</li>
+  <li>Detection is reliable mostly toward the end of the action &mdash; little
+    early warning.</li>
+  <li>Future work named: <em>anticipating</em> failures before they occur to
+    minimize damage.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The label space is a <strong>flat, action-outcome taxonomy</strong>
+    (collision/miss/overflow/spill/overturn), not a representation of object
+    <em>state</em> or state <em>transition</em>. It answers "did this action
+    succeed?" not "is the water boiling now?" &mdash; no notion of a continuous
+    or evolving physical property.</li>
+  <li>It is a passive <strong>classifier</strong>, not a controller: it emits a
+    failure label but has no recovery, replanning, or correction loop. The
+    "closed-loop" value is latent (situation awareness as a prerequisite),
+    never realized in this paper.</li>
+  <li>The temporal modeling (convLSTM over 8 sampled frames + MFCC windows) is
+    monitoring-as-sequence-classification, with no symbolic precondition/effect
+    structure &mdash; failures are detected, not <em>explained</em> in terms of
+    which expected effect did not hold.</li>
+  <li>No tactile/force or thermal sensing despite "multimodal"; the non-visual
+    modality is purely contact-audio. So it covers the audio axis of the
+    state-change idea but not touch/force/thermal.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>For the idea of <strong>grounding dynamic, change-oriented manipulation
+concepts on multimodal non-visual sensing, monitored over time, to drive
+closed-loop semantic correction</strong>, FINO-Net is the closest existing
+"<em>multimodal temporal monitor</em>" anchor &mdash; it does exactly the
+fuse-RGB-D-+-audio-over-time-to-judge-execution part, and demonstrates
+concretely that audio carries failure information vision lacks. But it stops
+well short of the idea on three axes:</p>
+<ul>
+  <li><strong>Flat outcomes, not state-change predicates.</strong> Its targets
+    are action-level failure classes, not object-state transitions
+    ("became slippery", "coming to a boil"). There is no symbolic predicate
+    whose precondition/effect could feed a planner &mdash; the exact opposite
+    of <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+    learned precondition/effect predicates over which bi-level planning runs.</li>
+  <li><strong>Detection, not correction.</strong> BLADE's replan-after-each-behavior
+    loop is the closed-loop mechanism FINO-Net only motivates. To serve the
+    idea, a FINO-Net-style monitor would need its output wired to a replanner
+    &mdash; the role
+    <a href="reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>
+    (multimodal failure <em>explanation</em> + LLM-driven correction) and
+    <a href="doremi_grounding_language_plans_detecting_recovering.pdf">DoReMi</a>
+    (detect &amp; recover from plan&ndash;execution misalignment) play, and that
+    FINO-Net does not.</li>
+  <li><strong>Audio-only non-visual sensing.</strong> It validates the audio
+    axis but ignores tactile/force/thermal, where many of the dynamic
+    predicates I care about actually live.</li>
+</ul>
+<p>Net: FINO-Net is the right architectural skeleton (multimodal convLSTM
+temporal monitor on a real robot, with a real open dataset) but the wrong
+output abstraction (flat failure label, no symbolic change-predicate, no
+precondition/effect tie-in, no replanning). It is the strongest "monitor as
+classifier" foil to argue against &mdash; the gap I'd want to close is turning
+its temporal multimodal evidence into <em>grounded state-transition predicates
+that replanning can consume</em>.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Effective post-manipulation failure detection requires environmental
+  monitoring and the use of exteroceptive sensors since a failure may happen in
+  the post-impact phase (i.e., end-effector and object contact ends).
+  <span class="quote-cite">&mdash; &sect;I / II</span>
+</blockquote>
+<blockquote>
+  In our previous works we have also represented auditory and visual inputs as
+  symbolic predicates. However, data-driven manipulation failure detection and
+  classification approaches have been underexplored due to the lack of
+  open-source robot execution datasets.
+  <span class="quote-cite">&mdash; &sect;V Conclusions</span>
+</blockquote>
+<blockquote>
+  Most of the object interactions generate a sound event regardless of the
+  manipulation success (e.g., pouring pasta into the pan).
+  <span class="quote-cite">&mdash; &sect;IV-B Qualitative Evaluation</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited here that are candidates to ingest:</p>
+<ul>
+  <li><strong>Inceoglu et al. 2021 &mdash; FINO-Net (IROS)</strong> [1] &mdash;
+    the original conference version this paper extends (failure detection only;
+    this work adds type classification + 99 recordings).</li>
+  <li><strong>Park, Hoshi &amp; Kemp 2018 / Park, Kim &amp; Kemp 2019 &mdash;
+    LSTM-VAE multimodal anomaly detector for robot-assisted feeding</strong>
+    [34,35] &mdash; the closest multimodal execution-monitoring predecessor
+    (camera + mic + joint encoder + force sensor), framed around HRI rather
+    than robot&ndash;object failures.</li>
+  <li><strong>Altan &amp; Sariel 2021 / 2022 (CLUE-AI)</strong> [12,38] &mdash;
+    predicate-extraction and three-stream anomaly identification from
+    multimodal inputs; the symbolic-side counterpart to this data-driven model.</li>
+  <li><strong>Diehl &amp; Ramirez-Amaro 2022 &mdash; Why did I fail?</strong>
+    [11] &mdash; causal explanation of robot failures; relevant to turning
+    detection into explanation/correction.</li>
+</ul>
+<p>Related already-ingested work:</p>
+<ul>
+  <li><a href="reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>
+    &mdash; multimodal failure <em>explanation</em> + LLM correction; the
+    closed-loop / explanatory step FINO-Net stops short of.</li>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; learned symbolic precondition/effect predicates + replanning; the
+    structured-abstraction contrast to FINO-Net's flat failure labels.</li>
+  <li><a href="inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>
+    &mdash; closed-loop replanning from textual scene/success feedback; the
+    replanning consumer a monitor like FINO-Net would feed.</li>
+  <li><a href="audio_vla_contact_audio_perception.html">Audio-VLA</a>,
+    <a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>,
+    <a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a> &amp;
+    <a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a>
+    &mdash; contact-audio / audio-visual sensing for manipulation; FINO-Net is
+    the failure-monitoring point in this same audio-as-non-visual-cue space.</li>
+</ul>
+<p>New in this batch, related:</p>
+<ul>
+  <li><a href="../../raw/papers/code_as_monitor_constraint_aware_failure_detection.pdf">Code-as-Monitor</a>
+    &mdash; constraint-aware visual failure detection; same monitoring goal via
+    visual constraints rather than learned multimodal fusion.</li>
+  <li><a href="../../raw/papers/doremi_grounding_language_plans_detecting_recovering.pdf">DoReMi</a>
+    &mdash; detect &amp; recover from plan&ndash;execution misalignment; the
+    detect-then-replan loop FINO-Net's detector would slot into.</li>
+  <li><a href="../../raw/papers/hear_vision_sound_language_action_sound_centric_manipulation.pdf">HEAR</a>
+    &amp; <a href="../../raw/papers/teaching_physical_awareness_to_llms_through_sounds.pdf">Teaching Physical Awareness to LLMs through Sounds</a>
+    &mdash; sound-centric process monitoring; push the audio axis toward
+    physical-state inference FINO-Net leaves as flat outcome labels.</li>
+</ul>
+
+</body>
+</html>

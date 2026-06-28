@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Text2Touch: Tactile In-Hand Manipulation with LLM-Designed Reward Functions</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Field, Yang, Lin, Psomopoulou, Barton, Lepora">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint (CoRL 2025 submission)">
+<meta name="arxiv_id" content="2509.07445">
+<meta name="url" content="https://arxiv.org/abs/2509.07445">
+<meta name="pdf" content="../../raw/papers/text2touch_tactile_in_hand_llm_reward.pdf">
+<meta name="tags" content="tactile-sensing, in-hand-manipulation, dexterous-manipulation, llm-planning, reinforcement-learning, sim-to-real, learning-from-language, vision-based-tactile, force-control">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Text2Touch: Tactile In-Hand Manipulation with LLM-Designed Reward Functions</h1>
+<p class="meta">
+  Harrison Field, Max Yang, Yijiong Lin, Efi Psomopoulou, David Barton, Nathan F. Lepora
+  &middot; University of Bristol / Bristol Robotics Laboratory
+  &middot; 2025
+  &middot; <a href="https://arxiv.org/abs/2509.07445">arXiv:2509.07445</a>
+  &middot; <a href="../../raw/papers/text2touch_tactile_in_hand_llm_reward.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Text2Touch is the first system to let an LLM
+auto-design the RL reward function for a <em>tactile</em> dexterous task &mdash;
+multi-axis in-hand object rotation on a real four-fingered Allegro hand with
+vision-based TacTip sensors &mdash; and the LLM-crafted reward, distilled
+sim-to-real via teacher&ndash;student, beats a carefully hand-tuned human
+baseline on rotation speed and stability while using ~1/10 the variables and
+~1/4 the lines of code.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>LLM-driven reward design (Eureka [5] and follow-ons) has been shown to
+match or beat hand-crafted rewards, but every prior demonstration used vision
+or proprioception only &mdash; never touch. Tactile sensing is known to be
+critical for human-like dexterity, yet it amplifies the difficulty of reward
+design: high-DoF fully-actuated hands plus rich, high-dimensional contact
+signals make the reward landscape hard to specify by hand. The authors ask a
+clean question: can an LLM autonomously write a good reward for a
+<em>real-world, vision-based-tactile</em> manipulation task? Their target is
+gravity-invariant multi-axis in-hand rotation (rotate an aloft object about
+each of 3 perpendicular axes, in both palm-up and palm-down hand
+orientations) &mdash; the hardest dexterity setting from AnyRotate [12], which
+itself showed this level of dexterity depends critically on tactile feedback.</p>
+
+<h2>Method</h2>
+<p>Text2Touch extends the Eureka iterative reward-design loop and bolts it
+onto a teacher&ndash;student sim-to-real pipeline (Fig 2). Three pieces.</p>
+
+<p><strong>1. Iterative LLM reward design (Eq 1).</strong> Given environment
+code/context <code>M</code> and a natural-language task description
+<code>l</code>, an LLM proposes a batch of reward-function candidates
+<code>{R<sup>(k)</sup>}</code>. Each candidate trains a PPO policy
+<code>&pi;<sup>(k)</sup></code>; a fitness <code>F</code> (running count of
+sub-goal <code>successes</code> per rollout) scores them; the best
+<code>R<sub>best</sub><sup>(k)</sup></code> is fed back via <em>reward
+reflection</em> to seed the next iteration. The task description
+<code>l</code> was tuned to mirror the human baseline's task spec without
+injecting qualitative bias ("reposition and reorient objects&hellip; by
+regrasping or finger gaiting, where contacts must be detached and
+repositioned locally"). An <em>environment-based subgoal curriculum</em>
+updates the target orientation each time an incremental rotation is met,
+allowing multiple successes per episode.</p>
+
+<p><strong>2. Two novel prompting moves for high-complexity environments.</strong>
+The tactile environment exposes <strong>over 70 variables</strong> vs Eureka's
+~10, which broke the original prompt. (a) <em>Scaling bonuses and penalties</em>:
+rather than Eureka's fixed scalar success bonus <code>B</code> added outside
+the LLM reward, both a success bonus <code>B</code> and an early-termination
+penalty <code>P</code> are exposed to the LLM as <em>scalable</em> variables
+(without revealing the success/failure conditions), so the LLM can size them
+relative to its own reward terms. The paper reports task success was
+empirically <em>impossible</em> without scalable <code>B,P</code> (Table 1).
+(b) <em>Modified prompt structuring</em>: supply an explicit reward-function
+signature <code>S<sub>detailed</sub></code> listing all variable names/types,
+so <code>M<sub>modified</sub> = {E, S<sub>detailed</sub>}</code>. This sharply
+reduced syntactic/type errors and code failures at 70+ variables.</p>
+
+<p><strong>3. Reward-discovery training + sim-to-real distillation.</strong>
+Full 8-billion-step training per candidate is infeasible, so each iteration
+uses short 150M-step runs to rank candidates, then the single best reward is
+trained from scratch for 8B steps (5&times;). A <em>Teacher</em> policy is
+trained in sim with privileged observations (object pose/velocity, properties,
+gravity direction, auxiliary goal); a <em>Student</em> is then fit by
+regression (MSE to teacher actions) using only proprioception + tactile
+observations, and transfers to hardware with no further tuning. The Allegro
+hand wears TacTip vision-based tactile sensors and runs at 20&nbsp;Hz.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> No external dataset &mdash; RL in
+    simulation. Task = gravity-invariant multi-axis in-hand rotation following
+    AnyRotate [12]. Real-world eval over ten household objects, 3 rotation axes
+    (X/Y/Z) &times; palm-up/palm-down. OOD eval on heavier masses and novel
+    shapes (Fig 4 top, Table 3).</li>
+  <li><strong>Hardware / simulator:</strong> GPU-accelerated RL sim (Isaac-style;
+    rigid-body tactile). Real hardware: fully-actuated four-fingered Allegro
+    Hand with vision-based TacTip tactile sensors, 20&nbsp;Hz, receiving joint
+    positions, velocities, and tactile observations.</li>
+  <li><strong>Baselines:</strong> Carefully hand-engineered human reward from
+    AnyRotate [12] (stages 2&ndash;3 frozen as published, for fair comparison).
+    Across the LLM-design study: 5 LLMs &times; 4 prompting strategies (GPT-4o,
+    o3-mini, Gemini-1.5-Flash, Llama-3.1-405B, Deepseek-R1-671B; strategies =
+    Bonus/Penalty+Mod, Bonus/Penalty, Mod template, Original).</li>
+  <li><strong>Compute:</strong> Reward discovery uses 150M-step short runs;
+    final policies trained 8B steps each, 5 repeats. Over 4 strategies &times;
+    5 LLMs &times; 5 experiments &times; 20 rewards = <strong>2,000 generated
+    reward functions</strong> in the prompting study. Wall-clock / GPU-hours
+    <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: the best LLM-designed reward beats the human-engineered baseline
+both in sim (with privileged obs) and, after distillation, in the real world.</p>
+
+<p><strong>Prompting ablation (Table 1, highest 360&deg; rotations/episode and
+Solve Rate, frac. of episodes with &gt;1 success).</strong> Only the
+Bonus/Penalty+Mod strategy yields non-trivial solve rates; removing scalable
+<code>B,P</code> or the detailed signature collapses to ~0% solve. Gemini-1.5-Flash
+reached the highest Solve Rate (31%); GPT-4o the highest best Rots/Ep among the
+top cells (5.46).</p>
+
+<p><strong>Sim, privileged teacher vs human baseline (Table 2).</strong> The
+baseline gets 4.92 best / 4.73 avg Rots/Ep; every LLM beats it on avg, and all
+use far less code:</p>
+
+<table>
+  <tr><th>Reward source</th><th>Rots/Ep (best)</th><th>Rots/Ep (avg)</th><th>Vars (&pi;*)</th><th>LoC (&pi;*)</th><th>Halstead Vol (&pi;*)</th></tr>
+  <tr><td>Human baseline</td><td>4.92</td><td>4.73</td><td>66</td><td>111</td><td>2576</td></tr>
+  <tr><td>Gemini-1.5-Flash</td><td><strong>5.48</strong></td><td><strong>5.29</strong></td><td>7</td><td>24</td><td>370</td></tr>
+  <tr><td>Llama-3.1-405B</td><td>5.41</td><td>5.28</td><td>5</td><td>31</td><td>211</td></tr>
+  <tr><td>GPT-4o</td><td>5.46</td><td>5.20</td><td>8</td><td>35</td><td>317</td></tr>
+  <tr><td>o3-mini</td><td>5.38</td><td>5.26</td><td>6</td><td>27</td><td>302</td></tr>
+  <tr><td>Deepseek-R1-671B</td><td>5.26</td><td>5.12</td><td>12</td><td>43</td><td>994</td></tr>
+</table>
+
+<p>Reward&ndash;baseline correlation is low (Corr 0.30&ndash;0.42), i.e. the LLM
+discovered genuinely different reward structures rather than re-deriving the
+human one, yet got &sim;1/10 the variables, &sim;1/4 the LoC, and &sim;1/8 the
+Halstead Volume.</p>
+
+<p><strong>Real-world distilled students (Table 4, avg full Rotations and Time
+To Terminate over all objects).</strong> All three deployed LLM policies beat
+the baseline on average rotations; Deepseek-R1-671B gives a <strong>38%</strong>
+increase in rotations and <strong>25%</strong> longer episode duration over the
+baseline (Total Avg Rot 1.37 vs 0.99; TTT 25.1s vs 20.0s). Notably the
+direction <em>flips</em> from sim: the human baseline looked more <em>stable</em>
+in simulation, but the LLM policies are more stable on real hardware &mdash; the
+authors attribute this to LLM policies favouring faster, more reactive motions
+that exploit real tactile feedback for early instability detection and
+regrasping (rigid-body sim tactile being brittle vs smooth real TacTip signals).
+OOD (Table 3): students still beat the baseline on heavier masses and novel
+shapes.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Evaluated on a single in-hand rotation task; generalization to other
+    tasks/sensor modalities and to multi-stage / long-horizon planning is
+    untested. They flag long-horizon dependencies as future work.</li>
+  <li>Only reward design is automated; architecture, curriculum, and
+    hyperparameters are held fixed &mdash; LLMs could also optimize those.</li>
+  <li>Fewer real-world hand orientations (palm up/down only) than AnyRotate's
+    baseline study, for practical feasibility; real-world assessment still needs
+    heavy human intervention (e.g. replacing a dropped object).</li>
+  <li>LLMs still frequently produce rewards that fail to train, giving low solve
+    rates &mdash; reward discovery is compute-heavy and a bottleneck.</li>
+  <li>Sim-to-real gap for tactile is hard: rigid-body sim sensors vs soft
+    real sensors; soft-body simulators flagged as future work.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The real-world headline (38% over baseline) rests on a single
+    Deepseek-R1 student over ten objects with no reported per-object variance or
+    seeds in Table 4 &mdash; it's an average over objects, not a multi-seed mean
+    &plusmn; std like Table 1. The stability claim ("more stable in the real
+    world") is partly qualitative (Duck-about-z anecdote).</li>
+  <li>The sim-vs-real reversal of stability is the most interesting finding but
+    also the least controlled: faster motions being a sim liability yet a real
+    asset is plausible but hinges on the (unmeasured) fidelity gap between
+    rigid-body and TacTip tactile signals. No ablation isolates speed from
+    reactivity.</li>
+  <li>The reward is "tactile" only in that tactile variables are <em>available</em>
+    in the 70-var context; the paper doesn't quantify how much the LLM-chosen
+    reward terms actually depend on tactile vs proprioceptive variables. A
+    tactile-ablated reward-design run would sharpen the central claim.</li>
+  <li>Only 5 short-run iterations and 5 final repeats; with solve rates as low
+    as &sim;16&ndash;31%, the "best" reward per cell is selected from a noisy,
+    small sample &mdash; selection bias likely inflates the best-cell numbers.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This sits right on the thesis that motivates the whole 2026-06-24 batch:
+many manipulation predicates &mdash; <code>is_grasped</code>,
+<code>is_rotating_stably</code>, <code>contact_is_slipping</code> &mdash; are
+<em>not</em> visually evaluable; they live in touch and force. Text2Touch is a
+useful and slightly off-axis data point. It does <em>not</em> learn predicates
+or symbolic abstractions, and it has no language-grounded state at execution
+time &mdash; the "language" is confined to LLM-authored <em>reward code</em>,
+not to <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+goal-to-FOL translation or operator proposal. So relative to BLADE this is the
+<em>low-level controller</em> layer, not the abstraction layer: it's the
+tactile analogue of "train a good diffusion policy," except the policy is
+RL-trained and the LLM's job is to write its reward.</p>
+<p>Where it connects: (1) It is direct evidence that an LLM can reason usefully
+over a <em>tactile</em> observation space (70+ contact/proprio variables) and
+produce concise, interpretable control objectives &mdash; encouraging for a
+future BLADE-style system whose contact-primitive bodies (e.g.
+<code>rotate-in-hand</code>, <code>regrasp</code>) are trained against
+force/tactile signals rather than vision. (2) The reversal "speed is a sim
+liability but a real asset via reactive tactile regrasping" is exactly the kind
+of force-modulated behavior BLADE's purely categorical abstraction layer pushes
+entirely into the controller &mdash; a reminder that the abstraction/controller
+split has to leave room for tactile reactivity. (3) The Eureka-style
+reward-reflection loop is an LLM-in-the-loop design tool that could,
+in principle, also propose <em>predicates</em> or <em>termination conditions</em>
+&mdash; the bridge to predicate invention, though this paper doesn't take it.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  no prior work has considered tactile sensing, which is known to be critical
+  for human-like dexterity. We present Text2Touch, bringing LLM-crafted rewards
+  to the challenging task of multi-axis in-hand object rotation with real-world
+  vision based tactile sensing.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  Empirically, Table 1 shows task success through LLM-generated rewards proved
+  impossible without providing a scalable B, P.
+  <span class="quote-cite">&mdash; &sect;3.2 / p.4</span>
+</blockquote>
+<blockquote>
+  Although the baseline policy appeared more stable in simulation, here we see
+  the opposite: the LLM-based approaches demonstrate greater real-world
+  stability overall.
+  <span class="quote-cite">&mdash; &sect;4.3 / p.8</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[5] Ma et al. 2023 &mdash; Eureka</strong> (arXiv:2310.12931) &mdash;
+    the iterative LLM reward-design framework Text2Touch extends; foundational
+    dependency.</li>
+  <li><strong>[10] Ma et al. 2024 &mdash; DrEureka</strong> (arXiv:2406.01967) &mdash;
+    LLM-guided sim-to-real reward design; closest prior, but proprioception-only.</li>
+  <li><strong>[12] Yang et al. 2024 &mdash; AnyRotate</strong> (arXiv:2405.07391) &mdash;
+    the gravity-invariant multi-axis tactile in-hand rotation task and the frozen
+    human-engineered baseline; the direct comparison target.</li>
+  <li><strong>[11] Hansen et al. 2022 &mdash; Visuotactile-RL</strong> (ICRA) &mdash;
+    multimodal manipulation policies with deep RL; tactile-RL backdrop.</li>
+  <li><strong>[13] Qi et al. 2023 &mdash; General In-Hand Object Rotation with
+    Vision and Touch</strong> (CoRL) &mdash; the visuo-tactile in-hand rotation
+    lineage this builds on.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; the anchor. Text2Touch is the tactile, RL-trained <em>controller</em>
+    layer beneath the kind of contact-primitive bodies BLADE composes; it uses
+    LLMs for reward code rather than for symbolic abstractions.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>,
+    <a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>, and
+    <a href="taf_vla_tactile_force_alignment_vla.html">TaF-VLA</a>
+    &mdash; cluster C tactile/force VLA policies; the language-conditioned
+    counterpart to Text2Touch's language-conditioned <em>reward</em> (policy vs
+    reward as the place language enters).</li>
+  <li><a href="dexterity_from_touch_self_supervised_pretraining.html">Dexterity from Touch (T-DEX)</a>
+    and <a href="vtdexmanip_visual_tactile_dexterous_benchmark.html">VTDexManip</a>
+    &mdash; tactile dexterous manipulation siblings; same Allegro/in-hand regime,
+    different learning recipe (pretrained reps / benchmark vs LLM-reward RL).</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a>
+    &mdash; self-supervised touch representations; a candidate observation encoder
+    for the tactile inputs Text2Touch's student consumes raw.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+    &mdash; situates LLM-designed tactile rewards within the broader
+    force/contact-aware foundation-model agenda.</li>
+</ul>
+
+</body>
+</html>

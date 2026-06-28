@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Language-Table</title>
+<meta name="type" content="paper">
+<meta name="authors" content="">
+<meta name="year" content="2022">
+<meta name="venue" content="datasets.bot public catalog">
+<meta name="arxiv_id" content="2210.06407">
+<meta name="url" content="https://arxiv.org/abs/2210.06407">
+<meta name="pdf" content="https://arxiv.org/abs/2210.06407">
+<meta name="tags" content="datasets-bot,open-data,manipulator,both,ee-pose,language,proprioception,rgb,rlds">
+<meta name="status" content="datasets-bot-crosscheck">
+<meta name="ingested" content="2026-06-28">
+<meta name="source_prompt" content="datasets.bot public catalog cross-check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .meta { color: #777; font-size: 0.9em; }
+  a { color: #2962ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>Language-Table</h1>
+<p class="meta">Robotics at Google / Google Research &middot; 2022 &middot; datasets.bot &middot; <a href="https://datasets.bot/datasets/language-table">datasets.bot page</a></p>
+<p><strong>One-liner.</strong> Google's large language-conditioned tabletop block-manipulation dataset: ~442K real + ~181K sim xArm6 trajectories, plus a sim benchmark.</p>
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Language-Table is a suite of human-collected datasets and a multi-task continuous control benchmark for open-vocabulary visuolinguomotor learning, released with the paper 'Interactive Language: Talking to Robots in Real Time'. It contains nearly 600,000 natural-language-labeled trajectories of a UFACTORY xArm6 robot moving colored blocks on a tabletop (442,226 real-robot episodes plus simulated human-controlled and oracle episodes). Observations are third-person RGB images (captured at 640x360, resized to 320x180) plus end-effector/block state, and the arm is constrained to a 2D plane and acts via a 2D Cartesian end-effector delta setpoint. License: Apache-2.0. Download: https://github.com/google-research/language-table.</li>
+  <li><strong>Hardware / simulator:</strong> Embodiment: xarm. Environment: simulation, tabletop. Realness: both.</li>
+</ul>
+<h2>Schema</h2>
+<p>RLDS/TFDS: episodes -&gt; steps -&gt; {observation: {rgb 320x180, effector_translation, effector_target_translation}, action: 2D EE delta, instruction (language)}</p>
+<h2>Links</h2>
+<ul>
+  <li><a href="https://datasets.bot/datasets/language-table">datasets.bot page</a></li>
+  <li><a href="https://interactive-language.github.io/">Homepage</a></li>
+  <li><a href="https://arxiv.org/abs/2210.06407">Paper</a></li>
+  <li><a href="https://github.com/google-research/language-table">Download</a></li>
+</ul>
+</body>
+</html>

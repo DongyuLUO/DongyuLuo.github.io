@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Look for the Change: Learning Object States and State-Modifying Actions from Untrimmed Web Videos</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Souček, Alayrac, Miech, Laptev, Sivic">
+<meta name="year" content="2022">
+<meta name="venue" content="CVPR 2022">
+<meta name="arxiv_id" content="2203.11637">
+<meta name="url" content="https://arxiv.org/abs/2203.11637">
+<meta name="pdf" content="../../raw/papers/look_for_the_change_object_states_state_modifying_actions.pdf">
+<meta name="tags" content="object-state-recognition, state-change, video-understanding, self-supervised-learning, temporal-reasoning, representation-learning, multimodal, cooking">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-25">
+<meta name="source_prompt" content="related-work ingest: dynamic state-change concept grounding for manipulation">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+</style>
+</head>
+<body>
+
+<!-- Off-genre: vision-only, self-supervised video-understanding paper, not a robot manipulation paper.
+     Structure kept; headers adapted lightly. "Why I care" marks it as the adjacent/contrast anchor on the
+     state-change-from-video axis. -->
+
+<h1>Look for the Change: Learning Object States and State-Modifying Actions from Untrimmed Web Videos</h1>
+<p class="meta">
+  Tomáš Souček, Jean-Baptiste Alayrac, Antoine Miech, Ivan Laptev, Josef Sivic
+  &middot; CIIRC CTU / DeepMind / ENS-Inria
+  &middot; CVPR 2022
+  &middot; <a href="https://arxiv.org/abs/2203.11637">arXiv:2203.11637</a>
+  &middot; <a href="../../raw/papers/look_for_the_change_object_states_state_modifying_actions.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A self-supervised model that, given a noisy
+collection of long untrimmed web videos of one state-modifying action (e.g.
+"cut apple"), temporally localizes the <em>initial object state &rarr;
+manipulating action &rarr; end object state</em> triple in each video &mdash;
+supervised only by the causal arrow of time plus a handful of exemplar still
+images &mdash; and introduces <strong>ChangeIt</strong>, a 2,600+-hour /
+34k-state-change dataset to scale this past the small curated setups of prior
+work.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Human actions induce <em>changes</em> in object state ("cut an apple",
+"pour coffee", "fill a cup"), and recognizing both the action and the resulting
+state change is a prerequisite for following recipes or reproducing actions in
+the world. Prior work on object-state / state-modifying-action recognition was
+confined to small-scale curated setups: Alayrac et al. [2] used closed-form
+linear classifiers over only seven object-action classes with tens of videos
+each; Damon et al.'s task-fluent / "i-learn" line [18] worked on a single
+constrained egocentric scene. The open question this paper poses: can learning
+of object states <em>and</em> their state-modifying actions be scaled up to
+<em>noisy, uncurated</em> web video with <em>minimal</em> supervision? The
+difficulty is twofold &mdash; the huge variability of object-action pairs in
+the wild, and the cost of manually collecting and annotating temporal
+boundaries.</p>
+
+<h2>Method</h2>
+<p>Three contributions stack on each other (Fig 2):</p>
+
+<p><strong>1. Causal-ordering self-supervision.</strong> The model learns two
+per-frame classifiers over second-by-second visual features: an action
+classifier <em>g</em> (confidence the frame depicts the manipulating action)
+and a state classifier <em>h</em> outputting two scores
+<em>h<sub>1</sub>, h<sub>2</sub></em> (initial vs. end state). No ground-truth
+temporal labels exist; instead the free supervisory signal is the
+<em>arrow of time</em> &mdash; the action must appear <em>between</em> the
+initial and end states. Training alternates (i) optimizing <em>g, h</em> given
+current per-video labels <em>l(v)</em>, and (ii) re-estimating <em>l(v)</em> as
+the action/state temporal positions that maximize the classifier scores
+<em>subject to the causal ordering constraint</em>
+<em>1 &le; s<sub>1</sub> &lt; a &lt; s<sub>2</sub> &le; T<sub>v</sub></em>
+(initial-state index before action index before end-state index). Because most
+state-modifying actions are physically irreversible (cut apple) or
+conventionally one-directional (clean shoes), this ordering is a strong,
+free inductive bias. The "no-action" negatives are sampled as
+<em>hard</em> negatives at a fixed temporal distance &kappa; (~60s) from the
+positives rather than uniformly &mdash; a choice the ablations show is crucial.</p>
+
+<p><strong>2. Noise-adaptive weighting from a few exemplar images.</strong>
+Uncurated web video for a query like "cutting an apple" is full of irrelevant
+clips (e.g. videos of Apple laptops). To downweight them, the authors download
+up to five still images per object state via Google Image Search and compute a
+per-video relevance score <em>r<sub>v</sub></em> as the max similarity between
+exemplar-image features and video-frame features (in a pretrained visual
+embedding), <em>constrained by the same causal ordering</em>. A sigmoid of
+<em>r<sub>v</sub></em> gives a scalar weight &omega;(v) &isin; [0,1] that scales
+each video's loss contribution &mdash; near 0 for irrelevant videos, near 1 for
+relevant ones. This handful of exemplar images is the <em>only</em> manual data
+in the whole pipeline; notably they use exemplar <em>state</em> images, not
+action images.</p>
+
+<p><strong>3. Architecture.</strong> Both <em>g</em> and <em>h</em> are
+two-layer MLPs (hidden 512, ReLU) over concatenated frozen 2D (ResNeXt,
+ImageNet-21K) + 3D (TSM ResNet-50, HowTo100M + AudioSet) features at one frame
+per second; feature extractors are not backpropagated through. Unlike Alayrac
+et al.'s linear/closed-form classifiers, the non-linear MLP and SGD training are
+what let it scale to noisy large data.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> New <strong>ChangeIt</strong>
+    dataset &mdash; 44 state-changing actions, 34,428 untrimmed in-the-wild
+    YouTube videos, 2,642 total hours, 4.6 min average duration; 667 videos
+    (48 hrs, ~15 per class) manually annotated with
+    <em>background / initial state / action / end state</em> labels for
+    evaluation. Also evaluated on the smaller curated dataset of Alayrac et
+    al. [2] (7 trimmed object-action classes).</li>
+  <li><strong>Hardware / simulator:</strong> <em>not reported</em> (purely
+    passive video understanding; no robot, no simulator).</li>
+  <li><strong>Baselines:</strong> Alayrac et al. [2] (linear discriminative
+    clustering, prior SOTA); zero-shot CLIP ViT-L/14 [52] with prompt
+    engineering; MIL-NCE S3D [42] (HowTo100M); image-exemplar-only similarity;
+    Random / Random-with-constraint chance baselines.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (100 training epochs;
+    feature extractors frozen).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Metric: per-video <em>action precision</em> (1/0 whether predicted action
+location falls in the GT interval) and <em>state precision</em> (0 / 0.5 / 1
+for how many of the two state locations match), averaged within then across
+categories, following [2].</p>
+<ul>
+  <li><strong>On Alayrac et al.'s own dataset (Table 1):</strong> Ours
+    St 0.49 / Ac 0.58 vs. Alayrac et al. St 0.48 / Ac 0.55 and CLIP ViT-L/14
+    St 0.42 / Ac 0.42 &mdash; beating the prior SOTA <em>despite [2] using
+    stronger supervision (a pretrained object detector with known bounding
+    boxes)</em>.</li>
+  <li><strong>On the new ChangeIt dataset (Table 2):</strong> Ours
+    St 0.35 / Ac 0.68, clearly ahead of Alayrac et al. (0.30 / 0.59),
+    CLIP ViT-L/14 (0.30 / 0.63), MIL-NCE S3D (0.27 / 0.50), image-examples
+    (0.29 / &ndash;), and Random-with-constraint (0.15 / 0.41) &mdash;
+    demonstrating the method scales to noisy untrimmed video where the
+    baselines do not.</li>
+  <li><strong>Ablations (Fig 3, Table 2c):</strong> performance rises
+    monotonically with dataset size (no saturation at 34k videos &mdash;
+    larger would help). Removing noise-adaptive weighting drops Ac
+    0.68&rarr;0.64; removing the multi-layer MLP (linear, as in [2])
+    drops to 0.61; removing data augmentation 0.66. Hard-negative sampling at
+    &kappa; &ge; 60s strongly beats random negatives (Fig 3b).</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Relies on training videos existing on the web &mdash; common or
+    unintentional daily actions (e.g. "open a fridge") may be rare on
+    YouTube.</li>
+  <li>Some object-state appearance variation is too large to be learned
+    unsupervised (their example: "remove weed").</li>
+  <li>A separate model is trained per action class; sharing information across
+    related classes (e.g. "cut apple" and "cut avocado") is an open problem.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The model localizes a <em>single</em> most-prominent initial&rarr;end
+    transition per video; multi-step or repeated state changes within one video
+    (a real recipe) are explicitly treated as background &mdash; it is not a
+    continuous process monitor.</li>
+  <li>The "state" is only ever a <em>discrete pair</em> (initial vs. end) tied
+    to one named action; there is no notion of a continuous or graded state
+    ("how cooked", "how full"), nor of state transitions driven by anything but
+    the one labeled action.</li>
+  <li>The causal-ordering bias is purely <em>visual and temporal</em> &mdash;
+    it never observes <em>why</em> the change happened (heat, force, wetting);
+    state and cause are entangled in appearance only.</li>
+  <li>Per-class models plus frozen features mean nothing learned here closes any
+    loop or produces a control signal; it is a labeller of past video, not a
+    monitor of an ongoing process.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p><strong>This is the canonical object-state-change-from-video anchor &mdash;
+and precisely the conceptual baseline the dynamic-state-change idea departs
+from.</strong> Look for the Change owns the <em>state-change-from-video</em>
+axis: it is the paper that introduced <a href="#">ChangeIt</a> and showed that
+<em>initial state &rarr; action &rarr; end state</em> can be learned at web
+scale from the arrow of time. But against the idea of grounding dynamic,
+change-oriented manipulation concepts on multimodal non-visual sensing and
+using them to drive closed-loop correction, it sits on the far side of every
+axis:</p>
+<ul>
+  <li><strong>Static-pair vs. dynamic-transition:</strong> it does capture a
+    <em>change</em> (initial vs. end), so it is closer to dynamic than
+    static-property work like <a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+    &mdash; but only as a discrete before/after pair, never as a continuous
+    process ("coming to a boil", "became slippery after wetting").</li>
+  <li><strong>Vision-only vs. non-visual sensing:</strong> entirely RGB(+motion)
+    web video. The states it learns are exactly the ones that are visually
+    apparent; the predicates the idea cares about ("hot enough now", "screwed
+    tight") often live in touch / audio / thermal / force, which this paper
+    never touches.</li>
+  <li><strong>Passive recognition vs. closed-loop correction:</strong> it
+    <em>labels</em> already-recorded video; it has no actuator, no policy, no
+    replanning. Contrast with <a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>,
+    whose whole point is precondition/effect predicates feeding a planner that
+    replans after each behavior.</li>
+  <li><strong>Self-supervised neural scores vs. symbolic predicates:</strong>
+    the "state" here is a continuous classifier output with no symbolic identity
+    or planning role &mdash; the opposite of BLADE's learned
+    <code>turned-on(faucet)</code> predicate that gates an operator.</li>
+</ul>
+<p>So its value to the thesis is as the <em>scale-and-self-supervision</em>
+reference: the proof that state changes can be mined from cheap web video with
+near-zero labels. The research bet is that the <em>interesting</em> manipulation
+state changes are the ones this paper structurally cannot see (non-visual) and
+cannot use (passive). It pairs naturally with the cooking-state line
+(<a href="../../raw/papers/continuous_object_state_recognition_cooking_vlm.pdf">Continuous Object State Recognition</a>,
+<a href="../../raw/papers/heat_induced_food_state_changes_time_series_vlm.pdf">Heat-Induced Food State Changes</a>)
+and the event-grounding line
+(<a href="../../raw/papers/dynamic_concept_learner_physical_concepts_visual_reasoning.pdf">DCL</a>)
+as the vision-only end of the spectrum.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  The model is self-supervised by the causal ordering signal, i.e. initial
+  object state &rarr; manipulating action &rarr; end state.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  The causal ordering constraint &hellip; is motivated by the fact that many
+  object-modifying actions cannot be physically reversed, e.g. cut apple.
+  Also, many object-modifying actions are commonly performed only one way, even
+  if the other direction is physically possible, e.g. clean shoes.
+  <span class="quote-cite">&mdash; &sect;3.2</span>
+</blockquote>
+
+<blockquote>
+  Our proposed methods does not require temporal supervision. It uses changes
+  in object states as a guidance for action localization.
+  <span class="quote-cite">&mdash; &sect;2, Action recognition and localization</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Cited in this paper, candidates to ingest:</p>
+<ul>
+  <li><strong>Alayrac et al. 2017 [2] &mdash; Joint Discovery of Object States
+    and Manipulation Actions</strong> (ICCV) &mdash; the direct predecessor and
+    prime baseline (linear discriminative clustering on curated video); this
+    paper is its large-scale, noise-robust successor.</li>
+  <li><strong>Fathi &amp; Rehg 2013 [23] &mdash; Modeling Actions through State
+    Changes</strong> (CVPR) &mdash; foundational state-change-from-video
+    reference.</li>
+  <li><strong>Damen et al. 2014 [18] &mdash; You-do, I-learn</strong> (BMVA)
+    &mdash; unsupervised object-state / state-modifying-action discovery in a
+    single egocentric scene; the constrained-setting contrast.</li>
+  <li><strong>Doughty et al. 2018/2020 [20,21] &mdash; Who's Better? / Action
+    Modifiers</strong> &mdash; visual state change for skill determination and
+    adverb (modifier) learning.</li>
+  <li><strong>Grauman et al. [29] &mdash; Ego4D</strong> &mdash; concurrent
+    large-scale egocentric dataset with state-change annotations; the
+    complementary egocentric counterpart to ChangeIt's web-video focus.</li>
+</ul>
+<p>Related ingested papers (this batch + corpus):</p>
+<ul>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; the anchor: learns symbolic precondition/effect predicates for
+    <em>closed-loop</em> planning; Look for the Change is the passive, vision-only,
+    self-supervised contrast on what a learned "object state" can be.</li>
+  <li><a href="../../raw/papers/dynamic_concept_learner_physical_concepts_visual_reasoning.pdf">Dynamic Concept Learner (DCL)</a>
+    &mdash; the other vision-only state/event-grounding paper in this batch;
+    grounds physical concepts via dynamic visual reasoning rather than
+    arrow-of-time self-supervision.</li>
+  <li><a href="../../raw/papers/continuous_object_state_recognition_cooking_vlm.pdf">Continuous Object State Recognition (cooking, VLM)</a>
+    and <a href="../../raw/papers/heat_induced_food_state_changes_time_series_vlm.pdf">Heat-Induced Food State Changes (time-series VLM)</a>
+    &mdash; push exactly the <em>continuous</em>, monitored-over-time state axis
+    that Look for the Change's discrete initial/end pair stops short of.</li>
+  <li><a href="../../raw/papers/octopi_object_property_reasoning_tactile_language.pdf">Octopi</a>
+    &mdash; the non-visual (tactile) static-property contrast; together they
+    bracket the vision/non-visual and static/dynamic corners around the idea.</li>
+</ul>
+
+</body>
+</html>

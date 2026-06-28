@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DIGIT: A Novel Design for a Low-Cost Compact High-Resolution Tactile Sensor with Application to In-Hand Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Lambeta, Chou, Tian, Yang, Maloon, Most, Stroud, Santos, Byagowi, Kammerer, Jayaraman, Calandra">
+<meta name="year" content="2020">
+<meta name="venue" content="IEEE RA-L 2020">
+<meta name="arxiv_id" content="2005.14679">
+<meta name="url" content="https://arxiv.org/abs/2005.14679">
+<meta name="pdf" content="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">
+<meta name="tags" content="tactile-sensing, vision-based-tactile, digit, gelsight, in-hand-manipulation, dexterous-manipulation, world-models, foundational">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- Foundational/sensor-hardware format variant: Method renamed to
+     "Sensor design / formalism"; Setup kept brief per brief. -->
+
+<h1>DIGIT: A Novel Design for a Low-Cost Compact High-Resolution Tactile Sensor with Application to In-Hand Manipulation</h1>
+<p class="meta">
+  Mike Lambeta*, Po-Wei Chou*, Stephen Tian*, Brian Yang*, Benjamin Maloon,
+  Victoria Rose Most, Dave Stroud, Raymond Santos, Ahmad Byagowi, Gregg Kammerer,
+  Dinesh Jayaraman, Roberto Calandra (Facebook AI Research)
+  &middot; 2020
+  &middot; IEEE Robotics and Automation Letters (RA-L)
+  &middot; <a href="https://arxiv.org/abs/2005.14679">arXiv:2005.14679</a>
+  &middot; <a href="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> DIGIT is a ~$15, fingertip-sized, high-resolution
+camera-based tactile sensor whose ruggedized gel and tool-less, off-the-shelf
+manufacturing finally make it practical to instrument <em>every</em> finger of a
+multi-fingered hand &mdash; turning vision-based touch from a benchtop curiosity
+into a mass-producible commodity for in-hand manipulation research.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>General-purpose in-hand manipulation stays unsolved partly because robots
+cannot precisely sense contact forces, and touch is the most direct, low-noise
+way to measure them. Vision-based tactile sensors (GelSight, GelSlim, FingerVision,
+TacTip) give unmatched spatial resolution by imaging the deformation of a soft
+elastomer, but the authors identify three blockers to wide adoption: (i) bulky
+form factors that don't fit on multi-finger hands, (ii) soft contact surfaces
+that wear out fast, and (iii) largely manual, high-variability manufacturing
+that makes a damaged sensor hard to replace without re-calibration or retraining.
+A sensor that is simultaneously high-resolution, sensitive, reliable, easy to use,
+compact, <em>and</em> cheap did not exist. DIGIT is the engineering answer.</p>
+
+<h2>Sensor design / formalism</h2>
+<p>DIGIT is a vision-based tactile sensor: a camera images a soft reflective
+elastomer lit by colored LEDs, and contact geometry is read off as image
+deformations. The contribution is the concrete design that makes this compact,
+durable, and reproducible. Three design pillars:</p>
+
+<p><strong>Mechanical design (Fig 2).</strong> A 20&times;27&times;18&nbsp;mm,
+~20&nbsp;g, three-piece plastic enclosure (3D-printable for prototyping,
+injection-moldable at scale). Camera and gel attach via <em>press-fit</em>
+connections so any component swaps out on breakage; the elastomer is replaceable
+with a single screw, and the housing can be swapped to change focal length. The
+modular body lets users drop in <em>task-specific elastomers</em> (Fig 4):
+purely reflective for texture, reflective-with-markers for optical-flow/force,
+or transparent-with-markers (FingerVision-style) to see objects during approach.
+This is a deliberate generalization of the GelSight idea into a configurable
+platform.</p>
+
+<p><strong>Electronic design.</strong> Custom electronics fit in ~7&nbsp;cm&sup2;
+(barely larger than a human fingertip). Camera is an Omnivision OVM7692, a 60&nbsp;fps
+color CMOS with a 1.15&nbsp;mm focal-length microlens and 30&nbsp;cm depth of field,
+at 640&times;480. A custom PCB routes to a SuperSpeed USB 3.0 hub so multiple DIGITs
+share one host USB port, and gives manual control of three RGB LEDs (max 4 lumens).</p>
+
+<p><strong>Elastomer design &amp; durability.</strong> The headline robustness win.
+GelSight gels put an opaque image-transfer layer at the contact surface, which wears.
+DIGIT casts the gel in three stages: a silicone-based white pigment airbrushed into
+the mold and cured with a chemical kicker to make a uniform-thickness image-transfer
+layer; a Smooth-On Solaris base layer cured on a finger-shaped mold; then bonded to
+an acrylic window with Sil-Poxy optically clear adhesive, press-fit into the body.
+A thin transfer layer is sensitive but fragile; a thick one is rugged but blurs
+resolution &mdash; the authors hand-tune this thickness trade-off. The result is a far
+more abrasion-resistant gel (see Results).</p>
+
+<p><strong>Demonstration application &mdash; scaling tactile-MPC to multiple fingers.</strong>
+To validate the sensor they push tactile model-predictive control (<code>tactile-MPC</code>,
+ref. Tian et al.) from one sensor / 3-DOF to two DIGITs / 8-DOF. A keypoint
+autoencoder (tiny ResNet-18 backbone, "Structural VRNN" bottleneck) compresses each
+raw DIGIT image to a single <code>(x, y, i)</code> keypoint &mdash; the marble's
+position plus a press-depth intensity. State is <code>s = [k_l, k_r, j]</code>
+(left+right keypoints + 8 joint angles), only 14-D vs. the raw 64&times;64 images.
+A lightweight MLP dynamics model <code>s' = f(s, a)</code> predicts next state, and
+MPC with the cross-entropy method plans <em>directly in the 14-D keypoint space</em>
+(encoder called once per MPC step), which is what makes planning over two image
+streams and 8-DOF tractable (Fig 6).</p>
+
+<h2>Coverage</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected DIGIT marble-manipulation
+  videos (4800 autonomous trials, 950 held out for validation, via a golf-tee-style
+  auto-reset rig); BAIR robot pushing dataset used as a standard video-prediction
+  benchmark. Abrasion-test bench comparing DIGIT gel vs. Yuan&nbsp;et&nbsp;al. [11] gel
+  and a GelSight Inc. gel.</li>
+  <li><strong>Hardware / simulator:</strong> DIGIT sensors mounted on an Allegro
+  multi-finger hand (thumb + middle finger), on a Sawyer arm; the in-hand task is
+  rolling a glass marble in a precision grip. No simulator &mdash; all real hardware.</li>
+  <li><strong>Baselines:</strong> For the predictive model, CDNA (the video-prediction
+  model used in prior tactile-MPC). For control, a hand-tuned linear proportional
+  (P) controller in keypoint space. For the gel, two competing GelSight-style gels
+  under abrasion.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (no GPU/training-budget figures;
+  only inference timings in Table III).</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Cost &amp; form factor (Table I).</strong> DIGIT is 20&times;27&times;18&nbsp;mm
+at 20&nbsp;g and ~$15/sensor in components (batches of 1000: PCB $1.5, electronics $8,
+plastics $2, gel $3), vs. fingertip GelSight at 35&times;60&times;35&nbsp;mm and ~$30,
+and GelSlim at 50&times;205&times;20&nbsp;mm. Sensing field 19&times;16&nbsp;mm, 640&times;480
+@ 60&nbsp;fps.</p>
+
+<p><strong>Gel durability (Table II).</strong> The standout number. Degradation
+(% increase in light transmittance under standardized abrasion, higher = worse):</p>
+
+<table>
+  <tr><th>Gel / abrasion passes</th><th>5</th><th>10</th><th>15</th></tr>
+  <tr><td><strong>DIGIT (ours)</strong></td><td>0</td><td>0.3</td><td>0.3</td></tr>
+  <tr><td>Gel from Yuan et al. [11]</td><td>276</td><td>482</td><td>805</td></tr>
+  <tr><td>Gel from GelSight Inc.</td><td>475</td><td>662</td><td>918</td></tr>
+</table>
+<p>After just 5 passes the two competing gels were torn / rendered unusable; DIGIT's
+was nearly unaffected (Fig 5). Caveat the authors flag: DIGIT's gel is more
+translucent (transmits 676 of 1255 Lux vs. 17 and 16 for the others), but they argue
+the manipulation results show this doesn't hurt sensing.</p>
+
+<p><strong>Predictive model (Table III).</strong> Their lightweight Struct-NN trades a
+little accuracy for a huge speedup vs. CDNA:</p>
+
+<table>
+  <tr><th>Metric</th><th>Struct-NN</th><th>CDNA</th></tr>
+  <tr><td>1 MPC step</td><td>1.4&nbsp;s</td><td>69&nbsp;s</td></tr>
+  <tr><td>Parameters</td><td>1.2&nbsp;M</td><td>4&nbsp;M</td></tr>
+  <tr><td>RMSE (BAIR pushing)</td><td>0.06023</td><td>0.01082</td></tr>
+  <tr><td>RMSE (Marble)</td><td>0.00657</td><td>0.00028</td></tr>
+</table>
+<p>So CDNA is ~5&times;&ndash;20&times; <em>more</em> accurate per-pixel, but Struct-NN is
+~50&times; faster per MPC step (1.4&nbsp;s vs. 69&nbsp;s), which is what makes real-time
+multi-finger control feasible. A single MPC step runs 250 particles, horizon 10,
+~120 CEM iterations (~0.3M dynamics forward passes).</p>
+
+<p><strong>In-hand control (Fig 8, 50 trials/condition).</strong> The learned-dynamics
+MPC steadily reduces Euclidean keypoint distance-to-goal over a rollout, while the
+hand-tuned P controller diverges. Drop rate: ~25% of trials drop the marble before
+reaching goal for the learned controller (attributed to planning inaccuracy and joint
+actuation noise); the P controller drops far more by ~6&ndash;8 actions in.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><strong>Author-stated.</strong> ~25% of marble trials still end in a drop, blamed on
+low-level controller and actuation noise; they suggest a better low-level controller
+and more data. The image-transfer-layer thickness is a hand-tuned ruggedness/sensitivity
+trade-off rather than principled. Future work: further miniaturization and curved,
+omni-directional sensing fields.</p>
+
+<p><strong>What I noticed reading it.</strong> (a) The control results are
+single-task and single-object (one glass marble between two fingers) &mdash; the
+sensor's generality claim rests almost entirely on the design and the abrasion table,
+not on diverse manipulation. (b) Statistics are thin: 50 trials per condition with
+median/68th-percentile curves but no significance tests, and the headline "25% drop"
+is a count-style summary, not a per-condition rate with error bars across objects.
+(c) The Struct-NN keypoint trick collapsed to a <em>single</em> active keypoint
+(K=8 set, 7 went inactive) &mdash; convenient for a marble, but it's unclear this
+1-keypoint representation generalizes to objects with richer contact geometry; the
+method effectively assumes one tracked blob. (d) Durability is the strongest empirical
+result, but it's one abrasion device, one weight (1.7&nbsp;N), and three gels &mdash; no
+field-aging or thousands-of-grasp lifetime data despite the lifespan claims.
+(e) The "high-resolution" framing competes against a 640&times;480 sensor while the
+GelSight baseline in Table I is 1920&times;1080; DIGIT's edge is cost/size/durability,
+not raw pixels.</p>
+
+<h2>Why I care</h2>
+<p>This is a <strong>hardware enabler</strong>, not a planning or language paper, and
+I'll treat it as such &mdash; but it is foundational to a thesis running through my
+work. In <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+I learn PDDL-style predicates (preconditions / effects) from language and ground them
+with <em>visual</em> classifiers. The uncomfortable truth that this batch keeps
+surfacing is that many manipulation predicates &mdash; <code>is_grasped</code>,
+<code>is_inserted</code>, <code>is_screwed_tight</code>, <code>surface_is_rough</code>,
+<code>contact_is_stable</code> &mdash; are <em>not visually evaluable</em>; they live in
+touch and force. DIGIT matters because it is one of the two canonical sensors (with
+<a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">GelSight</a>)
+that made high-resolution touch <em>cheap and dense enough to put on every finger</em>,
+which is the precondition for any future predicate classifier that reads contact state
+from touch rather than RGB. Nearly every tactile-representation and touch-language model
+in this batch (Sparsh, UniTouch, TVL, Octopi, T3) trains on DIGIT/GelSight image streams
+&mdash; so DIGIT is upstream infrastructure for the whole tactile-predicate direction.
+Secondary relevance for my <a href="../topic/world_models.html">world-model</a> interests:
+the paper's keypoint-space dynamics model + MPC is a clean, tiny instance of learning a
+latent forward model for contact-rich control, exactly the kind of compact
+abstraction a TAMP body could plan over.</p>
+
+<h2>Quotable</h2>
+<blockquote>"The main bottleneck for wide adoption of touch sensing in robotic
+manipulation is the lack of sensors that fulfill at the same time all the requirements
+of being 1) high resolution, 2) highly sensitive, 3) reliable, 4) easy to use,
+5) compact, and 6) inexpensive."
+<span class="quote-cite">&mdash; &sect;I / p.1</span></blockquote>
+<blockquote>"For the first time, it is possible to equip a robotic hand with
+high-resolution camera-based tactile sensing on all fingers."
+<span class="quote-cite">&mdash; &sect;IV / p.4</span></blockquote>
+
+<h2>Related</h2>
+<p><strong>Cited here &mdash; worth ingesting next:</strong></p>
+<ul>
+  <li><a href="../../raw/papers/making_sense_of_vision_and_touch.pdf">Making Sense of Vision and Touch</a>
+  &mdash; ref [6], self-supervised multimodal (vision+touch) representations for contact-rich tasks; directly on the visuo-tactile fusion theme.</li>
+</ul>
+<p><strong>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</strong></p>
+<ul>
+  <li><a href="gelsight_high_resolution_tactile_sensors.html">GelSight</a>
+  &mdash; the vision-based tactile sensor DIGIT directly improves on (compactness, gel durability, manufacturability); read together as the sensor-hardware foundation.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a>
+  &mdash; self-supervised touch representations trained on DIGIT/GelSight image streams; consumes exactly the data DIGIT produces.</li>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a>
+  &mdash; binds touch (DIGIT-style images) into a shared multimodal embedding; downstream of this hardware.</li>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL (Touch-Vision-Language)</a>
+  &mdash; tactile-language dataset collected with DIGIT-class sensors; the bridge from raw touch to the language-grounded predicates I care about.</li>
+  <li><a href="tacto_tactile_simulator.html">TACTO</a>
+  &mdash; simulator that models DIGIT/GelSight optical tactile output; the sim counterpart to this real sensor.</li>
+</ul>
+
+</body>
+</html>

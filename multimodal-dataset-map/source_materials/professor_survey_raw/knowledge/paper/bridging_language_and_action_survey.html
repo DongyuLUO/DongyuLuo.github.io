@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bridging Language and Action: A Survey of Language-Conditioned Robot Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Yao, Zhou, Mees, Meng, Xiao, Bisk, Oh, Johns, Shridhar, Shah, Thomason, Huang, Chai, Bing, Knoll">
+<meta name="year" content="2024">
+<meta name="venue" content="arXiv preprint (accepted to IJRR)">
+<meta name="arxiv_id" content="2312.10807">
+<meta name="url" content="https://arxiv.org/abs/2312.10807">
+<meta name="pdf" content="../../raw/papers/bridging_language_and_action_survey.pdf">
+<meta name="tags" content="survey, learning-from-language, manipulation-planning, vision-language-action, vla, robot-learning, foundation-models, vlm, planning-abstractions, neuro-symbolic">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- SURVEY format variant: Method->"Survey scope / taxonomy", Setup->"Coverage",
+     Results->"Key insights / classifications", per batch brief. -->
+
+<h1>Bridging Language and Action: A Survey of Language-Conditioned Robot Manipulation</h1>
+<p class="meta">
+  Xiangtong Yao*, Hongkuan Zhou*, Oier Mees*, Yuan Meng, Ted Xiao, Yonatan Bisk,
+  Jean Oh, Edward Johns, Mohit Shridhar, Dhruv Shah, Jesse Thomason, Kai Huang,
+  Joyce Chai, Zhenshan Bing, Alois Knoll
+  &middot; 2024 (accepted to IJRR)
+  &middot; <a href="https://arxiv.org/abs/2312.10807">arXiv:2312.10807</a>
+  &middot; <a href="../../raw/papers/bridging_language_and_action_survey.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A 70-page survey that re-taxonomizes language-conditioned
+manipulation not by algorithm or by robotic module, but by the <em>functional role
+language plays in the control loop</em> &mdash; state evaluation, policy condition,
+cognitive planning/reasoning, and unified VLAs &mdash; then cross-cuts the whole field
+along five engineering axes (action granularity, data/supervision, cost/latency,
+environments, task specification).</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Language-conditioned manipulation has exploded across RL, IL, neuro-symbolic
+planning, and foundation-model approaches, and prior surveys (Tellex et al. 2020;
+Hu et al. 2023; Xiao et al. 2024; Firoozi et al. 2025) organized the field either by
+<em>technical underpinning</em> ("lexically grounded" vs. "learning methods") or by
+the <em>robotic module</em> language enhances (perception / decision-making / control).
+The authors argue these axes obscure the deeper question: the central design choice is
+<em>how language enters the control loop</em>. Two methods can both "use an LLM" yet play
+fundamentally distinct roles &mdash; one shaping a reward, another directly emitting
+actions. They propose a new, orthogonal taxonomy around language's functional role, then
+layer a cross-cutting comparative analysis to expose practical trade-offs (latency, data
+cost, granularity) that the role-taxonomy alone doesn't surface. The framing is "Language
+&ndash; Perception &ndash; Control" (Fig 2), but the survey's claim is that the interesting
+variation lives in <em>how</em> language bridges those three modules.</p>
+
+<h2>Survey scope / taxonomy</h2>
+<p>The spine is a four-way taxonomy of the functional role of language (Fig 3), each a
+section with its own sub-taxonomy figure and comparison table:</p>
+
+<p><strong>1. Language for state evaluation (&sect;4).</strong> Language &rarr; numerical
+feedback (reward for RL, cost for planners). Subdivided into <em>reward designing/learning</em>
+(sparse vs. dense vs. learned; e.g. ZSRM uses CLIP image&ndash;text similarity as reward,
+PixL2R learns a dense relatedness shaping reward, LOReL learns a binary classifier),
+<em>FM-driven reward generation</em> (Text2Reward / EUREKA write executable reward code with
+LLMs; Reward-Self-Align and R* then learn the component <em>weights</em> the code leaves
+fragile; VLM critics like Video-Language Critic and ReWiND drop the privileged-simulator
+dependence), and <em>cost-function mapping</em> for motion planners (VoxPoser writes Python
+to compose 3D value maps; ReKep writes symbolic keypoint constraints; LACO learns a
+collision function; IMPACT rates "contact tolerance" with GPT-4o).</p>
+
+<p><strong>2. Language as a policy condition (&sect;5).</strong> Language directly conditions
+a policy <code>&pi;<sub>&theta;</sub>(a<sub>t</sub>|s<sub>t</sub>, l)</code> &mdash; from
+goal specifier to <em>behavior</em> specifier. Subdivided by learning paradigm:
+<em>RL</em> (LCGG decouples language into a goal generator; LanCon-Learn / MILLION gate skill
+modules; FLaRe fine-tunes a BC policy with sparse linguistic reward), <em>BC</em>
+(CLIPORT, PerAct's voxel "next-best-action", RVT/Act3D/GNFactor 3D representations,
+HiveFormer's history-aware transformer, HULC/SPIL for long horizon), and
+<em>diffusion policy</em> (StructDiffusion, ChainedDiffuser, LCD, PoCo, MDT/GR-MG for
+multimodal goals).</p>
+
+<p><strong>3. Language for cognitive planning and reasoning (&sect;6).</strong> Language as an
+<em>internal reasoning medium</em> &mdash; the robot "thinks in language." Three branches:
+<em>classic neuro-symbolic</em> (learning-for-reasoning, reasoning-for-learning,
+learning-reasoning &mdash; including Silver et al. 2023's learned predicate skills + bilevel
+planner, and LEMMo-Plan injecting tactile/force data into PDDL); <em>LLM-empowered</em>
+(open-loop planning like SayCan, closed-loop like SayPlan, plus summarization, prompt
+engineering, code-as-policies, iterative self-reflection, LLM+PDDL/behavior-tree structured
+planning); <em>VLM-empowered</em> (contrastive CLIP-based grounding, generative goal-image
+and world-model approaches that resolve the LLM "grounding problem").</p>
+
+<p><strong>4. Language in unified VLAs (&sect;7).</strong> Language is jointly modeled with
+vision and action inside one embodied policy, not an external condition. Organized along an
+optimization-direction flow Perception &rarr; Reasoning &rarr; Action &rarr; Adaptation
+(Fig 16): perception (data/augmentation, 3D grounding via SpatialVLA/PointVLA/BridgeVLA,
+multimodal sensing/fusion via VTLA/Tactile-VLA/OmniVTLA/ForceVLA/FuSe), reasoning
+(long-horizon planning, preserving VLM capabilities against catastrophic forgetting via MoE
+/ knowledge insulation, internal world models like WorldVLA/DreamVLA), action (continuous
+flow-matching like &pi;<sub>0</sub>, FAST tokenization, discrete diffusion), and adaptation
+(OpenVLA-OFT, ControlVLA, ConRFT, RIPT-VLA).</p>
+
+<p>On top of the role-taxonomy, &sect;8 adds a <strong>cross-cutting comparative analysis</strong>
+along five axes: action granularity (skill / trajectory / low-level torque), data &amp;
+supervision regime (expert demos / play data / web data; target / outcome / auxiliary
+supervision), system cost &amp; latency, environments &amp; evaluations (with a three-family
+task taxonomy: object-centric / interaction-centric / long-horizon), and task specification
+(language vs. image/video conditioning). &sect;9 stages three "heat debates," &sect;10 covers
+challenges and future directions.</p>
+
+<h2>Coverage</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Simulators &mdash; PyBullet, MuJoCo, CoppeliaSim,
+  NVIDIA Omniverse, Unity, UniSim (Table 7). Benchmarks &mdash; CALVIN, Meta-World, RLBench,
+  VIMAbench, LoHoRavens, ARNOLD, RoboGen, LIBERO (Table 8). Real-world datasets &mdash;
+  Open X-Embodiment (2.4M+ trajectories, 22 robots, 527 skills), DROID (76k traj, ~350h),
+  Galaxea Open-World (100k traj, ~500h). A three-family task taxonomy (Table 9):
+  object-centric / interaction-centric / long-horizon.</li>
+  <li><strong>Hardware / simulator:</strong> <em>not reported</em> &mdash; survey, no robot
+  experiments of its own. Surveyed embodiments span Franka Panda, UR5, Sawyer, mobile
+  bimanual platforms (Galaxea R1 Lite), etc.</li>
+  <li><strong>Baselines:</strong> <em>not reported</em> &mdash; surveys prior surveys
+  (Tellex 2020, Hu 2023, Xiao 2024, Firoozi 2025) and positions its functional-role
+  taxonomy as orthogonal to their model-type / robotic-module organizations.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>. (The survey itself reports inference
+  cost/latency for surveyed models in Table 6, e.g. PaLM-E 562B, &pi;<sub>0</sub> ~10,000
+  training hours, diffusion policies running ~1Hz vs. RT-1 ~3Hz.)</li>
+</ul>
+
+<h2>Key insights / classifications</h2>
+<p>The survey's value is the organizing claims, not headline numbers. The most useful:</p>
+<ul>
+  <li><strong>The functional-role taxonomy is the contribution.</strong> Four roles &mdash;
+  state evaluation, policy condition, cognitive planning, unified VLA &mdash; each with an
+  evolutionary arc from hand-engineered &rarr; data-driven &rarr; FM-automated. E.g. state
+  evaluation evolved from manual reward/cost specification (ZSRM, VoxPoser) to
+  autonomous FM-driven reward+success-detector generation (ARCHIE).</li>
+  <li><strong>Five cross-cutting axes (&sect;8) expose the real trade-offs.</strong>
+  Action granularity: skill-level (SayCan, Code-as-Policies, TAMP) matches "language as
+  natural units" but fails on skill-library uncoverage; trajectory-level (most IL) suffers
+  covariate shift over long horizons; low-level torque (Bi-LAT, ManiFoundation, TA-VLA) is
+  needed for contact-rich/dexterous tasks but is hard to teleoperate and sim-to-real.</li>
+  <li><strong>Task-difficulty taxonomy warns against naive success-rate comparison</strong>
+  (Table 9): object-centric benchmarks mostly test visual-language grounding + short-horizon
+  visuomotor control; interaction-centric and long-horizon benchmarks additionally test
+  physical interaction, force, memory, and closed-loop replanning. Strong numbers on one
+  family don't transfer.</li>
+  <li><strong>Language vs. image/video conditioning are complementary (&sect;8.5).</strong>
+  Language gives low-bandwidth specification, compositional generalization, interactive
+  editability, and uniquely encodes <em>negative constraints / safety protocols</em>
+  ("stay away from the yellow bottle," "watch out for the vase") and relational preferences;
+  image/video give dense perceptual grounding of geometric configurations language
+  under-specifies. The "contemporary consensus" they articulate: language to dictate
+  <em>what</em>, image/video to specify <em>how precisely</em>, fused in hybrid VLAs.</li>
+  <li><strong>Three heat debates (&sect;9):</strong> (1) Are VLAs the right path? &mdash;
+  scaling laws may not transfer to embodiment; the field's gains came from expanding the
+  <em>task manifold</em>, not model size; structure-aware scaling argued over pure scale.
+  (2) Are world models the right path? &mdash; offer safety via "imagination" and shared
+  dynamics priors, but model bias / distributional brittleness accumulate over imagined
+  rollouts. (3) Does scaling help under real-time constraints? &mdash; latency is the
+  under-reported wall; control cycles have hard deadlines; authors "strongly encourage
+  authors to report latency as a primary metric."</li>
+  <li><strong>Future directions (&sect;10):</strong> generalization (data scale, lifelong
+  learning, cross-embodiment alignment) and real-world safety (language ambiguity &rarr;
+  clarification dialogue, failure recovery, real-time performance). Zero-shot capability is
+  reframed as <em>partial and conditional</em> &mdash; strongest at semantic/planning levels,
+  fragile at policy/control levels.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><strong>(a) Author-stated.</strong> The survey concedes the field "still lacks a unified
+evaluation protocol" for measuring how much grounding/reasoning actually contributes to task
+success; that direct success-rate comparison is misleading because benchmarks differ wildly
+in difficulty; that latency is rarely treated as a first-class metric in the literature it
+reviews; and that real-world, large-scale, cross-embodiment evaluation benchmarks are
+missing. It also flags its own taxonomy choice (focusing on the "primary contribution" of
+each method) as lossy, since most methods touch multiple roles at once.</p>
+<p><strong>(b) What I noticed reading it.</strong></p>
+<ul>
+  <li><strong>Tactile/force/audio sensing is under-weighted relative to this batch's thesis.</strong>
+  Non-visual sensing appears almost entirely inside &sect;7.2.3 (VLA multimodal fusion:
+  VTLA, Tactile-VLA, OmniVTLA, ForceVLA, FuSe) and as a passing note that LEMMo-Plan injects
+  tactile/force-torque into PDDL to reason about "invisible" events like cable tension /
+  insertion forces. There is no dedicated treatment of tactile representation learning,
+  acoustic sensing, or the systematic claim that many predicates are non-visual. For a survey
+  named "Bridging Language and Action," touch/sound is a footnote, not a pillar.</li>
+  <li><strong>Recency padding / citation inflation risk.</strong> The comparison tables cite
+  many 2025 and even 2026-dated works (H-RDT 2026, PointVLA/BridgeVLA 2026, MemoryVLA 2026).
+  A v1 posted Dec 2023 carrying 2026 citations means heavy revision; the taxonomy is sound
+  but some "representative" entries are very fresh and may not have stabilized as canonical.</li>
+  <li><strong>No quantitative synthesis.</strong> Despite the comparative-analysis framing,
+  &sect;8 is qualitative &mdash; the tables list mechanisms/advantages/disadvantages, not
+  head-to-head numbers on a shared benchmark. So the "trade-offs" are argued, not measured;
+  a reader can't rank approaches from this survey alone.</li>
+  <li><strong>The "functional role" boundary is fuzzy at &sect;5/&sect;7.</strong> The authors
+  themselves spend a paragraph (CLIPORT example) disambiguating "language as policy condition"
+  from "unified VLA," which signals the taxonomy's cleanest cut is also its softest. Methods
+  drift between cells as they add reasoning heads.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This survey is the <strong>map of the territory BLADE sits in</strong>, and a useful
+positioning device. BLADE &mdash; <a href="learning_compositional_behaviors_from_demonstration_and_language.html">Learning
+Compositional Behaviors from Demonstration and Language</a> &mdash; lands squarely in this
+survey's &sect;6 "classic neuro-symbolic / learning-reasoning" branch: it learns PDDL-style
+predicate abstractions + diffusion-policy controllers from language-annotated demos and
+composes them with a bilevel planner. Notably the survey explicitly cites Silver et al. 2023
+("learn neuro-symbolic skills from demonstrations... predefined 'language' of symbolic
+predicates... bilevel planner uses these learned skills") as the canonical instance of this
+branch &mdash; that is exactly BLADE's lineage and the cleanest place to position BLADE in a
+related-work section. It gives Weiyu a ready-made, citable framing: "language-conditioned
+manipulation by functional role," with our work as the predicate-learning + bilevel-planning
+exemplar.</p>
+<p>On the batch's bigger thesis &mdash; that many manipulation predicates
+(<code>is_grasped</code>, <code>is_inserted</code>, <code>is_full</code>,
+<code>surface_is_rough</code>, <code>is_screwed_tight</code>) are <em>not visually evaluable</em>
+and live in touch/force/sound &mdash; this survey is <strong>partially on-theme but does not
+make that argument</strong>. Its one resonant move is &sect;8.5: language uniquely encodes
+constraints and relations that vision under-specifies, while vision/touch ground geometric
+and contact details language under-specifies. That's the dual of our thesis (it argues vision
+grounds what language can't; we argue touch grounds what vision can't). The LEMMo-Plan example
+&mdash; using force-torque to define predicates over "invisible" events like cable tension &mdash;
+is the single clearest seed in the survey for the non-visual-predicate idea, and worth chasing.
+But the survey treats tactile/acoustic sensing as a late VLA-fusion topic, not as a challenge
+to the visual-predicate assumption. So: <strong>use it as the structural map and the
+positioning citation, not as evidence for the non-visual-predicate thesis</strong> &mdash; for
+that, lean on the dedicated tactile/audio papers in this batch (clusters A&ndash;G).</p>
+
+<h2>Quotable</h2>
+<blockquote>"A deeper analysis reveals that the central research questions are not just
+about these components, but about the <em>specific functional role language plays in bridging
+them</em>. Different approaches leverage language in fundamentally distinct ways to solve the
+manipulation problem."
+<span class="quote-cite">&mdash; &sect;1.2 / p.4</span></blockquote>
+<blockquote>"The contemporary consensus points toward a unified multimodal task-specification
+framework: utilize language as the primary interface to dictate <em>what</em> to do ... while
+using image/video conditioning to specify <em>how precisely</em> to execute it."
+<span class="quote-cite">&mdash; &sect;8.5.4 / p.45</span></blockquote>
+<blockquote>"We note that latency is not consistently treated as a first-class evaluation
+metric in the literature, and often it is mentioned only in footnotes. ... we strongly
+encourage authors to report latency prominently as a primary performance metric."
+<span class="quote-cite">&mdash; &sect;9.3 / p.47</span></blockquote>
+
+<h2>Related</h2>
+<p><strong>(a) Cited here, worth ingesting next</strong> (forward references):</p>
+<ul>
+  <li><a href="../../raw/papers/forceful_robotic_foundation_models_survey.pdf">Towards Forceful
+  Robotic Foundation Models (survey)</a> &mdash; complementary Cluster-J survey; takes the
+  <em>force</em> angle this one under-weights, directly relevant to the non-visual-predicate
+  thesis.</li>
+  <li><a href="../../raw/papers/what_foundation_models_robot_manipulation_survey.pdf">What
+  Foundation Models can Bring (survey)</a> &mdash; the model-type / robotic-module survey
+  (Xiao et al. 2024) this paper explicitly positions itself against; useful contrast for a
+  related-work framing.</li>
+  <li><a href="../../raw/papers/beyond_sight_fuse_heterogeneous_sensors_language.pdf">Beyond
+  Sight (FuSe)</a> &mdash; cited as a multimodal-fusion VLA in &sect;7.2.3; canonical
+  heterogeneous-sensor + language policy.</li>
+  <li><a href="../../raw/papers/tactile_vla_physical_knowledge_generalization.pdf">Tactile-VLA</a>
+  &mdash; the survey's example (Huang et al. 2025a) of grounding force-adverbs ("gently",
+  "hard") in tactile feedback; directly on the non-visual-predicate thesis.</li>
+  <li><a href="../../raw/papers/forcevla_force_aware_moe_contact_rich.pdf">ForceVLA</a>
+  &mdash; the force-aware MoE late-fusion VLA the survey highlights (Yu et al. 2026).</li>
+</ul>
+<p><strong>(b) Newly ingested in 2026-06-24 batch &mdash; directly relevant:</strong></p>
+<ul>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+  &mdash; the work this survey's &sect;6 learning-reasoning branch (Silver et al. 2023 lineage)
+  describes; positions our predicate-learning + bilevel-planning approach within the taxonomy.</li>
+  <li><a href="palm_e_embodied_multimodal_lm.html">PaLM-E</a> &mdash; the survey's canonical
+  VLM-empowered planner / embodied multimodal LM anchor (&sect;6.3, Table 4, Table 6).</li>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">FuSe</a> &mdash; if
+  already summarized, the survey's multimodal-fusion VLA exemplar.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a> &mdash;
+  if already summarized, the force-adverb-grounding instance closest to the batch thesis.</li>
+</ul>
+
+</body>
+</html>

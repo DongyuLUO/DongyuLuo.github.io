@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Any2Policy: Learning Visuomotor Policy with Any-Modality</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Zhu, Ou, Feng, Tang">
+<meta name="year" content="2024">
+<meta name="venue" content="NeurIPS 2024">
+<meta name="arxiv_id" content="">
+<meta name="url" content="https://openreview.net/forum?id=8lcW9ltJx9">
+<meta name="pdf" content="../../raw/papers/any2policy_any_modality_visuomotor.pdf">
+<meta name="tags" content="multimodal, imitation-learning, any-modality, robot-learning, vision-language-action, multimodal-binding, multimodal-dataset, sensory-fusion, foundation-models, vlm">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Any2Policy: Learning Visuomotor Policy with Any-Modality</h1>
+<p class="meta">
+  Yichen Zhu, Zhicai Ou, Feifei Feng, Jian Tang* &middot; Midea Group
+  &middot; NeurIPS 2024
+  &middot; <a href="https://openreview.net/forum?id=8lcW9ltJx9">OpenReview</a>
+  &middot; <a href="../../raw/papers/any2policy_any_modality_visuomotor.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Any2Policy is an end-to-end manipulation policy
+that accepts task <em>instructions</em> in any of four modalities (text, audio
+speech, image end-goal, video demonstration) and <em>observations</em> in any
+of three (image, video, point cloud), by encoding everything into a shared
+ImageBind latent space and fusing instruction-with-observation via a learnable
+cross-attention "embodied alignment" module &mdash; trained and evaluated on a
+new 30-task real-world dataset (RoboAny) richly annotated across all of these
+modalities.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Most robot-learning methods commit to a single modality for task
+specification (usually text) and a single modality for observation (usually
+2D images), treating each sensory channel as a distinct, specialized problem.
+That limits generalizability: a human can be told a task in speech, shown a
+goal picture, or given a video demo, and can perceive the world through images
+and 3D. The paper argues that simultaneous multi-modal learning yields richer,
+more transferable representations (citing dual-coding and intersensory-redundancy
+work from cognitive science, [16,17]). Prior multi-modal systems like VIMA and
+MUTEX engage several instruction modalities but still fix a single observation
+type. The gap Any2Policy targets is a <em>single unified policy</em> that
+handles arbitrary combinations of instruction and observation modalities, and a
+benchmark dataset that even makes such evaluation possible.</p>
+
+<h2>Method</h2>
+<p>The Any-to-Policy ("Any2Policy") architecture has two primary components,
+shown in Fig 1 and detailed in Fig 2: a set of multi-modal encoders that map
+every input into a shared latent space, and an <em>embodied alignment</em>
+module that fuses the instruction token with the observation tokens to condition
+a policy network. The objective is a multi-task policy <code>&pi;(a | s, o)</code>
+producing continuous actions; demonstrations <code>d = [(s, o, a)]</code> pair an
+instruction <code>s</code>, observation <code>o</code>, and action <code>a</code>.</p>
+
+<p><strong>Multimodal encoder.</strong> Rather than maintain heterogeneous
+per-modality backbones, the authors adopt <a href="../../raw/papers/imagebind_one_embedding_space.pdf">ImageBind</a>
+[25] as a single unified encoder across all five modalities (text, audio, image,
+video, point cloud). The encoder is a frozen mapping <code>P(x)</code>; only the
+downstream projection layers are trained, which keeps compute low and the
+representation modality-agnostic. If instruction and observation share a modality,
+they share the encoder.</p>
+
+<p><strong>Embodied alignment.</strong> Projection layers map each modality's
+features into a uniform token form. Each modality is tokenized at a different
+count: 81&times;<code>t</code> tokens for video (<code>t</code> = frames), 256
+for point clouds, a single token for text and for audio. Because self-attention
+is quadratic in token count, they follow RT-1 in applying TokenLearner [105]
+<em>per visual modality</em> to prune redundant tokens &mdash; images and videos
+drop to 8 tokens, point clouds to 16. The pruned tokens from co-present
+observation modalities are amalgamated with a <em>modality token</em> inserted
+between every pair to mark boundaries, plus absolute position embeddings; with
+all three visual modalities present the total drops to as few as 34
+(8+8+16+2). A single Transformer block then mixes them.</p>
+
+<p>To align instruction with observation, the authors use cross-attention: given
+an observation sequence <code>P<sub>o</sub></code> and instruction sequence
+<code>P<sub>s</sub></code>, they project <code>P<sub>o</sub></code> into keys
+(K), <code>P<sub>s</sub></code> into values (V), and use a fixed set of 16
+learnable <em>query</em> embeddings (Q) for the cross-attention,
+<code>h<sub>i</sub> = Softmax(Q<sub>i</sub>K<sub>i</sub><sup>T</sup>/&radic;d<sub>h</sub>)V<sub>i</sub></code>
+(Eq 1), in the BERT-style QKV framing. This learnable-query design adapts the
+different modalities for efficient instruction&ndash;observation fusion.</p>
+
+<p><strong>Policy network.</strong> The policy is conditioned on the observation
+(and optionally instruction) sequence through a stack of Transformer blocks,
+each with self-attention, cross-attention, and a feed-forward network, plus
+residual connections to the rollout trajectory. One history action token is
+appended (similar to VIMA [59]). The instruction representation is cached to
+avoid recomputation since it aligns with observation at every step. A final MLP
+emits continuous actions; the training loss is behavior-cloning MSE. The action
+space is absolute joint position.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> <em>RoboAny</em>, a new real-world
+    dataset of <code>n</code>=30 distinct tasks (pick-and-place, sorting by
+    color, "open the drawer", etc.), each with <code>m</code>=30 human
+    teleoperated trajectories, drawn from a set of 70 objects. Every task is
+    annotated with <code>k</code>=5 distinct text instructions (paraphrased via
+    GPT-4) plus speech (Amazon Polly voices), image end-goals, and video
+    demonstrations; depth recordings are converted to point clouds for
+    observation. Simulation benchmarks: <em>Franka Kitchen</em> [92]
+    (text&ndash;image) and <em>ManiSkill2</em> [94] (text&ndash;image and
+    text&ndash;{image, point cloud}).</li>
+  <li><strong>Hardware / simulator:</strong> Franka real robot with two
+    workstations (Fig 3); data via teleoperation. Simulators: Franka Kitchen,
+    ManiSkill2. Training on A100 GPUs, PyTorch.</li>
+  <li><strong>Baselines:</strong> real-world &mdash; modality-specific variants
+    of the same architecture (single instruction&ndash;observation pair),
+    Any2Policy without embodied alignment (concatenation ablation), and SOTA
+    robot models VIMA [59], R3M [109], T5 [110]. Simulation &mdash; R3M [109],
+    BLIP-2 [22], Embodied-GPT [113].</li>
+  <li><strong>Compute:</strong> A100 GPUs; Franka Kitchen trained 40K steps;
+    AdamW, lr 3e-5 (real-world) / 1e-3 &amp; 3e-4 (Franka Kitchen, ManiSkill2),
+    weight decay 1e-6, cosine schedule with 2% warmup, gradient clip 1.0. Exact
+    GPU count / wall-clock <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Real-world evaluations use a 7/1/2 train/val/test split, objects positioned
+randomly, mean success rate over 10 trials.</p>
+
+<p><strong>1. Multi-modal beats modality-specific (Table 1).</strong> With total
+training data held fixed, Any2Policy outperforms single-modality variants across
+all twelve instruction&rarr;observation pairs. Examples: Text&rarr;Image 51 vs
+39; Text&rarr;Point Cloud 62 vs 47; Audio&rarr;Video 55 vs 48; Image&rarr;Video
+63 vs 47. The gain is attributed to cross-modal training improving
+generalization.</p>
+
+<p><strong>2. Embodied alignment is essential (Table 2).</strong> Removing the
+alignment module (concatenating projection outputs, fusing via MLP) collapses
+performance: Text&rarr;Video drops 57&rarr;18, Video&rarr;Video 57&rarr;9,
+Image&rarr;Image 56&rarr;15. The cross-attention fusion is doing most of the
+work.</p>
+
+<p><strong>3. More modalities at inference help (Table 4 ablation).</strong>
+Starting from Text&rarr;Image (51), stacking instruction modalities
+(Text+Audio+ImageEndGoal+VideoDemo) reaches 62; stacking observation modalities
+(Image+Video+PointCloud) reaches 66; a mixed combination reaches 69. Adding
+video demonstrations in instruction plus video in observation gave a +12 point
+jump. Text and audio convey similar information, so combining them adds only
+~1%.</p>
+
+<p><strong>4. Beats SOTA robot models (Table 3, Image-observation column):</strong></p>
+<table>
+  <tr><th>Instr&rarr;Obs</th><th>Image&rarr;Image</th><th>Text&rarr;Image</th><th>Video&rarr;Image</th><th>Image+Text&rarr;Image</th></tr>
+  <tr><td>VIMA [59]</td><td>&ndash;</td><td>&ndash;</td><td>&ndash;</td><td>49</td></tr>
+  <tr><td>R3M [109]</td><td>42</td><td>&ndash;</td><td>46</td><td>&ndash;</td></tr>
+  <tr><td>T5 [110]</td><td>&ndash;</td><td>39</td><td>&ndash;</td><td>&ndash;</td></tr>
+  <tr><td><strong>Any2Policy</strong></td><td><strong>44</strong></td><td><strong>51</strong></td><td><strong>59</strong></td><td><strong>62</strong></td></tr>
+</table>
+
+<p><strong>5. Simulation (Franka Kitchen, Fig 4).</strong> Benchmarked against
+R3M, BLIP-2, Embodied-GPT with 10 or 25 demonstrations across five tasks (two
+camera views). Any2Policy is superior on all tasks <em>except</em> Knobs-Left
+with 25 demonstrations &mdash; the one reported loss.</p>
+
+<p><strong>Where it loses / weak spots:</strong> point-cloud pairings
+(image&ndash;point cloud, video&ndash;point cloud) score lower than other
+observation pairs, which the authors attribute to the difficulty of fusing 2D
+visual features with 3D spatial data; point cloud helps most when paired with
+text/audio instruction.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>Author-stated:</em></p>
+<ul>
+  <li>Integrating point-cloud (3D) observations with image/video (2D) remains
+    hard &mdash; the authors explicitly flag that more sophisticated fusion is
+    needed and that these pairings underperform.</li>
+  <li>One reported loss (Knobs-Left, 25 demos) against baselines in simulation.</li>
+  <li>Reliance on a frozen ImageBind backbone means the policy inherits whatever
+    modality gaps and biases that encoder carries (implied throughout the method
+    discussion).</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>No tactile, no force, no contact-audio.</strong> Despite the
+    "any-modality" branding, the modalities are all <em>perceptual at a
+    distance</em>: text, speech, image, video, point cloud. There is no touch,
+    no force/torque, no proprioception, no contact sound. This is "any visual
+    or linguistic modality," not "any sensory modality" in the contact-rich
+    sense.</li>
+  <li><strong>Tiny statistics.</strong> Real-world numbers are mean success over
+    only 10 trials per cell; no variance / std reported, unlike e.g.
+    <a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+    seeded tables. With 10 trials a difference of 51 vs 39 is roughly 5 vs 4
+    successes &mdash; the confidence intervals must be wide and are not shown.</li>
+  <li><strong>"Same training data" claim is load-bearing but thin.</strong> The
+    headline ("multi-modal training improves generalization at fixed data") rests
+    on holding total trajectories fixed, but each task already has 5 text
+    paraphrases + speech + image-goal + video; the multi-modal model sees
+    strictly more <em>annotation</em> per trajectory, so it isn't obviously a
+    clean apples-to-apples comparison.</li>
+  <li><strong>Tasks are simple and same-environment.</strong> All 30 tasks are in
+    one environment; most are pick-and-place. Long-horizon composition,
+    contact-rich manipulation, and cross-environment transfer are untested.</li>
+  <li><strong>ImageBind dependence caps the ceiling.</strong> Freezing the
+    encoder is presented as an efficiency win, but it also means representation
+    quality for, say, point clouds is bounded by ImageBind's (relatively weak)
+    point-cloud arm &mdash; plausibly why the 3D pairings lag.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This sits in my Cluster H multimodal-binding anchors alongside
+<a href="../paper/imagebind_one_embedding_space.html">ImageBind</a>,
+<a href="../paper/palm_e_embodied_multimodal_lm.html">PaLM-E</a>, and
+<a href="../paper/meta_transformer_unified_modalities.html">Meta-Transformer</a>.
+It is the most <em>policy-level</em> of those: it actually closes the loop from
+a shared multi-modal embedding to robot actions, which is the embodied step the
+pure binding papers stop short of.</p>
+<p>Relative to my thesis &mdash; that many manipulation predicates
+(<code>is_grasped</code>, <code>is_inserted</code>, <code>is_full</code>,
+<code>surface_is_rough</code>, <code>is_screwed_tight</code>) live in
+touch/force/sound, not pixels &mdash; <strong>Any2Policy is a clean
+counter-example of the limitation I want to address.</strong> It markets
+"any-modality" but its modalities are entirely vision + language + 3D geometry;
+there is no channel that could ever evaluate <code>is_screwed_tight</code>. It
+is the visual-binding paradigm taken to its policy conclusion, and precisely
+because it stops at the non-contact modalities it sharpens the argument for
+adding tactile/force/audio binding (FuSe, OmniVTLA, AnyTouch) into exactly this
+kind of shared-latent-space-plus-cross-attention recipe.</p>
+<p>For <a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+specifically: Any2Policy is the opposite design axis. BLADE keeps a small visual
+observation channel but adds <em>symbolic structure</em> (PDDL operators,
+predicates, bi-level planning) for long-horizon composition; Any2Policy keeps a
+flat end-to-end BC policy but maximizes <em>input-modality breadth</em>. Both are
+ways to generalize, structure-vs-modality. A future system wants both: BLADE-style
+abstractions whose predicate classifiers can read from a multi-modal (including
+tactile) observation encoder like Any2Policy's. The "instruction in any modality"
+piece (speech, image-goal, video-demo &rarr; FOL goal) is also directly relevant
+to BLADE's LLM goal-translation step.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We present an end-to-end general-purpose multi-modal system named Any-to-Policy
+  Embodied Agents. This system empowers robots to handle tasks using various
+  modalities, whether in combinations like text-image, audio-image, text-point
+  cloud, or in isolation.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  We leverage existing well-established models, ImageBind, a unified
+  high-performance encoder across five modalities, to encode inputs of various
+  modalities. With the help of ImageBind, we are spared from managing many
+  numbers of heterogeneous modal encoders.
+  <span class="quote-cite">&mdash; &sect;3.1, Multimodal Encoder / p.4</span>
+</blockquote>
+<blockquote>
+  Our dataset, RoboAny, stands out as the first to support a comprehensive range
+  of modalities in robotics. It encompasses both instructions and observations
+  across images, videos, audio, language, and point clouds.
+  <span class="quote-cite">&mdash; &sect;2, Robot Manipulation and Datasets / p.3</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[25] Girdhar et al. 2023 &mdash; ImageBind</strong> (CVPR) &mdash;
+    the unified five-modality encoder Any2Policy is built on; in this batch as
+    <a href="../../raw/papers/imagebind_one_embedding_space.pdf">imagebind_one_embedding_space</a>.</li>
+  <li><strong>[59] Jiang et al. &mdash; VIMA</strong> &mdash; multimodal-prompt
+    manipulation; the closest prior on multi-modal instruction and the key
+    baseline.</li>
+  <li><strong>[26] Zhang et al. 2023 &mdash; Meta-Transformer</strong> &mdash;
+    unified multimodal transformer; in this batch as
+    <a href="../../raw/papers/meta_transformer_unified_modalities.pdf">meta_transformer_unified_modalities</a>.</li>
+  <li><strong>[12] Lee et al. 2019 &mdash; Making Sense of Vision and Touch</strong>
+    (ICRA) &mdash; the contact-rich multimodal-representation paper Any2Policy
+    cites but does <em>not</em> include touch from; in this batch as
+    <a href="../../raw/papers/making_sense_of_vision_and_touch.pdf">making_sense_of_vision_and_touch</a>.</li>
+  <li><strong>[35] Brohan et al. 2022 &mdash; RT-1</strong> &mdash; source of the
+    TokenLearner token-pruning trick Any2Policy reuses.</li>
+  <li><strong>[92] Franka Kitchen</strong> and <strong>[94] ManiSkill2</strong>
+    &mdash; the two simulation benchmarks used.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="imagebind_one_embedding_space.html">ImageBind</a> &mdash; the exact
+    backbone; Any2Policy is ImageBind operationalized into a robot policy.</li>
+  <li><a href="meta_transformer_unified_modalities.html">Meta-Transformer</a> and
+    <a href="languagebind_language_anchored.html">LanguageBind</a> &mdash; sibling
+    unified-modality encoders; the binding-vs-policy contrast.</li>
+  <li><a href="palm_e_embodied_multimodal_lm.html">PaLM-E</a> &mdash; the other
+    embodied-multimodal-LM anchor in Cluster H; LLM-centric where Any2Policy is
+    encoder-centric.</li>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">Beyond Sight (FuSe)</a>,
+    <a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a>, and
+    <a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a> &mdash;
+    the <em>contact-modality</em> counterparts: these add the touch/force/audio
+    channels Any2Policy conspicuously omits, into a similar shared-space-plus-fusion
+    recipe.</li>
+  <li><a href="kaiwu_multimodal_manipulation_dataset.html">Kaiwu</a> &mdash;
+    another multimodal manipulation dataset; the contact-rich data foil to
+    RoboAny's vision/language-only annotation.</li>
+</ul>
+
+</body>
+</html>
