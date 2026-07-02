@@ -122,7 +122,7 @@ redirect_from:
       </div>
       <div class="timeline__content">
         <time>2022.09 - 2026.08</time>
-        <strong>Bachelor of Science</strong>
+        <strong>Bachelor of Science, First Class Honours</strong>
         <span>The University of Hong Kong</span>
       </div>
     </div>
