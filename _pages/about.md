@@ -48,7 +48,7 @@ redirect_from:
     </p>
     <div class="home-links" aria-label="Profile links">
       <a href="mailto:lewisluo@connect.hku.hk">Email</a>
-      <a href="https://drive.google.com/file/d/1V_SqumjYqOeeTcke9awByuDSDNciy6GL/view?usp=sharing">CV</a>
+      <a href="files/Dongyu_Luo_CV.pdf">CV</a>
       <a href="https://scholar.google.com/citations?user=NHxZZQ0AAAAJ&hl=en&oi=ao">Google Scholar</a>
       <a href="https://www.linkedin.com/in/dongyu-luo-911a4724b/">LinkedIn</a>
       <a href="https://x.com/lewisluo49?s=21&t=Gyyr18zy2nITBEm85DNWxQ">X</a>
@@ -113,7 +113,7 @@ redirect_from:
     <div class="timeline__item">
       <time>2022.09 - 2026.08</time>
       <div class="timeline__content">
-        <strong>Bachelor of Science, First Class Honours</strong>
+        <strong>Bachelor of Science, First Class Honours, top 10%</strong>
         <span class="timeline__institution">The University of Hong Kong</span>
       </div>
     </div>
