@@ -111,7 +111,9 @@ redirect_from:
 
   <div class="timeline">
     <div class="timeline__item">
-      <div class="institution-logo institution-logo--umd" aria-label="University of Maryland, College Park logo">UMD</div>
+      <div class="institution-logo">
+        <img src="images/logos/umd-logo.jpg" alt="University of Maryland logo">
+      </div>
       <div class="timeline__content">
         <time>2025.01 - Present</time>
         <strong>Exchange Student &amp; Research Intern</strong>
@@ -120,7 +122,9 @@ redirect_from:
       </div>
     </div>
     <div class="timeline__item">
-      <div class="institution-logo institution-logo--sail" aria-label="Shanghai Artificial Intelligence Laboratory logo">SAIL</div>
+      <div class="institution-logo">
+        <img src="images/logos/shanghai-ai-lab-logo.jpg" alt="Shanghai Artificial Intelligence Laboratory logo">
+      </div>
       <div class="timeline__content">
         <time>2024.04 - 2024.12</time>
         <strong>Research Intern</strong>
@@ -129,7 +133,9 @@ redirect_from:
       </div>
     </div>
     <div class="timeline__item">
-      <div class="institution-logo institution-logo--hku" aria-label="The University of Hong Kong logo">HKU</div>
+      <div class="institution-logo">
+        <img src="images/logos/hku-logo.svg" alt="The University of Hong Kong logo">
+      </div>
       <div class="timeline__content">
         <time>2022.09 - 2026.08</time>
         <strong>Bachelor of Science</strong>
