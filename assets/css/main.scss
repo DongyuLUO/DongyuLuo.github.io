@@ -430,34 +430,23 @@ body.home-layout a:hover {
 }
 
 .institution-logo {
-    display: inline-flex;
+    display: flex;
     align-items: center;
     justify-content: center;
-    width: 88px;
-    min-height: 56px;
+    width: 160px;
+    min-height: 68px;
+    padding: 0.45rem;
     border: 1px solid var(--home-border);
     border-radius: 6px;
     background: var(--home-surface);
-    color: var(--home-text);
-    font-size: 1rem;
-    font-weight: 800;
-    letter-spacing: 0;
     box-shadow: 0 6px 18px rgba(32, 33, 36, 0.05);
 }
 
-.institution-logo--umd {
-    border-color: #ffd200;
-    color: #e21833;
-}
-
-.institution-logo--sail {
-    border-color: #7aa7ff;
-    color: #1f4fb2;
-}
-
-.institution-logo--hku {
-    border-color: #b7955f;
-    color: #7b1e3a;
+.institution-logo img {
+    display: block;
+    width: 100%;
+    max-height: 58px;
+    object-fit: contain;
 }
 
 .timeline__content time {
@@ -581,9 +570,8 @@ body.home-layout a:hover {
     }
 
     .institution-logo {
-        width: 76px;
-        min-height: 48px;
-        font-size: 0.9rem;
+        width: 140px;
+        min-height: 60px;
     }
 
     .home-footer {
