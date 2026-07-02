@@ -1,0 +1,133 @@
+---
+layout: compress
+---
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    <script>
+      (function() {
+        document.documentElement.classList.add('theme-initializing');
+
+        try {
+          const savedTheme = localStorage.getItem('theme');
+          const prefersDark =
+            window.matchMedia &&
+            window.matchMedia('(prefers-color-scheme: dark)').matches;
+
+          const hour = new Date().getHours();
+          const isNight = hour >= 20 || hour < 6;
+          const shouldUseDark =
+            savedTheme === 'dark' ||
+            (!savedTheme && (prefersDark || isNight));
+
+          document.documentElement.classList.toggle('dark-mode', shouldUseDark);
+        } catch (e) {
+          document.documentElement.classList.remove('dark-mode');
+        }
+      })();
+    </script>
+
+    {% include head.html %}
+    {% include head/custom.html %}
+  </head>
+
+  <body class="home-layout">
+    <script>
+      (function() {
+        if (document.documentElement.classList.contains('dark-mode')) {
+          document.body.classList.add('dark-mode');
+        }
+      })();
+    </script>
+
+    {% include browser-upgrade.html %}
+
+    <header class="home-masthead">
+      <nav class="home-nav" aria-label="Primary navigation">
+        <a class="home-nav__brand" href="/#about-me" target="_self">Dongyu Luo</a>
+        <div class="home-nav__links">
+          <a href="/#publications" target="_self">Publications</a>
+          <a href="/#experience" target="_self">Experience</a>
+          <a href="https://drive.google.com/file/d/1D2E56T2EJL-6eYjscP-6i6JxBdx-Cc_m/view?usp=sharing">CV</a>
+        </div>
+      </nav>
+    </header>
+
+    <button id="theme-toggle" aria-label="Toggle light/dark mode" title="Toggle light/dark mode">
+      <svg id="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M21 12.79a9 9 0 1 1-9.21-9.21 7 7 0 1 0 9.21 9.21z"/>
+        <circle cx="14" cy="8" r="0.8" opacity="0.25"/>
+        <circle cx="16" cy="11" r="0.5" opacity="0.25"/>
+        <circle cx="13" cy="13" r="0.6" opacity="0.25"/>
+      </svg>
+
+      <svg id="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" aria-hidden="true" style="display:none;">
+        <circle cx="12" cy="12" r="4"/>
+        <g stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <line x1="12" y1="1" x2="12" y2="3"/>
+          <line x1="12" y1="21" x2="12" y2="23"/>
+          <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+          <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+          <line x1="1" y1="12" x2="3" y2="12"/>
+          <line x1="21" y1="12" x2="23" y2="12"/>
+          <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+          <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+        </g>
+        <circle cx="12" cy="12" r="2" opacity="0.25"/>
+      </svg>
+    </button>
+
+    <main id="main" class="home-main" role="main">
+      {{ content }}
+    </main>
+
+    <footer class="home-footer">
+      <span>&copy; {{ site.time | date: '%Y' }} Dongyu Luo.</span>
+      <span>Last updated: {{ site.time | date: '%b %Y' }}</span>
+    </footer>
+
+    {% include scripts.html %}
+
+    <script>
+      (function() {
+        const toggleBtn = document.getElementById('theme-toggle');
+        const iconSun = document.getElementById('icon-sun');
+        const iconMoon = document.getElementById('icon-moon');
+
+        if (!toggleBtn || !iconSun || !iconMoon) return;
+
+        function isDarkMode() {
+          return document.documentElement.classList.contains('dark-mode');
+        }
+
+        function updateIcons() {
+          const isDark = isDarkMode();
+          iconSun.style.display = isDark ? 'block' : 'none';
+          iconMoon.style.display = isDark ? 'none' : 'block';
+        }
+
+        function setTheme(isDark, savePreference) {
+          document.documentElement.classList.toggle('dark-mode', isDark);
+          document.body.classList.toggle('dark-mode', isDark);
+
+          if (savePreference) {
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+          }
+
+          updateIcons();
+        }
+
+        updateIcons();
+        window.requestAnimationFrame(function() {
+          document.documentElement.classList.remove('theme-initializing');
+        });
+
+        toggleBtn.addEventListener('click', function(e) {
+          e.preventDefault();
+          setTheme(!isDarkMode(), true);
+        });
+      })();
+    </script>
+  </body>
+</html>
