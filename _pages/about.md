@@ -56,6 +56,22 @@ redirect_from:
   </div>
 </section>
 
+<section class="home-section" id="news">
+  <div class="home-section__header">
+    <h2>News</h2>
+  </div>
+
+  <div class="news-list">
+    <div class="news-item">
+      <time>2025.10</time>
+      <p>
+        ControlTac is accepted by ICCV CDEL Workshop with
+        <span class="news-highlight">Oral Presentation</span>.
+      </p>
+    </div>
+  </div>
+</section>
+
 <section class="home-section" id="publications">
   <div class="home-section__header">
     <h2>Publications</h2>
@@ -68,7 +84,7 @@ redirect_from:
     <div class="publication__body">
       <div class="publication__badges">
         <a class="badge" href="https://curateddata.github.io/">ICCV CDEL Workshop <span>(Oral)</span></a>
-        <span class="badge badge--muted">Under review</span>
+        <span class="badge badge--muted">Accepted</span>
       </div>
       <h3>ControlTac: Scaling Tactile Data with Physically Controlled Tactile Image Generation</h3>
       <p>
@@ -95,18 +111,40 @@ redirect_from:
 
   <div class="timeline">
     <div class="timeline__item">
-      <time>2025.01 - 2025.05</time>
-      <div>
-        <strong>Exchange Student</strong>
-        <span>University of Maryland</span>
+      <div class="institution-logo institution-logo--umd" aria-label="University of Maryland, College Park logo">UMD</div>
+      <div class="timeline__content">
+        <time>2025.01 - Present</time>
+        <strong>Exchange Student &amp; Research Intern</strong>
+        <span>University of Maryland, College Park</span>
+        <span>Supervisor: Prof. <a href="https://ruohangao.github.io/">Ruohan Gao</a> and Mr. <a href="https://colinyu1.github.io/">Kelin Yu</a></span>
       </div>
     </div>
     <div class="timeline__item">
-      <time>2022.08 - 2026.09</time>
-      <div>
+      <div class="institution-logo institution-logo--sail" aria-label="Shanghai Artificial Intelligence Laboratory logo">SAIL</div>
+      <div class="timeline__content">
+        <time>2024.04 - 2024.12</time>
+        <strong>Research Intern</strong>
+        <span>Shanghai Artificial Intelligence Laboratory</span>
+        <span>Supervisor: Prof. <a href="https://wlouyang.github.io/">Wanli Ouyang</a> and Dr. <a href="https://tangshixiang.github.io/">Shixiang Tang</a></span>
+      </div>
+    </div>
+    <div class="timeline__item">
+      <div class="institution-logo institution-logo--hku" aria-label="The University of Hong Kong logo">HKU</div>
+      <div class="timeline__content">
+        <time>2022.09 - 2026.08</time>
         <strong>Bachelor of Science</strong>
         <span>The University of Hong Kong</span>
       </div>
     </div>
+  </div>
+</section>
+
+<section class="home-section" id="service">
+  <div class="home-section__header">
+    <h2>Service</h2>
+  </div>
+
+  <div class="service-list">
+    <p><strong>Reviewer:</strong> CoRL</p>
   </div>
 </section>

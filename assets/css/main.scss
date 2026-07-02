@@ -193,7 +193,7 @@ body.home-layout a:hover {
 .home-nav {
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: flex-start;
     gap: 1rem;
     width: min(100% - 2rem, 980px);
     min-height: 56px;
@@ -267,7 +267,7 @@ body.home-layout a:hover {
 .home-intro h1 {
     margin: 0 0 1rem;
     color: var(--home-text);
-    font-size: clamp(2.3rem, 7vw, 4.2rem);
+    font-size: clamp(2.1rem, 5vw, 3.35rem);
     line-height: 1;
     letter-spacing: 0;
 }
@@ -388,32 +388,95 @@ body.home-layout a:hover {
     font-weight: 600;
 }
 
+.news-list,
+.service-list {
+    display: grid;
+    gap: 0.8rem;
+}
+
+.news-item {
+    display: grid;
+    grid-template-columns: 220px minmax(0, 1fr);
+    gap: 3rem;
+    align-items: baseline;
+}
+
+.news-item time {
+    color: var(--home-muted);
+    font-size: 0.92rem;
+}
+
+.news-item p,
+.service-list p {
+    margin: 0;
+    color: var(--home-text);
+}
+
+.news-highlight {
+    color: #d93025;
+    font-weight: 700;
+}
+
 .timeline {
     display: grid;
-    gap: 1rem;
+    gap: 1.35rem;
 }
 
 .timeline__item {
     display: grid;
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 3rem;
+    align-items: start;
 }
 
-.timeline__item time {
+.institution-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 88px;
+    min-height: 56px;
+    border: 1px solid var(--home-border);
+    border-radius: 6px;
+    background: var(--home-surface);
+    color: var(--home-text);
+    font-size: 1rem;
+    font-weight: 800;
+    letter-spacing: 0;
+    box-shadow: 0 6px 18px rgba(32, 33, 36, 0.05);
+}
+
+.institution-logo--umd {
+    border-color: #ffd200;
+    color: #e21833;
+}
+
+.institution-logo--sail {
+    border-color: #7aa7ff;
+    color: #1f4fb2;
+}
+
+.institution-logo--hku {
+    border-color: #b7955f;
+    color: #7b1e3a;
+}
+
+.timeline__content time {
+    display: block;
+    margin-bottom: 0.1rem;
     color: var(--home-muted);
     font-size: 0.92rem;
 }
 
-.timeline__item strong,
-.timeline__item span {
+.timeline__content strong,
+.timeline__content span {
     display: block;
 }
 
-.timeline__item strong {
+.timeline__content strong {
     color: var(--home-text);
 }
 
-.timeline__item span {
+.timeline__content span {
     color: var(--home-muted);
 }
 
@@ -462,11 +525,11 @@ body.home-layout a:hover {
 
 @media (max-width: 760px) {
     .home-nav {
-        align-items: flex-start;
-        flex-direction: column;
+        align-items: center;
+        flex-direction: row;
         justify-content: center;
-        gap: 0.25rem;
-        min-height: 72px;
+        gap: 0;
+        min-height: 58px;
         padding: 0.65rem 3.4rem 0.65rem 0;
     }
 
@@ -490,6 +553,7 @@ body.home-layout a:hover {
     .home-intro,
     .home-section__header,
     .publication,
+    .news-item,
     .timeline__item {
         grid-template-columns: 1fr;
         gap: 1rem;
@@ -514,6 +578,12 @@ body.home-layout a:hover {
 
     .publication__media img {
         max-width: 280px;
+    }
+
+    .institution-logo {
+        width: 76px;
+        min-height: 48px;
+        font-size: 0.9rem;
     }
 
     .home-footer {
