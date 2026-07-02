@@ -419,7 +419,7 @@ body.home-layout a:hover {
 
 .timeline {
     display: grid;
-    gap: 1.35rem;
+    gap: 0;
 }
 
 .timeline__item {
@@ -427,33 +427,19 @@ body.home-layout a:hover {
     grid-template-columns: 220px minmax(0, 1fr);
     gap: 3rem;
     align-items: start;
+    padding: 1.05rem 0;
+    border-top: 1px solid var(--home-border);
 }
 
-.institution-logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 96px;
-    height: 96px;
-    padding: 0.55rem;
-    border: 1px solid var(--home-border);
-    border-radius: 6px;
-    background: var(--home-surface);
-    box-shadow: 0 6px 18px rgba(32, 33, 36, 0.05);
+.timeline__item:first-child {
+    padding-top: 0;
+    border-top: 0;
 }
 
-.institution-logo img {
-    display: block;
-    max-width: 100%;
-    max-height: 100%;
-    object-fit: contain;
-}
-
-.timeline__content time {
-    display: block;
-    margin-bottom: 0.1rem;
+.timeline__item > time {
     color: var(--home-muted);
     font-size: 0.92rem;
+    font-variant-numeric: tabular-nums;
 }
 
 .timeline__content strong,
@@ -463,10 +449,22 @@ body.home-layout a:hover {
 
 .timeline__content strong {
     color: var(--home-text);
+    font-size: 1rem;
+    line-height: 1.35;
 }
 
 .timeline__content span {
     color: var(--home-muted);
+}
+
+.timeline__institution {
+    margin-top: 0.2rem;
+    color: var(--home-text) !important;
+}
+
+.timeline__meta {
+    margin-top: 0.1rem;
+    font-size: 0.94rem;
 }
 
 .home-footer {
@@ -567,11 +565,6 @@ body.home-layout a:hover {
 
     .publication__media img {
         max-width: 280px;
-    }
-
-    .institution-logo {
-        width: 84px;
-        height: 84px;
     }
 
     .home-footer {

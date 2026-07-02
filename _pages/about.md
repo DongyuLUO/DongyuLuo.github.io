@@ -95,35 +95,26 @@ redirect_from:
 
   <div class="timeline">
     <div class="timeline__item">
-      <div class="institution-logo">
-        <img src="images/logos/umd-icon.png" alt="University of Maryland logo">
-      </div>
+      <time>2025.01 - Present</time>
       <div class="timeline__content">
-        <time>2025.01 - Present</time>
         <strong>Exchange Student &amp; Research Intern</strong>
-        <span>University of Maryland, College Park</span>
-        <span>Supervisor: Prof. <a href="https://ruohangao.github.io/">Ruohan Gao</a> and Mr. <a href="https://colinyu1.github.io/">Kelin Yu</a></span>
+        <span class="timeline__institution">University of Maryland, College Park</span>
+        <span class="timeline__meta">Supervisor: Prof. <a href="https://ruohangao.github.io/">Ruohan Gao</a> and Mr. <a href="https://colinyu1.github.io/">Kelin Yu</a></span>
       </div>
     </div>
     <div class="timeline__item">
-      <div class="institution-logo">
-        <img src="images/logos/shanghai-ai-lab-icon.png" alt="Shanghai Artificial Intelligence Laboratory logo">
-      </div>
+      <time>2024.04 - 2024.12</time>
       <div class="timeline__content">
-        <time>2024.04 - 2024.12</time>
         <strong>Research Intern</strong>
-        <span>Shanghai Artificial Intelligence Laboratory</span>
-        <span>Supervisor: Prof. <a href="https://wlouyang.github.io/">Wanli Ouyang</a> and Dr. <a href="https://tangshixiang.github.io/">Shixiang Tang</a></span>
+        <span class="timeline__institution">Shanghai Artificial Intelligence Laboratory</span>
+        <span class="timeline__meta">Supervisor: Prof. <a href="https://wlouyang.github.io/">Wanli Ouyang</a> and Dr. <a href="https://tangshixiang.github.io/">Shixiang Tang</a></span>
       </div>
     </div>
     <div class="timeline__item">
-      <div class="institution-logo">
-        <img src="images/logos/hku-icon.png" alt="The University of Hong Kong logo">
-      </div>
+      <time>2022.09 - 2026.08</time>
       <div class="timeline__content">
-        <time>2022.09 - 2026.08</time>
         <strong>Bachelor of Science, First Class Honours</strong>
-        <span>The University of Hong Kong</span>
+        <span class="timeline__institution">The University of Hong Kong</span>
       </div>
     </div>
   </div>
