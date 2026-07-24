@@ -18,7 +18,7 @@ redirect_from:
 
 <section class="home-intro" id="about-me">
   <div class="home-intro__photo">
-    <img src="images/me.jpg" alt="Dongyu Luo">
+    <img src="images/me.png" alt="Dongyu Luo">
   </div>
   <div class="home-intro__content">
     <p class="home-intro__eyebrow">Incoming Ph.D. Student</p>
