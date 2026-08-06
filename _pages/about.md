@@ -119,6 +119,7 @@ redirect_from:
         <div class="timeline__content">
           <strong>Research Intern</strong>
           <span class="timeline__institution">Sharpa</span>
+          <span class="timeline__meta">Supervisor: Prof. <a href="https://www.weiyuliu.com/">Weiyu Liu</a> and Mr. <a href="https://openreview.net/profile?id=~Kaifeng_Zhang1">Kaifeng Zhang</a></span>
         </div>
       </div>
       <div class="timeline__item">
