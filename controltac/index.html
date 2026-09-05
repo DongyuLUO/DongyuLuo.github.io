@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ControlTac: Scaling Tactile Data with Physically Controlled Tactile Image Generation</title>
+<link rel="icon" type="image/svg+xml" href="./static/images/favicon.svg">
+<link rel="alternate icon" href="./static/images/favicon.ico">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Orbitron:wght@800;900&family=Montserrat:wght@900&display=swap" rel="stylesheet">
@@ -241,6 +243,34 @@
     letter-spacing: 0.05em;
     text-transform: uppercase;
     animation: fadeDown 0.8s ease 0.35s both;
+  }
+
+  .venue-badges {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 28px;
+    animation: fadeDown 0.8s ease 0.38s both;
+  }
+  .venue-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 13px;
+    border: 1px solid var(--border-bright);
+    border-radius: 999px;
+    background: rgba(139, 26, 26, 0.05);
+    color: var(--crimson);
+    font-size: 0.76rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    text-decoration: none;
+  }
+  a.venue-badge:hover {
+    background: var(--crimson);
+    color: white;
   }
 
   .hero-buttons {
@@ -912,6 +942,11 @@
 
   <p class="affiliation">University of Maryland, College Park</p>
 
+  <div class="venue-badges" aria-label="Publication venues">
+    <a class="venue-badge" href="https://curateddata.github.io/" target="_blank" rel="noopener noreferrer">ICCV CDEL Workshop (Oral)</a>
+    <span class="venue-badge">CoRL 2026</span>
+  </div>
+
   <div class="hero-buttons">
     <a href="https://drive.google.com/file/d/1wR6StQ_NhNsdrqc0WKvcsUx7Z2zHHtTu/view?usp=sharing" target="_blank" class="btn btn-primary">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -1052,6 +1087,13 @@
           <div class="stat-pill"><div class="val">~5h</div><div class="lbl">Training Time</div></div>
         </div>
         <span class="stage-hardware-note">Note: Trained on a single A5000 GPU</span>
+      </div>
+    </div>
+
+    <div class="fig-card reveal" style="margin-top:40px;">
+      <img src="./static/images/mask.gif" alt="ControlTac contact mask generation visualization">
+      <div class="fig-caption">
+        <strong>Contact mask conditioning.</strong> ControlTac uses a compact contact mask as an explicit spatial constraint for physically controlled tactile image generation.
       </div>
     </div>
 
