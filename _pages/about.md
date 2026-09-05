@@ -68,7 +68,7 @@ redirect_from:
     <div class="publication__body">
       <div class="publication__badges">
         <a class="badge" href="https://curateddata.github.io/">ICCV CDEL Workshop <span>(Oral)</span></a>
-        <span class="badge badge--muted">Under submission</span>
+        <span class="badge badge--muted">CoRL 2026</span>
       </div>
       <h3>ControlTac: Scaling Tactile Data with Physically Controlled Tactile Image Generation</h3>
       <p>
