@@ -4,8 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ControlTac: Scaling Tactile Data with Physically Controlled Tactile Image Generation</title>
-<link rel="icon" type="image/svg+xml" href="./static/images/favicon.svg">
-<link rel="alternate icon" href="./static/images/favicon.ico">
+<link rel="shortcut icon" href="./static/images/favicon.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&family=Orbitron:wght@800;900&family=Montserrat:wght@900&display=swap" rel="stylesheet">
@@ -250,27 +249,36 @@
     justify-content: center;
     align-items: center;
     flex-wrap: wrap;
-    gap: 10px;
-    margin: 0 0 28px;
+    gap: 12px;
+    margin: 0 0 34px;
     animation: fadeDown 0.8s ease 0.38s both;
   }
   .venue-badge {
     display: inline-flex;
     align-items: center;
-    padding: 7px 13px;
-    border: 1px solid var(--border-bright);
-    border-radius: 999px;
-    background: rgba(139, 26, 26, 0.05);
-    color: var(--crimson);
-    font-size: 0.76rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
+    min-height: 48px;
+    padding: 12px 20px;
+    border: 1px solid var(--crimson);
+    border-radius: 3px;
+    background: var(--crimson);
+    color: white;
+    font-size: 0.94rem;
+    font-weight: 700;
+    letter-spacing: 0.045em;
     line-height: 1.2;
     text-decoration: none;
   }
-  a.venue-badge:hover {
-    background: var(--crimson);
+  .venue-badge:first-child {
+    border-color: var(--black);
+    background: var(--black);
+  }
+  .venue-badge .oral-mark {
+    margin-left: 8px;
+    padding-left: 8px;
+    border-left: 1px solid rgba(255, 255, 255, 0.45);
     color: white;
+    font-size: 0.72em;
+    letter-spacing: 0.1em;
   }
 
   .hero-buttons {
@@ -384,17 +392,6 @@
     text-align: left;
     margin-top: 32px;
   }
-  .keyword-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 32px; justify-content: center; }
-  .keyword {
-    padding: 4px 14px;
-    border: 1px solid var(--border);
-    border-radius: 2px;
-    font-size: 0.73rem;
-    color: var(--text-secondary);
-    letter-spacing: 0.06em;
-    background: #FFF;
-  }
-
   /* ── TEASER / OVERVIEW ── */
   #overview { background: var(--dark-bg); }
 
@@ -943,7 +940,7 @@
   <p class="affiliation">University of Maryland, College Park</p>
 
   <div class="venue-badges" aria-label="Publication venues">
-    <a class="venue-badge" href="https://curateddata.github.io/" target="_blank" rel="noopener noreferrer">ICCV CDEL Workshop (Oral)</a>
+    <span class="venue-badge">ICCV CDEL Workshop <span class="oral-mark">Oral</span></span>
     <span class="venue-badge">CoRL 2026</span>
   </div>
 
@@ -1003,14 +1000,6 @@
       <blockquote class="abstract-text">
         Vision-based tactile sensing is widely used in perception, reconstruction, and robotic manipulation, yet collecting large-scale tactile data remains costly due to diverse sensor-object interactions and inconsistencies across sensor instances. Existing approaches to scaling tactile data — simulation and free-form tactile generation — often yield unrealistically rendered signals with poor transfer to highly dynamic real-world tasks. We propose <strong>ControlTac</strong>, a two-stage controllable tactile image generation framework that generates realistic tactile images conditioned on a single reference tactile image, contact force, and contact pose. By grounding generation in these important physical priors, ControlTac synthesizes realistic samples across different sensors while effectively capturing task-relevant variations. Across a series of downstream tasks and real-world experiments, the augmented datasets using our approach consistently improve performance and demonstrate practical utility in dynamic real-world settings.
       </blockquote>
-      <div class="keyword-list">
-        <span class="keyword">Vision-Based Tactile Sensing</span>
-        <span class="keyword">Tactile Data Augmentation</span>
-        <span class="keyword">Controllable Generation</span>
-        <span class="keyword">Diffusion Models</span>
-        <span class="keyword">Robot Manipulation</span>
-        <span class="keyword">GelSight</span>
-      </div>
     </div>
   </div>
 </section>
