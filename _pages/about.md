@@ -67,8 +67,8 @@ redirect_from:
     </div>
     <div class="publication__body">
       <div class="publication__badges">
-        <a class="badge" href="https://curateddata.github.io/">ICCV CDEL Workshop <span>(Oral)</span></a>
-        <span class="badge badge--muted">CoRL 2026</span>
+        <span class="badge badge--corl">CoRL 2026</span>
+        <span class="badge badge--workshop">ICCV CDEL Workshop <span>(Oral)</span></span>
       </div>
       <h3>ControlTac: Scaling Tactile Data with Physically Controlled Tactile Image Generation</h3>
       <p>
@@ -88,55 +88,57 @@ redirect_from:
   </article>
 </section>
 
-<section class="home-section" id="experience">
+<section class="home-section home-section--timeline" id="experience">
   <div class="home-section__header">
-    <h2>Experience</h2>
+    <h2>Research Experience</h2>
   </div>
 
   <div class="timeline">
-    <div class="timeline__group">
-      <h3 class="timeline__group-title"><span>Education</span></h3>
-      <div class="timeline__item">
-        <time>2025.01 - 2025.06</time>
-        <div class="timeline__content">
-          <strong>Exchange Student</strong>
-          <span class="timeline__institution">University of Maryland, College Park</span>
-        </div>
-      </div>
-      <div class="timeline__item">
-        <time>2022.09 - 2026.08</time>
-        <div class="timeline__content">
-          <strong>Bachelor of Science, First Class Honours, top 10%</strong>
-          <span class="timeline__institution">The University of Hong Kong</span>
-        </div>
+    <div class="timeline__item">
+      <time>2026.08 - Present</time>
+      <div class="timeline__content">
+        <strong class="timeline__institution">Sharpa</strong>
+        <span class="timeline__role">Research Intern</span>
+        <span class="timeline__meta">Supervisor: Prof. <a href="https://www.weiyuliu.com/">Weiyu Liu</a> and Mr. <a href="https://openreview.net/profile?id=~Kaifeng_Zhang1">Kaifeng Zhang</a></span>
       </div>
     </div>
+    <div class="timeline__item">
+      <time>2025.01 - 2026.07</time>
+      <div class="timeline__content">
+        <strong class="timeline__institution">University of Maryland, College Park</strong>
+        <span class="timeline__role">Research Intern</span>
+        <span class="timeline__meta">Supervisor: Prof. <a href="https://ruohangao.github.io/">Ruohan Gao</a> and Mr. <a href="https://colinyu1.github.io/">Kelin Yu</a></span>
+      </div>
+    </div>
+    <div class="timeline__item">
+      <time>2024.04 - 2024.12</time>
+      <div class="timeline__content">
+        <strong class="timeline__institution">Shanghai Artificial Intelligence Laboratory</strong>
+        <span class="timeline__role">Research Intern</span>
+        <span class="timeline__meta">Supervisor: Prof. <a href="https://wlouyang.github.io/">Wanli Ouyang</a> and Dr. <a href="https://tangshixiang.github.io/">Shixiang Tang</a></span>
+      </div>
+    </div>
+  </div>
+</section>
 
-    <div class="timeline__group">
-      <h3 class="timeline__group-title"><span>Research Experience</span></h3>
-      <div class="timeline__item">
-        <time>2026.08 - Present</time>
-        <div class="timeline__content">
-          <strong>Research Intern</strong>
-          <span class="timeline__institution">Sharpa</span>
-          <span class="timeline__meta">Supervisor: Prof. <a href="https://www.weiyuliu.com/">Weiyu Liu</a> and Mr. <a href="https://openreview.net/profile?id=~Kaifeng_Zhang1">Kaifeng Zhang</a></span>
-        </div>
+<section class="home-section home-section--timeline" id="education">
+  <div class="home-section__header">
+    <h2>Education</h2>
+  </div>
+
+  <div class="timeline">
+    <div class="timeline__item">
+      <time>2025.01 - 2025.06</time>
+      <div class="timeline__content">
+        <strong class="timeline__institution">University of Maryland, College Park</strong>
+        <span class="timeline__role">Exchange Student</span>
       </div>
-      <div class="timeline__item">
-        <time>2025.01 - 2026.07</time>
-        <div class="timeline__content">
-          <strong>Research Intern</strong>
-          <span class="timeline__institution">University of Maryland, College Park</span>
-          <span class="timeline__meta">Supervisor: Prof. <a href="https://ruohangao.github.io/">Ruohan Gao</a> and Mr. <a href="https://colinyu1.github.io/">Kelin Yu</a></span>
-        </div>
-      </div>
-      <div class="timeline__item">
-        <time>2024.04 - 2024.12</time>
-        <div class="timeline__content">
-          <strong>Research Intern</strong>
-          <span class="timeline__institution">Shanghai Artificial Intelligence Laboratory</span>
-          <span class="timeline__meta">Supervisor: Prof. <a href="https://wlouyang.github.io/">Wanli Ouyang</a> and Dr. <a href="https://tangshixiang.github.io/">Shixiang Tang</a></span>
-        </div>
+    </div>
+    <div class="timeline__item">
+      <time>2022.09 - 2026.08</time>
+      <div class="timeline__content">
+        <strong class="timeline__institution">The University of Hong Kong</strong>
+        <span class="timeline__role">Bachelor of Science · First Class Honours · Top 10%</span>
       </div>
     </div>
   </div>
