@@ -81,7 +81,7 @@ redirect_from:
       <p class="publication__links">
         <a href="https://dongyuluo.github.io/controltac/">Project Page</a>
         <span>/</span>
-        <a href="https://drive.google.com/file/d/1wR6StQ_NhNsdrqc0WKvcsUx7Z2zHHtTu/view?usp=sharing">Paper</a>
+        <a href="https://arxiv.org/pdf/2505.20498">Paper</a>
         <strong><span class="show_paper_citations" data="DhtAFkwAAAAJ:ALROH1vI_8AC"></span></strong>
       </p>
     </div>
