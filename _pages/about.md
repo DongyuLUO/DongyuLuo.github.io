@@ -29,10 +29,10 @@ redirect_from:
       degree from <strong>The University of Hong Kong</strong>.
     </p>
     <p>
-      During my undergraduate studies, I conducted research at the Multisensory
-      Machine Intelligence Lab at the <strong>University of Maryland</strong>,
-      where I was mentored by <a href="https://colinyu1.github.io/">Kelin Yu</a>
-      and Prof. <a href="https://ruohangao.github.io/">Ruohan Gao</a>. I am
+      I work closely with the best mentors I could ever ask for,
+      <a href="https://colinyu1.github.io/">Kelin Yu</a> and
+      Prof. <a href="https://ruohangao.github.io/">Ruohan Gao</a>, at the
+      Multisensory Machine Intelligence Lab at the <strong>University of Maryland</strong>. I am
       deeply grateful to Dr. <a href="https://tangshixiang.github.io/">Shixiang Tang</a>
       and Prof. <a href="https://wlouyang.github.io/">Wanli Ouyang</a> for
       introducing me to research and guiding me through the early stages of my
@@ -103,7 +103,7 @@ redirect_from:
       </div>
     </div>
     <div class="timeline__item">
-      <time>2025.01 - 2026.07</time>
+      <time>2025.01 - Present</time>
       <div class="timeline__content">
         <strong class="timeline__institution">University of Maryland, College Park</strong>
         <span class="timeline__role">Research Intern</span>
