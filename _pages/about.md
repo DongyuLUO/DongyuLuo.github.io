@@ -29,14 +29,10 @@ redirect_from:
       degree from <strong>The University of Hong Kong</strong>.
     </p>
     <p>
-      I work closely with the best mentors I could ever ask for,
-      <a href="https://colinyu1.github.io/">Kelin Yu</a> and
-      Prof. <a href="https://ruohangao.github.io/">Ruohan Gao</a>, at the
-      Multisensory Machine Intelligence Lab at the <strong>University of Maryland</strong>. I am
-      deeply grateful to Dr. <a href="https://tangshixiang.github.io/">Shixiang Tang</a>
-      and Prof. <a href="https://wlouyang.github.io/">Wanli Ouyang</a> for
-      introducing me to research and guiding me through the early stages of my
-      academic journey.
+      I conducted research at the Multisensory
+      Machine Intelligence Lab at the <strong>University of Maryland</strong>,
+      where I worked closely with <a href="https://colinyu1.github.io/">Kelin Yu</a>
+      and Prof. <a href="https://ruohangao.github.io/">Ruohan Gao</a>.
     </p>
     <p>
       My research interests primarily focus on <strong>Multisensory Intelligence</strong>
@@ -48,7 +44,6 @@ redirect_from:
     </p>
     <div class="home-links" aria-label="Profile links">
       <a href="mailto:lewisluo@connect.hku.hk">Email</a>
-      <a href="files/Dongyu_Luo_CV.pdf">CV</a>
       <a href="https://scholar.google.com/citations?user=NHxZZQ0AAAAJ&hl=en&oi=ao">Google Scholar</a>
       <a href="https://www.linkedin.com/in/dongyu-luo-911a4724b/">LinkedIn</a>
       <a href="https://x.com/lewisluo49?s=21&t=Gyyr18zy2nITBEm85DNWxQ">X</a>
@@ -103,19 +98,11 @@ redirect_from:
       </div>
     </div>
     <div class="timeline__item">
-      <time>2025.01 - Present</time>
+      <time>2025.01 - 2025.05</time>
       <div class="timeline__content">
         <strong class="timeline__institution">University of Maryland, College Park</strong>
         <span class="timeline__role">Research Intern</span>
         <span class="timeline__meta">Supervisor: Prof. <a href="https://ruohangao.github.io/">Ruohan Gao</a> and Mr. <a href="https://colinyu1.github.io/">Kelin Yu</a></span>
-      </div>
-    </div>
-    <div class="timeline__item">
-      <time>2024.04 - 2024.12</time>
-      <div class="timeline__content">
-        <strong class="timeline__institution">Shanghai Artificial Intelligence Laboratory</strong>
-        <span class="timeline__role">Research Intern</span>
-        <span class="timeline__meta">Supervisor: Prof. <a href="https://wlouyang.github.io/">Wanli Ouyang</a> and Dr. <a href="https://tangshixiang.github.io/">Shixiang Tang</a></span>
       </div>
     </div>
   </div>
@@ -128,7 +115,7 @@ redirect_from:
 
   <div class="timeline">
     <div class="timeline__item">
-      <time>2025.01 - 2025.06</time>
+      <time>2025.01 - 2025.05</time>
       <div class="timeline__content">
         <strong class="timeline__institution">University of Maryland, College Park</strong>
         <span class="timeline__role">Exchange Student</span>
