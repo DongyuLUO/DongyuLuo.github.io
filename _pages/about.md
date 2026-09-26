@@ -48,7 +48,7 @@ redirect_from:
     </p>
     <div class="home-links" aria-label="Profile links">
       <a href="mailto:lewisluo@connect.hku.hk">Email</a>
-      <a href="_pages/Dongyu_Luo_CV.pdf">CV</a>
+      <a href="Dongyu_Luo_CV.pdf">CV</a>
       <a href="https://scholar.google.com/citations?user=NHxZZQ0AAAAJ&hl=en&oi=ao">Google Scholar</a>
       <a href="https://www.linkedin.com/in/dongyu-luo-911a4724b/">LinkedIn</a>
       <a href="https://x.com/lewisluo49?s=21&t=Gyyr18zy2nITBEm85DNWxQ">X</a>
