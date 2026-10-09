@@ -758,7 +758,7 @@
   .citation-box code {
     display: block;
     white-space: pre-wrap;
-    word-break: break-all;
+    overflow-wrap: anywhere;
     font-family: inherit;
     color: inherit;
   }
@@ -1483,8 +1483,8 @@
 
     <div class="citation-box reveal" id="bibtex-box">
       <button class="copy-btn" onclick="copyBibtex()">Copy</button><code>@article{luo2025controltac,
-  title={ControlTac: Force-and Position-Controlled Tactile Data Augmentation with a Single Reference Image},
-  author={Luo, Dongyu and Yu, Kelin og Shahidzadeh, Amir-Hossein og Ferm{\"u}ller, Cornelia og Aloimonos, Yiannis og Gao, Ruohan},
+  title={{ControlTac}: Scaling Tactile Data with Physically Controlled Tactile Image Generation},
+  author={Luo, Dongyu and Yu, Kelin and Shahidzadeh, Amir-Hossein and Fermüller, Cornelia and Aloimonos, Yiannis and Gao, Ruohan},
   journal={arXiv preprint arXiv:2505.20498},
   year={2025}
 }</code></div>
@@ -1569,7 +1569,7 @@
   function copyBibtex() {
     const box = document.getElementById('bibtex-box');
     const codeTarget = box.querySelector('code');
-    const text = codeTarget.innerText.trim();
+    const text = codeTarget.textContent.trim();
     navigator.clipboard.writeText(text).then(() => {
       const btn = box.querySelector('.copy-btn');
       btn.textContent = 'Copied!';
