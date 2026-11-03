@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ForceVLA: Enhancing VLA Models with a Force-aware MoE for Contact-rich Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Yu, Liu, Yu, Ren, Hao, Ding, Huang, Huang, Song, Cai, Zhang, Lu">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint (under review)">
+<meta name="arxiv_id" content="2505.22159">
+<meta name="url" content="https://arxiv.org/abs/2505.22159">
+<meta name="pdf" content="../../raw/papers/forcevla_force_aware_moe_contact_rich.pdf">
+<meta name="tags" content="vision-language-action, vla, force-torque, mixture-of-experts, contact-rich, force-control, multisensory, sensory-fusion, flow-matching, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>ForceVLA: Enhancing VLA Models with a Force-aware MoE for Contact-rich Manipulation</h1>
+<p class="meta">
+  Jiawen Yu*, Hairuo Liu*, Qiaojun Yu&dagger;, Jieji Ren, Ce Hao, Haitong Ding,
+  Guangyu Huang, Guofan Huang, Yan Song, Panpan Cai, Wenqiang Zhang&dagger;, Cewu Lu
+  &middot; Fudan / SJTU / Shanghai Innovation Institute / Shanghai AI Lab / NUS / Shanghai Univ / XJTU / Noematrix
+  &middot; 2025 (arXiv, under review)
+  &middot; <a href="https://arxiv.org/abs/2505.22159">arXiv:2505.22159</a>
+  &middot; <a href="../../raw/papers/forcevla_force_aware_moe_contact_rich.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> ForceVLA bolts a 6-axis force/torque modality onto a
+&pi;<sub>0</sub>-style flow-matching VLA by routing the force token through a small
+Mixture-of-Experts fusion block (FVLMoE) <em>after</em> the pretrained VLM, so the
+policy can phase-adaptively modulate contact-rich actions (insertion, wiping,
+peeling) that vision-only VLAs botch under occlusion or misalignment.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Vision-Language-Action models (OpenVLA, &pi;<sub>0</sub>) inherit strong semantic
+grounding and spatial planning from pretrained VLMs, but contact-rich manipulation
+is "fundamentally driven by interaction forces," not just pixels. Under visual
+occlusion or pose error, vision-and-language cues alone leave the policy blind to
+the one signal that actually disambiguates success: the wrench at the end-effector
+(Fig 1 shows a VLA without force completing an insertion incorrectly while ForceVLA
+corrects). Furthermore, force requirements <em>change across task phases</em> &mdash;
+delicate grasp, controlled insertion, compliant surface contact each need different
+force modulation. The authors argue 6D external force should be a <strong>first-class
+modality</strong>, and the open question is <em>where</em> and <em>how</em> to inject
+it into a pretrained VLA without destroying the VLM's learned representations.</p>
+
+<h2>Method</h2>
+<p>ForceVLA is an end-to-end policy built on the &pi;<sub>0</sub> framework: a
+SigLIP-based, PaliGemma-backed VLM encodes multi-RGB views + instruction into fused
+features, and a conditional <strong>flow-matching</strong> action head denoises an
+<code>H<sub>action</sub></code>-length action chunk of target TCP pose + gripper
+width. The observation at step <code>t</code> is
+<code>O<sub>t</sub> = {V<sub>t</sub><sup>b</sup>, V<sub>t</sub><sup>h</sup>, s<sub>t</sub>, f<sub>t</sub>}</code>:
+base + hand RGB, proprioceptive state <code>s<sub>t</sub> &isin; R<sup>7</sup></code>
+(TCP pose as Cartesian <code>(x,y,z)</code> + Euler <code>(&alpha;,&beta;,&gamma;)</code>
+plus gripper width), and the estimated external wrench
+<code>f<sub>t</sub> = {f<sub>tx</sub>, f<sub>ty</sub>, f<sub>tz</sub>, m<sub>tx</sub>, m<sub>ty</sub>, m<sub>tz</sub>} &isin; R<sup>6</sup></code>
+in the world frame.</p>
+
+<p><strong>FVLMoE &mdash; the core fusion module (Fig 3).</strong> Rather than feed
+force into the VLM input, ForceVLA injects it <em>after</em> the VLM, positioned "akin
+to a higher-level cortical association area." The raw wrench
+<code>f<sub>raw</sub> &isin; R<sup>6</sup></code> is linearly projected by
+<code>&phi;<sub>F</sub></code> into a single force token
+<code>E<sub>F</sub> = &phi;<sub>F</sub>(f<sub>raw</sub>) &isin; R<sup>D<sub>model</sub></sup></code>
+and appended to the VLM's visual-linguistic tokens:
+<code>E<sub>in</sub> = [E<sub>VL</sub>; E<sub>F</sub>] &isin; R<sup>(N<sub>VL</sub>+1)&times;D<sub>model</sub></sup></code>.</p>
+
+<p><strong>Routing and fusion.</strong> <code>E<sub>in</sub></code> first passes a shared
+encoder layer (LayerNorm + multi-head self-attention with <code>N<sub>heads</sub></code>
+heads + FFN) for holistic refinement, yielding <code>E<sub>enc</sub></code>. It then
+enters a sparse MoE layer of <code>E = 4</code> expert MLPs with a gating network doing
+<strong>top-<code>k = 1</code></strong> routing per token (each token sent to its single
+most-appropriate expert). MoE output is added back via a residual connection
+(<code>E<sub>fused</sub></code>), then linearly projected to the action-expert
+dimensionality.</p>
+
+<p><strong>Injection into the flow head.</strong> The final <code>H<sub>action</sub></code>
+tokens of <code>E<sub>FVLMoE</sub></code> form a guidance sub-sequence
+<code>G<sub>FVLMoE</sub> &isin; R<sup>H<sub>action</sub>&times;D<sub>a</sub></sup></code>,
+combined by <em>element-wise addition</em> with <code>S<sub>suffix</sub></code>
+(from the VLM's processing of proprioceptive state <code>s<sub>t</sub></code>) and the
+noisy action trajectory <code>a<sub>t</sub><sup>&tau;</sup></code> at denoising step
+<code>&tau;</code>. This additive injection lets the fused contact-aware features
+modulate the predicted action at every flow step. The key architectural claim,
+justified in the ablation (&sect;5.4): force must enter <em>post-VLM</em> to preserve
+pretrained representations &mdash; early fusion corrupts them.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> <em>ForceVLA-Data</em>, a new
+    self-collected dataset of synchronized vision + proprioception + 6-axis
+    force/torque over 5 contact-rich tasks (bottle pumping, plug insertion, USB
+    insertion, whiteboard wiping, cucumber peeling); 244 trajectories &asymp; 140k
+    synchronized timesteps, ~50 expert demos per task; images resized to 480&times;640
+    and normalized, actions as target TCP pose + gripper width. To be open-sourced.</li>
+  <li><strong>Hardware / simulator:</strong> Flexiv Rizon 7-DoF arm with Dahuan
+    adaptive gripper (wrench estimated on TCP); two RGB-D cameras &mdash; static
+    third-person RealSense D435 (1280&times;720, 30 FPS) + wrist-mounted D415
+    (640&times;480, 30 FPS); teleoperation via Quest3 VR. Real-world only, no
+    simulator.</li>
+  <li><strong>Baselines:</strong> &pi;<sub>0</sub>-base w/o F and w/ F (force
+    concatenated to state input), &pi;<sub>0</sub>-fast w/o F and w/ F. The "w/ F"
+    variants isolate the value of the FVLMoE fusion vs. naive force concatenation.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: ForceVLA reaches <strong>60.5% average success</strong> across the five
+tasks vs. 37.3% for the strong &pi;<sub>0</sub>-base w/ F baseline &mdash; a
+<strong>+23.2%</strong> absolute improvement, with up to <strong>80%</strong> success
+on individual tasks (e.g., plug/USB insertion). Per-task bars are in Fig 5
+(read off; exact rates not all tabulated in text).</p>
+
+<p>On the intricate cucumber-peeling task (Table 1), ForceVLA peels longer per stroke
+and needs fewer strokes to clean:</p>
+<table>
+  <tr><th>Model</th><th>Avg. peel length (cm) &uarr;</th><th>Min. strokes to clean &darr;</th></tr>
+  <tr><td>&pi;<sub>0</sub>-base w/o F</td><td>10.27</td><td>14</td></tr>
+  <tr><td>&pi;<sub>0</sub>-base w/ F</td><td>13.17</td><td>10</td></tr>
+  <tr><td><strong>ForceVLA (ours)</strong></td><td><strong>14.12</strong></td><td><strong>7</strong></td></tr>
+</table>
+
+<p><strong>Generalization (Table 2),</strong> five perturbation settings, success %:</p>
+<table>
+  <tr><th>Model</th><th>Object Gen. 1</th><th>Object Gen. 2</th><th>Height Gen.</th><th>Visual Occlusion</th><th>Unstable Socket</th><th>Avg.</th></tr>
+  <tr><td>&pi;<sub>0</sub>-base w/o F</td><td>48.00</td><td>10.00</td><td>66.67</td><td>60.00</td><td>10.00</td><td>38.93</td></tr>
+  <tr><td>&pi;<sub>0</sub>-base w/ F</td><td>32.00</td><td>10.00</td><td>77.78</td><td>30.00</td><td>10.00</td><td>31.96</td></tr>
+  <tr><td>&pi;<sub>0</sub>-fast w/o F</td><td><strong>80.00</strong></td><td>35.00</td><td><strong>88.89</strong></td><td>50.00</td><td>10.00</td><td>52.78</td></tr>
+  <tr><td>&pi;<sub>0</sub>-fast w/ F</td><td>32.00</td><td>5.00</td><td>44.44</td><td>50.00</td><td><strong>30.00</strong></td><td>32.29</td></tr>
+  <tr><td><strong>ForceVLA (ours)</strong></td><td><strong>80.00</strong></td><td><strong>40.00</strong></td><td><strong>88.89</strong></td><td><strong>90.00</strong></td><td>20.00</td><td><strong>63.78</strong></td></tr>
+</table>
+
+<p>Where it loses: ForceVLA ties (not beats) the best baseline on Object Gen. 1 and
+Height Gen., and is <em>beaten</em> on Unstable Socket (20% vs. &pi;<sub>0</sub>-fast
+w/ F at 30%). Notably, naively concatenating force <em>hurts</em> the compact
+&pi;<sub>0</sub>-fast token space (drops 31.0% &rarr; 14.2% in the main bar chart),
+which motivates the whole post-VLM fusion design.</p>
+
+<p><strong>Ablation (Table 3),</strong> fusion-placement study, success rate:</p>
+<table>
+  <tr><th>Fusion strategy</th><th>Success</th></tr>
+  <tr><td>baseline (&pi;<sub>0</sub>)</td><td>45%</td></tr>
+  <tr><td>linear before VLM (early)</td><td>55%</td></tr>
+  <tr><td>MoE before VLM (early)</td><td><strong>0%</strong></td></tr>
+  <tr><td>concatenate after VLM (late, simple)</td><td>60%</td></tr>
+  <tr><td><strong>ForceVLA / FVLMoE (after VLM)</strong></td><td><strong>80%</strong></td></tr>
+</table>
+<p>The MoE-before-VLM collapse to 0% is the sharpest finding: injecting expert-routed
+force into the pretrained VLM's input distribution breaks it entirely. Late
+concatenation already helps (60%), but the FVLMoE routing adds another 20 points.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>Author-stated:</em></p>
+<ul>
+  <li>Uses <em>estimated</em> external wrench (from the Flexiv arm), not a dedicated
+    high-fidelity F/T sensor &mdash; may miss precision in extreme-haptic-sensitivity
+    scenarios.</li>
+  <li>Validation is predominantly on an integrated, high-cost force-torque platform;
+    broader accessibility on cheaper external/retrofitted sensors is "actively being
+    assessed," not demonstrated.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Tiny-N statistics.</strong> The ablation table reports success as
+    blunt percentages over very small trial counts (10&ndash;20 trials/task; the
+    ablation appears to be on a single task), so a "45% vs 55%" gap is &asymp;1&ndash;2
+    successes &mdash; no variance or seeds reported anywhere, unlike BLADE's
+    mean&plusmn;std over 3 seeds. The 0% MoE-before-VLM result is striking but also
+    rests on this thin base.</li>
+  <li><strong>Force as a single token.</strong> The entire 6D wrench at one timestep
+    is compressed into one token via a linear projection &mdash; no force <em>history</em>
+    / temporal window, despite the paper's own framing that contact dynamics evolve over
+    a phase. The "phase-aware" claim is carried by the MoE routing, not by any explicit
+    temporal force encoding.</li>
+  <li><strong>No simulation, no public benchmark.</strong> All five tasks are
+    self-collected on one robot; there is no comparison on any external contact-rich
+    benchmark, so cross-lab reproducibility and the 23.2% headline are hard to
+    situate against other force-aware VLAs.</li>
+  <li><strong>Generalization is mixed.</strong> ForceVLA actually loses on Unstable
+    Socket and only ties on two of five settings; the averaged "+11pt over best
+    baseline" is driven mostly by Visual Occlusion (90%), which is exactly the case
+    force should help &mdash; consistent, but the win is narrower than the abstract
+    implies.</li>
+  <li><strong>Why top-<code>k=1</code> with only 4 experts?</strong> No analysis of
+    whether the gating actually specializes experts per task <em>phase</em> (the
+    motivating claim) vs. per <em>task</em> or arbitrarily &mdash; the routing
+    interpretability that would validate "phase-aware" is asserted, not shown.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely on the thesis that many manipulation predicates &mdash;
+<code>is_inserted</code>, <code>is_screwed_tight</code>, <code>surface_is_clean</code>,
+<code>is_seated</code> &mdash; are <strong>not visually evaluable</strong> and live in
+force/touch. ForceVLA is direct evidence: vision-only VLAs fail insertion under
+occlusion precisely because the success signal is a wrench, not a pixel, and adding
+force recovers it (Visual Occlusion 30/60% &rarr; 90%). For <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>,
+this connects to a limitation I flagged in my own summary: BLADE's abstraction layer
+is "purely categorical" and "continuous parameters (pour amount, grasp pose, force)
+sit entirely inside the diffusion policy." ForceVLA shows the <em>opposite</em> design
+point &mdash; force is a first-class input to an end-to-end flow policy with <em>no</em>
+symbolic structure at all. The interesting synthesis BLADE could pursue: keep the
+symbolic plan, but let a force-aware controller (or a force-grounded predicate
+classifier) decide <code>is_inserted</code> as a precondition/effect, rather than
+leaving force implicit in the controller. ForceVLA's empirical message &mdash; force
+must enter <em>after</em> the pretrained VLM, not before &mdash; is also a useful prior
+for anyone retrofitting force into a foundation-model backbone.</p>
+<p>It is the structure-vs-scale debate again: ForceVLA is firmly on the
+"scale + end-to-end + a smart fusion module" side, a clean foil to BLADE's
+structured-abstraction stance. Tracking it is about understanding what end-to-end
+force fusion buys before deciding what a symbolic force-predicate layer must beat.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  ForceVLA introduces FVLMoE, a force-aware Mixture-of-Experts fusion module that
+  dynamically integrates pretrained visual-language embeddings with real-time 6-axis
+  force feedback during action decoding.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  6D external force sensed at the robot's end-effector should be treated as a
+  first-class modality and formally integrated into the action expert module to enable
+  phase-aware action generation.
+  <span class="quote-cite">&mdash; &sect;1, Introduction / p.2</span>
+</blockquote>
+<blockquote>
+  Notably, the MoE-based early fusion failed entirely (0% success rate), highlighting
+  that altering the input representations of a pretrained VLM disrupts its learned
+  feature distributions and undermines its capacity to process visual-linguistic
+  signals effectively.
+  <span class="quote-cite">&mdash; &sect;5.4, Ablation Studies / p.8</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[10] Black et al. 2024 &mdash; &pi;<sub>0</sub>: A VLA flow model for
+    general robot control</strong> &mdash; the foundational backbone ForceVLA extends;
+    the flow-matching action head + VLM encoder are inherited wholesale. Highest-value
+    forward ingest.</li>
+  <li><strong>[25] &pi;<sub>0</sub>-fast</strong> &mdash; the compact-token VLA variant
+    used as a baseline; its degradation under naive force concat motivates FVLMoE.</li>
+  <li><strong>[11] Beyer et al. 2024 &mdash; PaliGemma</strong> &mdash; the 3B VLM the
+    &pi;<sub>0</sub>/ForceVLA SigLIP encoder is based on.</li>
+  <li><strong>[12] Zhang et al. CoRL 2023 &mdash; sim-to-real contact-rich via online
+    admittance residual learning</strong> &mdash; classical force-control prior for
+    contact-rich insertion.</li>
+  <li><strong>[13] Noseworthy et al. RA-L 2025 &mdash; FORGE: force-guided exploration
+    for contact-rich manipulation under uncertainty</strong> &mdash; closest
+    force-method peer for insertion/assembly.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">Beyond Sight (FuSe)</a>
+    &mdash; the closest sibling: fuses heterogeneous sensors (incl. force) into a
+    language-conditioned policy; FuSe binds via language while ForceVLA binds via an
+    MoE fusion block. Direct design-point comparison.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>
+    &mdash; same "make a VLA contact-aware" agenda, but via tactile rather than
+    wrench/force-torque; complementary modality choice for the same insertion-class tasks.</li>
+  <li><a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a>,
+    <a href="taf_vla_tactile_force_alignment_vla.html">TaF-VLA</a>, and
+    <a href="favla_force_adaptive_fast_slow_vla.html">FAVLA</a>
+    &mdash; the cluster-C cohort of force/tactile-augmented VLAs; FAVLA's fast-slow
+    force adaptation and TaF-VLA's tactile-force alignment are the most direct
+    architectural alternatives to FVLMoE's post-VLM MoE fusion.</li>
+  <li><a href="vla_touch_dual_level_tactile_feedback.html">VLA-Touch</a>
+    &mdash; dual-level tactile feedback for VLAs; another point in the
+    where-to-inject-the-extra-modality design space.</li>
+  <li><a href="foar_force_aware_reactive_policy.html">FoAR</a> and
+    <a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive Diffusion Policy</a>
+    &mdash; force/visuo-tactile-aware reactive policies (non-VLA); the diffusion-policy
+    analogues to ForceVLA's flow head, useful for isolating what the VLM backbone adds.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+    &mdash; the survey that frames exactly ForceVLA's pitch: force as a first-class
+    modality in foundation-model policies. Best context document.</li>
+</ul>
+
+</body>
+</html>

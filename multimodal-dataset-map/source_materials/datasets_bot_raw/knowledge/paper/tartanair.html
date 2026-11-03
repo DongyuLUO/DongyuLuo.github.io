@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>TartanAir</title>
+<meta name="type" content="paper">
+<meta name="authors" content="">
+<meta name="year" content="2020">
+<meta name="venue" content="datasets.bot public catalog">
+<meta name="arxiv_id" content="2003.14338">
+<meta name="url" content="https://arxiv.org/abs/2003.14338">
+<meta name="pdf" content="https://arxiv.org/abs/2003.14338">
+<meta name="tags" content="datasets-bot,open-data,mobile,simulated,depth,point-cloud,proprioception,segmentation,rgb,custom">
+<meta name="status" content="datasets-bot-crosscheck">
+<meta name="ingested" content="2026-06-28">
+<meta name="source_prompt" content="datasets.bot public catalog cross-check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .meta { color: #777; font-size: 0.9em; }
+  a { color: #2962ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>TartanAir</h1>
+<p class="meta">CMU AirLab &middot; 2020 &middot; datasets.bot &middot; <a href="https://datasets.bot/datasets/tartanair">datasets.bot page</a></p>
+<p><strong>One-liner.</strong> Photorealistic AirSim/Unreal Engine simulation dataset for visual SLAM and navigation, with synchronized stereo RGB, depth, semantic segmentation, optical flow, camera poses, simulated LiDAR and IMU across 30 diverse environments (1037 sequences, &gt;1M frames).</p>
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> TartanAir is a large-scale synthetic dataset for visual SLAM and robot navigation, released by CMU's AirLab (Robotics Institute) and presented at IROS 2020. Data is collected in 30 photo-realistic Unreal Engine environments via the AirSim plugin, spanning urban, rural, nature, domestic, public and sci-fi scenes, with challenging conditions including day-night/lighting changes, weather (rain, snow, fog, wind), seasonal variation, moving/dynamic objects, and aggressive diverse ego-motion. It comprises 1037 long motion sequences (each 500-4000 frames) totaling over one million frames, organized hierarchically by Environment -&gt; Difficulty (Easy/Hard) -&gt; Trajectory (P000, P001, ...) -&gt; modality subfolders. Each frame provides multi-modal sensor data and precise ground truth: stereo RGB (left/right, ~640x480), depth maps, semantic segmentation, optical flow (with occlusion masks), 6-DoF camera poses, simulated multi-line LiDAR point clouds, and simulated IMU. Modalities are stored in open formats: RGB as PNG, depth/segmentation/optical flow as NumPy .npy arrays, and poses as .txt files. The full dataset is up to ~3TB and is distributed via the Microsoft Azure Open Datasets platform, an AirLab Ceph/S3 endpoint, and Hugging Face, with download scripts (download_training.py using boto3) and tooling provided at github.com/castacks/tartanair_tools. It served as the official dataset of the CVPR 2020 Visual SLAM Challenge (monocular and stereo tracks). The dataset is released under CC-BY-4.0; the accompanying tartanair_tools software is separately BSD-3-Clause licensed. License: CC-BY-4.0. Download: https://github.com/castacks/tartanair_tools.</li>
+  <li><strong>Hardware / simulator:</strong> Embodiment: drone. Environment: home, industrial, office, outdoor, simulation. Realness: simulated.</li>
+</ul>
+<h2>Schema</h2>
+<p>Hierarchy: Environment / {Easy,Hard} / P0xx trajectory / {image_left, image_right, depth_left, depth_right, seg_left, seg_right, flow} + pose .txt. RGB=PNG, depth/seg/flow=.npy, poses=.txt.</p>
+<h2>Links</h2>
+<ul>
+  <li><a href="https://datasets.bot/datasets/tartanair">datasets.bot page</a></li>
+  <li><a href="https://theairlab.org/tartanair-dataset/">Homepage</a></li>
+  <li><a href="https://arxiv.org/abs/2003.14338">Paper</a></li>
+  <li><a href="https://github.com/castacks/tartanair_tools">Download</a></li>
+</ul>
+</body>
+</html>

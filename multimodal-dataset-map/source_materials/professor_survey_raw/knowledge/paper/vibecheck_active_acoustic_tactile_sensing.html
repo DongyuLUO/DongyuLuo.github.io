@@ -1,0 +1,334 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VibeCheck: Using Active Acoustic Tactile Sensing for Contact-Rich Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Zhang, Kim, Chang, Liang, He, Lampo, Wu, Kymissis, Ciocarlie">
+<meta name="year" content="2026">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2504.15535">
+<meta name="url" content="https://arxiv.org/abs/2504.15535">
+<meta name="pdf" content="../../raw/papers/vibecheck_active_acoustic_tactile_sensing.pdf">
+<meta name="tags" content="acoustic-sensing, active-sensing, tactile-sensing, contact-rich, contact-audio, multisensory, imitation-learning, sim-to-real, material-recognition">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>VibeCheck: Using Active Acoustic Tactile Sensing for Contact-Rich Manipulation</h1>
+<p class="meta">
+  Kaidi Zhang*, Do-Gon Kim*, Eric T. Chang*, Hua-Hsuan Liang, Zhanpeng He,
+  Kathryn Lampo, Philippe Wu, Ioannis Kymissis, Matei Ciocarlie
+  &middot; Columbia University
+  &middot; 2026 (arXiv v2, Jun 2026)
+  &middot; <a href="https://arxiv.org/abs/2504.15535">arXiv:2504.15535</a>
+  &middot; <a href="../../raw/papers/vibecheck_active_acoustic_tactile_sensing.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A parallel-gripper where each finger holds an
+identical piezoelectric disk &mdash; one emits a 20&nbsp;Hz&ndash;20&nbsp;kHz
+acoustic sweep <em>through</em> the grasped object and the other receives it
+&mdash; turning the object itself into a resonant sensor that reports material,
+grasp position, internal structure, and extrinsic contact type, and (the
+headline) closes a peg-insertion loop using <em>only</em> that acoustic
+feedback.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Conventional tactile sensors acquire information by making and breaking
+contact, so they only see <em>local</em> contact points; passive/intrinsic
+contact is bounded by the sensor's contact area and leaves global object
+properties (material, mass distribution, internal geometry) and
+<em>extrinsic</em> contacts (how the object touches the rest of the world)
+unmeasured. The paper's premise: introduce an <em>active</em> component
+&mdash; emit an acoustic signal into the system and observe the response,
+"like shaking a wrapped present" &mdash; and read object/contact state out of
+the resonant response. Prior active-acoustic grippers (Lu &amp; Culbertson
+[11]; Yi, Lee &amp; Fazeli [12]) showed static classification (material,
+grasp position, occluded contact); VibeCheck streamlines the hardware (same
+component as emitter and receiver) and, crucially, goes <em>beyond static
+classification</em> to learn a closed-loop long-horizon policy (peg
+insertion) on acoustic feedback alone.</p>
+
+<h2>Method</h2>
+<p><strong>Hardware (Fig 2).</strong> Each finger embeds an Adafruit 1740
+piezoelectric disk (8&nbsp;kHz resonant frequency). Piezoelectrics convert
+both voltage&rarr;strain and strain&rarr;voltage, so the <em>same</em> part
+acts as speaker on one finger and contact microphone on the other. The
+microphone-side disk is unamplified and is "relatively immune to ambient
+noise." The plastic housing is removed for compactness/sensitivity (0.2&nbsp;mm
+thick, 6&nbsp;mm radius); transducers sit in 3D-printed Clear-V4-resin housings
+on <strong>sorbothane isolation pads</strong> (important for absorbing
+robot-arm vibration), with replaceable high-friction polyethylene grip strips
+at the fingertips. Two Teensy 4.0 boards with audio adapters generate/sample;
+the emitter signal passes an inverting amplifier (gain 1.5), biased to 2.5&nbsp;V
+center, 2.4&nbsp;V amplitude; received signal sampled at 44.1&nbsp;kHz;
+micro-ROS to the host.</p>
+
+<p><strong>Sensing procedure &amp; preprocessing.</strong> A sinusoid is
+<em>linearly swept 20&nbsp;Hz&rarr;20&nbsp;kHz over 1&nbsp;second</em> while the
+opposite finger records. Only the first 42,000 sweep points are retained (data
+corruption), effectively terminating the sweep at 19.029&nbsp;kHz. Raw time-domain
+signal &rarr; <code>FFT</code> &rarr; <strong>kernel PCA with a cosine
+kernel</strong> for dimensionality reduction before training. Across tasks they
+keep only 5&ndash;10 principal components ("~90% of variance"), which they find
+key to generalizing to unseen test conditions.</p>
+
+<p><strong>Static estimation tasks (Sec IV).</strong> For each task a small
+MLP (sizes 400&ndash;250&ndash;100) does classification or regression on the
+kPCA features. Four capabilities: (1) <em>object classification</em> &mdash;
+9 rods (~21&times;21&times;130&nbsp;mm) of different material/geometry; (2)
+<em>grasping position</em> &mdash; <code>edge</code> / <code>quarter</code> /
+<code>center</code> along a rod; (3) <em>pose from internal structure</em>
+&mdash; a smooth PLA cylinder with asymmetric internal geometry, regress
+rotation 0&ndash;170&deg; (10&deg; bins, flips beyond 170&deg;); (4)
+<em>contact-type classification</em> &mdash; <code>diagonal</code> /
+<code>line</code> / <code>in-hole</code> for a rod meeting a square hole, the
+classifier later reused as the peg-insertion observation.</p>
+
+<p><strong>Task learning &mdash; peg insertion (Sec V).</strong> A handcrafted
+"ideal" insertion trajectory (incremental rotations about <code>z</code> then
+<code>x</code> until aligned) yields ground-truth expert actions
+<code>a_expert</code> (action space = move &plusmn;4.5&deg; about <code>x</code>
+or <code>z</code>; 112 discrete poses). Because handcrafting a policy directly
+on noisy classifier outputs is brittle, they train in a <em>simulator</em>:
+given the trained contact classifier <code>h</code>, ground-truth contact
+<code>c_gt</code>, they build the categorical
+<code>p(c_obs | c_gt)</code> from <code>h</code>'s confusion matrix and sample
+observations from it, so the imitation policy learns to be <em>robust to
+classifier errors</em>. The policy
+<code>&pi;(a | c_obs^0,...,c_obs^n)</code> conditions on an
+<code>n=10</code>-step observation history, trained by minimizing
+<code>L = -log &pi;(a_expert | history)</code> (behavior cloning). On the UR5,
+a heuristic threshold on the receiver signal as the robot descends detects the
+moment of contact (and a second <code>z</code> threshold acts as a safety stop
+for misaligned pegs); a rollout succeeds if it reaches the insertion state
+within 50 steps.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected. Object: 9 rods,
+    900 train / 225 test. Grasping position: 2700 train / 675 test. Pose
+    regression: 1800 train / 450 test (18 poses). Contact type: 1000 train /
+    200 test per class. Test sets drawn from <em>separate</em> collection
+    sessions to capture distribution shift; out-of-distribution tests on
+    new surfaces and new orientations. No public benchmark.</li>
+  <li><strong>Hardware / simulator:</strong> Custom parallel gripper (twin
+    Adafruit-1740 piezo disks, Teensy 4.0 &times;2, micro-ROS) on a
+    Universal Robots UR5; peg = 13.1&times;12.8&times;53.9&nbsp;mm rod, hole
+    3&nbsp;mm expanded per direction (6&deg; tolerance). A simple simulator
+    tracks the 112 discrete poses and samples classifier outputs for policy
+    training.</li>
+  <li><strong>Baselines:</strong> <em>not reported</em> &mdash; no external
+    method comparison; "baselines" are internal ablations over frequency
+    range and number of principal components, and in-distribution vs.
+    new-surface / new-orientation / OOD test splits.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: a peg-insertion policy driven by <strong>acoustic contact-type
+feedback as the only sensing modality</strong> succeeds in simulation at 95%
+and transfers to the real UR5. Static-estimation accuracies (Table I; best
+frequency range, generally 0.02&ndash;9.19&nbsp;kHz beats the full range on
+unseen sets):</p>
+
+<table>
+  <tr><th>Task</th><th>In-distribution</th><th>New surface</th><th>New orientation</th></tr>
+  <tr><td>Object classification</td><td>1.00</td><td>1.00</td><td>1.00</td></tr>
+  <tr><td>Grasping position</td><td>1.00</td><td>0.99</td><td>0.90</td></tr>
+  <tr><td>Contact type</td><td>0.95</td><td colspan="2">interp. (in-dist) 0.73 &middot; interp. (OOD) 0.80</td></tr>
+</table>
+
+<p>Pose-from-internal-structure regression: RMSE ~20.0&deg; over 0&ndash;170&deg;
+(Fig 6), worse at low/high angles; interpolated unseen poses show similar error
+scale, a positive generalization sign. Object classification hits 100%
+in-distribution using only the top 3 PCs (~75% of variance), though ~91% of
+variance is needed for full unseen-case performance.</p>
+
+<p>Peg insertion on UR5 (Table II, success over 10 trials):</p>
+<table>
+  <tr><th>Start condition</th><th>&theta;<sub>z</sub>=45&deg; fixed</th><th>Random start</th></tr>
+  <tr><td>&theta;<sub>x</sub>=45&deg; (in-dist)</td><td>6/10</td><td>9/10</td></tr>
+  <tr><td>40.5&deg;&le;&theta;<sub>x</sub>&le;81&deg; (OOD)</td><td>N/A</td><td>6/10</td></tr>
+</table>
+
+<p>Where it wins: random-start in-distribution insertion is strong (9/10), and
+even significantly out-of-distribution poses still insert 60% of the time.
+Robustness check: contact-type classifier still hits <strong>87%</strong> with
+a 75&nbsp;dB music distractor playing (Sec VI-A). Where it loses / is weak:
+the fixed-start case is only 6/10 (worse than random start &mdash; the authors
+note borderline <code>diagonal</code>/<code>line</code> and
+<code>line</code>/<code>in-hole</code> states are hardest); New-orientation
+grasping drops to 0.90 (and to 0.43 in the high-frequency-only band);
+pose RMSE of 20&deg; is "fairly large."</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors (Sec VI-C/D):</em></p>
+<ul>
+  <li>Signal response is influenced by many factors &mdash; minor hardware
+    adjustments, motor heating, geometry, material, contact state &mdash; some
+    informative, some nuisance, introducing variability.</li>
+  <li>Learned models are specific to the object sets used; they do <em>not</em>
+    generalize broadly to entirely unseen objects, nor is that expected, since
+    the response depends on the whole acoustic system plus environment.</li>
+  <li>Truly general acoustic sensing needs careful curation of a diverse
+    dataset; for now best suited to sorting known objects or grasping a
+    familiar object under occlusion.</li>
+  <li>Adding compliant (elastomer) finger surfaces &mdash; desirable for grasp
+    stability &mdash; would attenuate vibrations and require a more powerful
+    actuator to coexist with other tactile modalities.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>Real-robot statistics are thin: peg insertion is reported as
+    <strong>count-of-success out of 10</strong> (6/10, 9/10, 6/10), no seeds
+    or confidence intervals &mdash; a weaker claim than the simulator's 95%.</li>
+  <li>No external baseline anywhere &mdash; all comparisons are internal
+    ablations. The 95% sim number rests on the same confusion-matrix that
+    generated the training observations, so sim success is partly tautological;
+    the real transfer (6&ndash;9/10) is the load-bearing result.</li>
+  <li>The "only acoustic feedback" claim has an asterisk: contact <em>onset</em>
+    is detected by a hand-tuned threshold on the receiver signal plus a
+    hard-coded <code>z</code> safety stop &mdash; so proprioception/geometry
+    priors quietly enter the loop, not pure acoustic state estimation.</li>
+  <li>The sweep is truncated to 19.029&nbsp;kHz due to a <em>data corruption</em>
+    bug rather than by design; unclear how much the resonant-feature content
+    above that would have helped.</li>
+  <li>Object classification is trivially saturated (100% even on new surfaces),
+    which suggests the 9-rod set is acoustically very separable &mdash;
+    the harder, more honest tasks are pose regression (RMSE 20&deg;) and the
+    borderline contact-type confusions that bottleneck insertion.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This paper is a clean instance of the thesis behind my batch interest:
+<strong>many manipulation predicates are not visually evaluable &mdash; they
+live in touch, force, and sound.</strong> VibeCheck's <code>in-hole</code> vs.
+<code>diagonal</code> vs. <code>line</code> contact-type classifier is, in
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+vocabulary, a learned <em>predicate</em> (an <code>is_aligned</code> /
+<code>is_inserted</code> precondition) whose ground truth is an
+<em>acoustic</em> resonance signature, not a pixel pattern. BLADE learns visual
+classifiers <code>f<sub>&theta;</sub>(p): O &rarr; {T,F}</code> for predicates
+and diffusion controllers for the bodies; VibeCheck demonstrates an
+<em>acoustic</em> classifier for exactly the kind of contact predicate that
+BLADE's faucet-pixel cropping could never evaluate (peg-in-hole alignment is
+occluded and contact-defined). The natural BLADE extension: let the predicate
+classifier's input modality be acoustic/tactile where the predicate is
+physically contact-defined &mdash; predicate <em>grounding</em> in the right
+sensory channel.</p>
+<p>Two more connections to my themes. (1) Their confusion-matrix-as-observation-model
+trick &mdash; train the imitation policy on classifier <em>errors</em> sampled
+in sim &mdash; is the same robustness concern BLADE flags ("noisy state
+classification causes planning failures; need planners robust to estimation
+noise"); VibeCheck answers it at the <em>policy</em> layer rather than the
+planner. (2) It is a long-horizon-ish contact-rich task closed on a single
+non-visual modality &mdash; a concrete data point that the abstraction layer
+for contact-rich manipulation may need force/sound channels, not just vision.
+The big caveat: VibeCheck has no language, no planning, no symbolic abstraction
+&mdash; it is a sensing + single-skill-policy paper, so its relevance to BLADE
+is at the <em>predicate-grounding-modality</em> level, not the
+planning-abstraction level.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  The acoustic response of an object can reveal a lot about its global state,
+  for example its material properties or the extrinsic contacts it is making
+  with the world.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  To our knowledge, we are the first to go beyond static classification and
+  demonstrate that a long-horizon manipulation task, in this case a peg
+  insertion task, can be learned using active acoustic sensing as the
+  <em>only</em> sensing modality.
+  <span class="quote-cite">&mdash; &sect;I, contributions / p.2</span>
+</blockquote>
+<blockquote>
+  We use a simple simulated transition model based on the performance of our
+  sensor to train an imitation learning policy that is robust to imperfect
+  predictions from the classifier.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[11] Lu &amp; Culbertson 2023 &mdash; Active Acoustic Sensing for
+    Robot Manipulation</strong> (IROS) &mdash; the hardware platform VibeCheck
+    rebuilds and streamlines. Direct predecessor; see batch entry
+    <a href="../../raw/papers/active_acoustic_sensing_manipulation.pdf">Active Acoustic Sensing for Robot Manipulation</a>.</li>
+  <li><strong>[12] Yi, Lee &amp; Fazeli 2024 &mdash; Visual-auditory Extrinsic
+    Contact Estimation</strong> (arXiv:2409.14608) &mdash; the other prior
+    active-acoustic-in-gripper work VibeCheck positions against (extrinsic
+    contact under occlusion).</li>
+  <li><strong>[2] Liu &amp; Chen 2024 &mdash; SonicSense</strong> (CoRL) &mdash;
+    passive contact-microphone multi-fingered hand for container contents /
+    3D shape / re-ID; the passive-acoustic counterpoint. See batch entry
+    <a href="../../raw/papers/sonicsense_in_hand_acoustic_vibration.pdf">SonicSense</a>.</li>
+  <li><strong>[1] Kim &amp; Rodriguez 2022 &mdash; Active Extrinsic Contact
+    Sensing (peg-in-hole)</strong> (ICRA) &mdash; the active-extrinsic-contact /
+    peg-insertion lineage VibeCheck's task slots into.</li>
+  <li><strong>[20] Liu et al. 2024 &mdash; ManiWAV</strong> (CoRL) &mdash;
+    in-the-wild audio-visual manipulation policy; see batch entry
+    <a href="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">ManiWAV</a>.</li>
+  <li><strong>[21] Mejia, Dean, Hellebrekers &amp; Gupta 2024 &mdash; Hearing
+    Touch</strong> (ICRA) &mdash; audio-tactile pretraining for contact-rich
+    manipulation; see batch entry
+    <a href="../../raw/papers/hearing_touch_audio_visual_pretraining.pdf">Hearing Touch</a>.</li>
+  <li><strong>[23] Du, Lee, Nair &amp; Finn &mdash; Play it by Ear</strong>
+    (RSS) &mdash; learning skills amidst occlusion via audio-visual imitation;
+    see batch entry
+    <a href="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">Play it by Ear</a>.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="../paper/sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>
+    &mdash; closest sibling: in-hand <em>passive</em> acoustic/vibration sensing
+    for object understanding; VibeCheck is the <em>active</em> (emit-and-listen)
+    counterpart that adds a closed-loop policy.</li>
+  <li><a href="../paper/active_acoustic_sensing_manipulation.html">Active Acoustic Sensing for Robot Manipulation</a>
+    &mdash; the Lu &amp; Culbertson platform [11] VibeCheck builds on; same
+    emit-through-object principle, VibeCheck unifies emitter/receiver hardware
+    and goes beyond static classification.</li>
+  <li><a href="../paper/maniwav_in_the_wild_audio_visual.html">ManiWAV</a>
+    and <a href="../paper/making_sense_audio_vibration_pouring.html">Making Sense of Audio Vibration (pouring)</a>
+    &mdash; audio-as-contact-feedback for manipulation; ManiWAV uses contact
+    audio in an imitation policy, the pouring work reads vibration for a
+    contact-rich pour &mdash; both share VibeCheck's "sound encodes contact
+    state" premise.</li>
+  <li><a href="../paper/see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a>
+    and <a href="../paper/hearing_touch_audio_visual_pretraining.html">Hearing Touch</a>
+    &mdash; multisensory fusion / audio-tactile pretraining; VibeCheck is the
+    single-modality (audio-only) ablation point of this fusion line.</li>
+  <li><a href="../paper/sound_of_simulation_generative_audio_sim2real.html">The Sound of Simulation</a>
+    &mdash; generative audio sim2real; relevant to VibeCheck's
+    confusion-matrix-driven simulator that trains the policy on sampled
+    acoustic-classifier observations.</li>
+</ul>
+
+</body>
+</html>

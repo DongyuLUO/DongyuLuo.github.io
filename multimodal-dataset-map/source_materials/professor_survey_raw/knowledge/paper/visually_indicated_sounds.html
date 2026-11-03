@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Visually Indicated Sounds</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Owens, Isola, McDermott, Torralba, Adelson, Freeman">
+<meta name="year" content="2016">
+<meta name="venue" content="CVPR 2016">
+<meta name="arxiv_id" content="1512.08512">
+<meta name="url" content="https://arxiv.org/abs/1512.08512">
+<meta name="pdf" content="../../raw/papers/visually_indicated_sounds.pdf">
+<meta name="tags" content="audio-visual, contact-audio, material-recognition, representation-learning, self-supervised-learning, multisensory, foundational">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- Off-genre audio-visual ML paper (no robot). Standard section structure
+     retained; "Why I care" marks it clearly as an adjacent method/insight
+     anchor, not a manipulation paper, per batch brief format variant. -->
+
+<h1>Visually Indicated Sounds</h1>
+<p class="meta">
+  Andrew Owens, Phillip Isola, Josh McDermott, Antonio Torralba, Edward H. Adelson, William T. Freeman
+  &middot; MIT / U.C. Berkeley / Google Research
+  &middot; CVPR 2016
+  &middot; <a href="https://arxiv.org/abs/1512.08512">arXiv:1512.08512</a>
+  &middot; <a href="../../raw/papers/visually_indicated_sounds.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Train a CNN+LSTM to synthesize the plausible
+impact sound a silent video of a drumstick hitting/scratching objects
+<em>should</em> make &mdash; and show that doing so forces the network to
+implicitly learn material and physical-interaction properties, because the
+sound a contact makes <em>is</em> a readout of what the object is made of.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Objects make distinctive sounds when struck, and those sounds encode
+material properties (stiffness, density) and the action that produced them.
+The authors propose <em>predicting sound from silent video</em> as a proxy
+task for learning about physical interactions in a scene: to predict a video's
+held-out soundtrack, an algorithm must reason about what is being hit and how.
+Unlike classic material-recognition work, the supervision is never an explicit
+material label &mdash; the network discovers material structure by learning
+the regularities of raw audio-visual data. The framing is inspired by how
+infants learn intuitive physics by poking and prodding objects. The task is a
+form of automatic <em>Foley</em> (the film-industry craft of faking impact
+sounds), but with the human taken out of the loop.</p>
+
+<h2>Method</h2>
+<p>Formulated as regression: map a sequence of video frames to a sequence of
+audio features, then convert those features back into a waveform (Fig 4).</p>
+
+<p><strong>Sound representation.</strong> Waveforms are decomposed into
+<em>subband envelopes</em>: a bank of 40 band-pass filters on an ERB scale,
+take the Hilbert envelope of each response, downsample to 90&nbsp;Hz, and
+compress with exponent <code>c=0.3</code> (Eq. 1). The result is a
+<em>cochleagram</em>. A 42-dim feature vector per timestep is PCA-projected to
+10 dims for the regression target.</p>
+
+<p><strong>Image representation.</strong> Motion is made explicit via
+<em>spacetime images</em>: each frame's three channels are grayscale versions
+of the previous, current, and next frames (a cheap optical-flow surrogate that
+avoids fast non-rigid motion problems). Per frame <code>t</code>, the input
+feature <code>x_t = [&phi;(F_t), &phi;(I_1)]</code> concatenates AlexNet
+<code>fc7</code> features of the spacetime image <code>F_t</code> and of the
+first color frame <code>I_1</code> (Eq. 2). The CNN is either trained from
+scratch or initialized from ImageNet and fine-tuned.</p>
+
+<p><strong>Sound prediction model.</strong> An LSTM RNN consumes the CNN
+feature sequence and emits subband-envelope features via an affine map of its
+hidden state (Eq. 3). CNN feature vectors are replicated <code>k=3</code> times
+to bridge the video/audio sampling-rate gap. Training minimizes a robust
+(log-bounded) loss between predicted and ground-truth sound features over time
+(Eq. 4); CNN and RNN are trained jointly with Caffe, dropout, and gradient
+clipping.</p>
+
+<p><strong>Waveform generation.</strong> Two options: (i) <em>parametric
+synthesis</em> &mdash; iteratively impose the predicted subband envelopes on
+white noise (one iteration); (ii) <em>example-based synthesis</em> &mdash; snap
+a window of predicted sound features to its nearest exemplar in the training
+set (by <code>L1</code> distance) and transfer that exemplar's real waveform.
+Example-based synthesis gives a strong natural-sound prior and is the one that
+fools humans best.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> the <em>Greatest Hits</em>
+    dataset, introduced here &mdash; 977 videos (64% indoor, 36% outdoor) of
+    a person probing scenes with a drumstick, 46,577 total actions, ~48 actions
+    per ~35&nbsp;s video (~69% hits, ~31% scratches). Semantic annotations
+    (material, action hit-vs-scratch, reaction, impact pixel location)
+    collected on ~62% of impacts via Amazon Mechanical Turk &mdash; used only
+    for analysis, never for training the sound model.</li>
+  <li><strong>Hardware / simulator:</strong> not a robot paper. Data capture
+    used a handheld drumstick, a shotgun microphone on the camera (wind cover
+    + denoising for outdoor scenes), and a separate audio recorder. AlexNet
+    CNN + LSTM trained on GPUs (<em>compute specifics not reported</em>).</li>
+  <li><strong>Baselines:</strong> image-based nearest-neighbor retrieval
+    variants (image match, spacetime match, image+spacetime); a random-impact
+    baseline; oracle models that draw exemplars from videos with the
+    <em>same</em> material label; plus ablations of the full system (from
+    scratch, no spacetime, parametric synthesis, no RNN, RGB-only).</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Psychophysical study (Fig 5a).</strong> A two-alternative
+forced-choice "real or fake" test on Mechanical Turk. The full system (RGB +
+spacetime + ImageNet pretraining + example-based synthesis) fooled
+participants <strong>40.01% &plusmn; 1.66%</strong> of the time &mdash; vs. a
+46.90% &plusmn; 1.49% ceiling for matching to a real held-out sound from the
+same video, and far above image-matching baselines (~32%) and the random-sound
+baseline (19.77%). Headline ablations:</p>
+
+<table>
+  <tr><th>Model</th><th>% labeled <em>real</em></th></tr>
+  <tr><td>Real sound match (ceiling)</td><td>46.90 &plusmn; 1.49</td></tr>
+  <tr><td><strong>Full system (ours)</strong></td><td><strong>40.01 &plusmn; 1.66</strong></td></tr>
+  <tr><td>&minus; No spacetime</td><td>37.88 &plusmn; 1.67</td></tr>
+  <tr><td>&minus; Parametric synthesis</td><td>34.66 &plusmn; 1.62</td></tr>
+  <tr><td>&minus; Trained from scratch</td><td>36.46 &plusmn; 1.68</td></tr>
+  <tr><td>Image match</td><td>32.98 &plusmn; 1.59</td></tr>
+  <tr><td>Image + spacetime</td><td>33.77 &plusmn; 1.18</td></tr>
+  <tr><td>&minus; No RNN</td><td>29.96 &plusmn; 1.55</td></tr>
+  <tr><td>Random impact sound</td><td>19.77 &plusmn; 1.34</td></tr>
+</table>
+
+<p>Full system significantly beat image matching (<code>p &lt; 0.001</code>);
+RGB-only vs. full was not significant (<code>p = 0.08</code>). On automated
+auditory metrics (loudness error, spectral-centroid error; Fig 5a right), the
+network beat image matching too. Where it <em>loses</em>: parametric (non
+example-based) synthesis did poorly on hard materials like wood and metal
+(confusion rate 62% &plusmn; 6% for dirt, 18% &plusmn; 5% for metal), and the
+example-based variant struggled with highly variable textural sounds like
+splashing water (Fig 7).</p>
+
+<p><strong>Material/action emerges from sound (Sec 6.3).</strong> An SVM
+trained on <em>real</em> sounds and applied to the network's
+<em>predicted</em> sounds reached <strong>22.7% class-averaged material
+accuracy</strong> (chance 5.9%) &mdash; rising to 28.8% with ImageNet
+pretraining &mdash; demonstrating the predicted sound carries genuine material
+information. Predicted-sound action classification hit 53.5% (chance 50%) and
+reaction 55.2%. As a sanity check, an SVM on <em>real</em> impact sounds gets
+45.8% material accuracy (Sec 4), confirming impact sounds are materially
+informative in the first place. Impact <em>detection</em> on long videos:
+average precision 43.6% (RGB+spacetime) vs. 21.6% (RGB-only).</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Splash sounds violate the single-amplitude-peak assumption of the
+    onset detector, so the dataset/onset pipeline is biased toward
+    crisp hits and scratches.</li>
+  <li>The model misses or hallucinates impacts when the drumstick moves
+    erratically; broken-RNN ablation often fails to detect hit timing and
+    under-predicts amplitude (Fig 8 failure modes: missed railing tap,
+    false cushion hit).</li>
+  <li>Example-based synthesis is poor on highly variable textural sounds
+    (water); parametric synthesis is poor on hard materials.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The "fool rate" metric tops out at 46.9% even for ground-truth real
+    sounds &mdash; people are bad at this task, which inflates how good 40%
+    sounds. The right framing is "82% of the human ceiling," not "fooled
+    40% of the time."</li>
+  <li>Material/action recovery is read out by an SVM trained on real audio,
+    not from the network's internal features &mdash; so it measures whether
+    the <em>output</em> is materially informative, a weaker claim than a
+    learned <em>representation</em> being so. The fc7-feature confusion
+    analysis (30.2% accuracy) is the representation-level result and is
+    reported separately.</li>
+  <li>Drumstick-only contact is a narrow, consistent action distribution.
+    Whether the material readout generalizes to arbitrary contact tools or
+    forces (the regime a robot gripper actually operates in) is untested.</li>
+  <li>Single dataset, single capture rig; no cross-environment generalization
+    study. The indoor/outdoor split hints at domain shift but isn't isolated.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p><strong>Adjacent, not a manipulation paper</strong> &mdash; there is no
+robot, no policy, no planning here. It is a 2016 audio-visual computer-vision
+classic, and it earns its place in this batch as a <em>method/insight
+anchor</em> rather than a method I'd directly build on.</p>
+<p>The load-bearing idea, though, is exactly the thesis behind the contact-audio
+robotics cluster: <strong>the sound of a contact is a near-direct readout of
+material and physical-interaction properties</strong> &mdash; precisely the
+predicates (<code>surface_is_rough</code>, <code>is_made_of_metal</code>,
+hardness, the hit-vs-scratch distinction) that are <em>not</em> visually
+evaluable and live in the touch/sound channel. <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+learns its predicate classifiers from <em>vision</em>; a predicate like
+"the lid is screwed tight" or "this surface is rough" has no clean visual
+signature but a sharp acoustic one. This paper is the foundational
+demonstration that a learned model can extract that signature from impact
+audio at all &mdash; the empirical bedrock that later robot contact-audio
+papers (<a href="../../raw/papers/sonicsense_in_hand_acoustic_vibration.pdf">SonicSense</a>,
+<a href="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">ManiWAV</a>,
+<a href="../../raw/papers/see_hear_feel_sensory_fusion.pdf">See, Hear, and Feel</a>)
+exploit for manipulation. The "predict one modality from another as
+self-supervision" recipe is also the conceptual seed for the binding/alignment
+line (<a href="../../raw/papers/objects_that_sound.pdf">Objects that Sound</a>,
+<a href="../../raw/papers/imagebind_one_embedding_space.pdf">ImageBind</a>).</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Objects make distinctive sounds when they are hit or scratched. These sounds
+  reveal aspects of an object's material properties, as well as the actions
+  that produced them.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  This task implicitly requires material recognition, but unlike traditional
+  work on this problem, we never explicitly tell the algorithm about materials.
+  Instead, it learns about them by identifying statistical regularities in the
+  raw audio-visual signal.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  This accuracy indicates that our model learned an output representation that
+  was informative about material, even though it was only trained to predict
+  sound.
+  <span class="quote-cite">&mdash; &sect;6.3 / p.7</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited here that could be ingested next:</p>
+<ul>
+  <li><strong>Arnab et al. 2015 [2]</strong> &mdash; semantic segmentation that
+    incorporates audio from impact sounds; the direct prior on using contact
+    audio for material/object recognition.</li>
+  <li><strong>Davis et al. 2014 [9] &mdash; The Visual Microphone</strong> &mdash;
+    passive recovery of sound from high-speed video of vibrating objects; the
+    inverse problem (sound from subtle visual vibration).</li>
+  <li><strong>Owens et al. &mdash; Greatest Hits / ambient-sound features</strong>
+    &mdash; the same group's follow-up using these sounds as a supervisory
+    signal for visual representation learning.</li>
+  <li><strong>Sinapov, Wiemer &amp; Stoytchev 2009 [41]</strong> &mdash; ICRA
+    work on interactive learning of acoustic properties of household objects;
+    the robotics-side precursor to contact-audio sensing.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="../../raw/papers/objects_that_sound.pdf">Objects that Sound</a>
+    and <a href="../../raw/papers/the_sound_of_pixels.pdf">The Sound of Pixels</a>
+    &mdash; the audio-visual correspondence/separation line that grew out of
+    this "predict-across-modalities" framing; closest siblings (Cluster E).</li>
+  <li><a href="../../raw/papers/sonicsense_in_hand_acoustic_vibration.pdf">SonicSense</a>,
+    <a href="../../raw/papers/active_acoustic_sensing_manipulation.pdf">Active Acoustic Sensing for Manipulation</a>,
+    and <a href="../../raw/papers/vibecheck_active_acoustic_tactile_sensing.pdf">VibeCheck</a>
+    &mdash; the robotics realization of this paper's core insight: contact /
+    acoustic vibration encodes material and object state (Cluster D).</li>
+  <li><a href="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">ManiWAV</a>,
+    <a href="../../raw/papers/see_hear_feel_sensory_fusion.pdf">See, Hear, and Feel</a>,
+    and <a href="../../raw/papers/making_sense_audio_vibration_pouring.pdf">Making Sense of Audio Vibration (pouring)</a>
+    &mdash; audio-as-feedback manipulation policies; downstream uses of the
+    contact-sound signal this paper first characterized (Cluster D).</li>
+  <li><a href="../../raw/papers/objectfolder_dataset_implicit_representations.pdf">ObjectFolder</a>
+    and <a href="../../raw/papers/objectfolder_2_multisensory_sim2real.pdf">ObjectFolder 2.0</a>
+    &mdash; multisensory (incl. impact-audio) object datasets; the simulated
+    counterpart to <em>Greatest Hits</em> (Cluster I).</li>
+  <li><a href="../../raw/papers/imagebind_one_embedding_space.pdf">ImageBind</a>
+    &mdash; the modern many-modality binding model whose audio-visual leg
+    descends from this self-supervised cross-modal-prediction idea (Cluster H).</li>
+</ul>
+
+</body>
+</html>

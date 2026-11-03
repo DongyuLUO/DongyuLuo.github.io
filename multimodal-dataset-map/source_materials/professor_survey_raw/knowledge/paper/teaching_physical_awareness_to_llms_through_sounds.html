@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Teaching Physical Awareness to LLMs through Sounds</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Wang, Nie, Zhou, Kai, Hu">
+<meta name="year" content="2025">
+<meta name="venue" content="ICML 2025">
+<meta name="arxiv_id" content="2506.08524">
+<meta name="url" content="https://arxiv.org/abs/2506.08524">
+<meta name="pdf" content="../../raw/papers/teaching_physical_awareness_to_llms_through_sounds.pdf">
+<meta name="tags" content="audio-language, audio-sensing, acoustic-sensing, physical-reasoning, llm, foundation-models, multimodal, representation-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-25">
+<meta name="source_prompt" content="related-work ingest: dynamic state-change concept grounding for manipulation">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<!-- Off-genre: non-robot audio-LLM perception paper. Structure kept; headers adapted (no manipulation hardware; "Setup" reports dataset/simulator/baselines). -->
+
+<h1>Teaching Physical Awareness to LLMs through Sounds</h1>
+<p class="meta">
+  Weiguo Wang, Andy Nie, Wenrui Zhou, Yi Kai, Chengchen Hu
+  &middot; NIO / Peking University
+  &middot; ICML 2025 (PMLR 267)
+  &middot; <a href="https://arxiv.org/abs/2506.08524">arXiv:2506.08524</a>
+  &middot; <a href="../../raw/papers/teaching_physical_awareness_to_llms_through_sounds.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> ACORN teaches an audio-LLM to reason about the
+<em>physics of how sound propagated</em> &mdash; Doppler shift, multipath/reverberation,
+direction-of-arrival, line-of-sight, range &mdash; rather than just what made the sound,
+by training a phase-aware audio encoder on a million-example QA dataset whose audio is
+synthesized by convolving real sound sources with a controllable physical-channel
+simulator.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Current audio-LLMs (Pengi, LTU, Qwen-Audio) recognize and describe sound
+<em>content</em> but lack <em>physical awareness</em>: they cannot tell from the raw signal
+whether a vehicle is approaching or receding (Doppler), whether the speaker is inside or
+outside an enclosure (line-of-sight / multipath), or where a sound came from (direction).
+The authors motivate this with a safety case &mdash; a voice-controlled car accepting
+<code>Open the Window</code> from <em>outside</em> the vehicle because it cannot discern the
+sound's physical origin. The core obstacle is data: large-scale physical-phenomenon audio
+is impractical to record across many environments and nearly impossible to annotate by hand
+(a human cannot label a Doppler shift or reverberation time without instruments). Their key
+insight: the received signal decomposes as <em>y = h &otimes; s</em>, a sound source
+<em>s</em> convolved with a physical-channel impulse response <em>h</em> (Eq. 1), so realistic
+physically-annotated audio can be <em>synthesized</em> by convolving existing source clips
+with simulated channels whose ground-truth physics is known by construction.</p>
+
+<h2>Method</h2>
+<p><strong>Channel simulator (the data engine).</strong> A signal-processing channel
+simulator models five independently-controllable components of the channel impulse response
+(CIR): (1) LOS path + early reflections (delta functions at path delays, Eq. 4), (2)
+reverberation tail (frequency-subband Gaussian noise with per-band decay envelopes, Eq. 5),
+(3) Doppler effect (a time-varying delay <em>&tau;(t) = (d<sub>0</sub>+v&middot;t)/c</em>,
+Eq. for <em>h(t,&tau;)</em>), (4) microphone-array reception (per-channel TDoA from
+direction <em>&theta;</em>, Eq. 6), and (5) parameter randomization of all non-target
+components. Sources are drawn from AudioSet (~2M 10-sec clips); each is convolved with a
+task-configured channel (Table 1 specifies, per task, which components are the controlled
+target <strong>T</strong>, randomized <strong>R</strong>, enabled, or disabled). This
+component-wise "simulate the whole life cycle of the sound wave" approach is contrasted with
+prior CIR work that reconstructs specific geometric environments.</p>
+
+<p><strong>AQA-PHY dataset.</strong> 1M <em>&lt;Audio, Question, Answer&gt;</em> tuples
+(Fig. 4 workflow). Closed-form QA (binary classification, multi-class, numeric estimation)
+from fixed templates; open-form QA (natural-language physics explanations) generated with
+ChatGPT-4. Per task: 200k closed-form + 10k open-form.</p>
+
+<p><strong>Phase-aware audio encoder (the architecture contribution).</strong> Unlike
+content-focused encoders that use magnitude only, ACORN's encoder ingests three STFT-derived
+channels: log-magnitude, sin(phase), and cos(phase) (sin/cos used to avoid the
+&pi;&rarr;&minus;&pi; wraparound discontinuity, Eq. 3). The argument: physical effects live in
+subtle <em>phase</em> relationships magnitude-only encoders discard. Each of the three
+components passes a 3&times;3 1D conv (128&rarr;1280 channels) + GELU, the three are stacked
+(3840 channels), fused by two 3&times;3 convs to 1280, given sinusoidal positional
+embeddings, and processed by a 32-layer transformer to produce audio tokens. The magnitude
+subnetwork is initialized from Whisper-large-v2; the phase subnetwork is trained from scratch.</p>
+
+<p><strong>LLM coupling.</strong> Audio tokens are linearly projected to the word-embedding
+size, wrapped in <code>&lt;soa&gt;</code>/<code>&lt;eoa&gt;</code> tokens, concatenated with
+text tokens, and fed to the LLM (Llama3.1-8B or Qwen2-7B). Encoder + LLM trained jointly with
+next-token loss on the answer; LLM fine-tuned with LoRA.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> AQA-PHY (self-built, 1M tuples) across five
+    tasks &mdash; LOS Detection, Doppler Estimation, DoA Estimation, Multipath Analysis,
+    Range Estimation. Sound sources from AudioSet. Real-world eval: NIO ES6 vehicle cabin,
+    LOS detection + DoA, zero-shot (trained on simulated only).</li>
+  <li><strong>Hardware / simulator:</strong> custom DSP channel simulator (no robot;
+    perception-only). Real-world rig: four omni-directional microphones in a vehicle cabin
+    (two front, two back, left/right per pair), 16 kHz, data-acquisition board. Training on
+    4 NVIDIA A100 GPUs, batch size 32, 7 epochs, ~61 hours total.</li>
+  <li><strong>Baselines:</strong> Whisper-large-v2 encoder (magnitude-only, 0.63B params)
+    vs. ACORN encoder (0.65B params), each paired with both Llama3.1-8B and Qwen2-7B; plus a
+    task-specific random baseline. Comparison is encoder-vs-encoder under matched LLMs.</li>
+  <li><strong>Compute:</strong> 4&times; A100, batch 32, 7 epochs, ~61 h training.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Overall performance (Table 2, "Merged" = one model over all tasks; metrics: LOS = binary
+class accuracy BCA &uarr;; Doppler = MAE of shift % &darr;; DoA = MAE in time samples &darr;;
+Multipath = triple-class accuracy TCA &uarr;; Range = relative error % REP &darr;):</p>
+
+<table>
+  <tr><th>Encoder + LLM</th><th>LOS (BCA&uarr;)</th><th>Doppler (MAE<sub>f</sub>&darr;)</th><th>DoA (MAE<sub>s</sub>&darr;)</th><th>Multipath (TCA&uarr;)</th><th>Range (REP&darr;)</th></tr>
+  <tr><td>Whisper + Llama3.1-8B</td><td>0.867</td><td>1.213</td><td>5.585</td><td>0.845</td><td>12.572</td></tr>
+  <tr><td>Whisper + Qwen2-7B</td><td>0.881</td><td>1.042</td><td>2.716</td><td>0.848</td><td>10.609</td></tr>
+  <tr><td><strong>ACORN + Llama3.1-8B</strong></td><td>0.920</td><td>0.791</td><td><strong>1.423</strong></td><td>0.890</td><td><strong>1.764</strong></td></tr>
+  <tr><td><strong>ACORN + Qwen2-7B</strong></td><td><strong>0.924</strong></td><td><strong>0.181</strong></td><td>0.907</td><td><strong>0.903</strong></td><td>1.599</td></tr>
+  <tr><td>Random baseline</td><td>0.50</td><td>10.00</td><td>66.67</td><td>0.33</td><td>33.33</td></tr>
+</table>
+
+<ul>
+  <li>The phase-aware encoder beats the Whisper magnitude-only baseline on <em>every</em>
+    metric: +5.3 pts BCA on LOS (Llama), 74.5% lower DoA MAE (1.423 vs 5.585, Llama), and a
+    ~7&times; reduction in range REP (1.764 vs 12.572, Llama). The paper credits the phase
+    channels for this.</li>
+  <li>Improvements hold across both Llama and Qwen, argued as evidence the encoder gain is
+    <em>model-agnostic</em>.</li>
+  <li>Open-form QA (Qwen2-7B): the model gives natural-language physics explanations;
+    for multi-step tasks it first extracts measurements then applies formulas (reported DoA
+    error 6.505&deg;, range error 0.472 m in the merged open-QA setting).</li>
+  <li><strong>Ablations:</strong> LOS presence <em>lowers</em> multipath TCA (strong direct
+    path masks subtle echoes); Doppler slightly lowers LOS BCA (signal distortion); range
+    accuracy improves monotonically with SNR (MAE 5.64&rarr;0.91 samples from &lt;10 dB to
+    &gt;40 dB, Llama). Degradations are small &mdash; argued as robustness for real
+    environments where effects co-occur.</li>
+  <li><strong>Real world (zero-shot, vehicle):</strong> LOS interior/exterior detection
+    0.845 (Llama) / 0.870 (Qwen); in-cabin left/right DoA 0.8975 (Llama) / 0.925 (Qwen).
+    Degraded vs simulation but functional sim-to-real.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Single-turn only; multi-turn conversational reasoning is future work.</li>
+  <li>Model evaluates direct outputs; no "internal thought" / chain-of-thought-style
+    internalization yet (they cite o1 / DeepSeek-R1 as inspiration for response conditioning).</li>
+  <li>Real-world experiments are limited in scope and scale; more extensive testing needed.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>All "physical awareness" is <strong>passive perception of propagation physics</strong>,
+    not of object state. The model infers properties of the <em>channel</em> (geometry,
+    motion, reflectivity), not of the sound's <em>source</em> changing state. No notion of a
+    process evolving over time toward a threshold ("coming to a boil").</li>
+  <li>Generalization rests entirely on the channel simulator's fidelity. Because both train
+    and test audio are synthesized the same way, the strong table numbers may overstate
+    real-world transfer; the much smaller, mostly-binary real-world results are the honest
+    signal.</li>
+  <li>No closed loop: outputs are one-shot answers to questions; nothing acts on the
+    inference or corrects behavior. The safety "reject the command" framing is illustrative,
+    not an evaluated control loop.</li>
+  <li>The phase-encoder ablation is correlational at the system level (encoder swap), not a
+    clean within-encoder magnitude-vs-phase ablation, so how much of the gain is phase vs
+    full-spectral-resolution vs from-scratch training is not isolated.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p><strong>Adjacent / contrast paper.</strong> This is the
+<em>concept-grounding-on-audio</em> half of the dynamic-state-change idea &mdash; grounding
+language/physical-process understanding on raw sound in an LLM &mdash; but it lands on a
+different axis than what I need, and the gap is instructive:</p>
+<ul>
+  <li><strong>Covers (the axis it shares):</strong> non-visual (audio) sensing fused into an
+    LLM, with language-level physical reasoning over the signal. It is the cleanest existing
+    demonstration that an LLM can be taught to read <em>physics</em> off audio rather than
+    just labels &mdash; the perception substrate a dynamic-state-change predicate
+    (<code>is_boiling</code>, <code>became_slippery</code>) would need.</li>
+  <li><strong>Misses (the axes it doesn't touch):</strong> (1) <em>Static channel physics,
+    not dynamic source state-transitions.</em> It reasons about how sound <em>traveled</em>
+    (Doppler, multipath, DoA), not about an object's state <em>changing</em> over a
+    manipulation. (2) <em>Passive QA, not closed-loop correction.</em> No monitoring over time,
+    no replanning, no semantic correction &mdash; the exact opposite end from
+    <a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+    replan-after-each-behavior loop. (3) <em>Textual/neural answers, not symbolic
+    predicates.</em> There is no precondition/effect abstraction a planner could consume.
+    (4) <em>No manipulation, no robot, no contact audio.</em> The sound is ambient/propagated,
+    not the impact/scrape/pour audio of a gripper acting on objects.</li>
+</ul>
+<p>So relative to BLADE: BLADE learns <em>symbolic, dynamic, action-grounded</em>
+predicates but on <em>vision</em>; ACORN learns <em>neural, static, passively-sensed</em>
+physical attributes but on <em>audio</em>. The interesting white space my idea sits in is the
+union neither occupies: <em>dynamic source-state transitions, grounded on contact/process
+audio, expressed as monitorable predicates that drive a correction loop.</em> ACORN is the
+strongest evidence that the audio-grounding leg is feasible; it is also a clean foil for what
+"physical awareness from sound" should additionally mean for manipulation &mdash; closer to
+<a href="../paper/hear_vision_sound_language_action_sound_centric_manipulation.html">HEAR</a>
+and
+<a href="../paper/the_sound_of_water_physical_properties_pouring.html">The Sound of Water</a>
+(source-side process physics) than to ACORN's channel-side propagation physics.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Large Language Models have shown remarkable capabilities in text and multimodal processing,
+  yet they fundamentally lack physical awareness &mdash; understanding of real-world physical
+  phenomena.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  The sound that we hear or microphones capture can be decomposed into two independent
+  components &mdash; the sound source and the physical channel through which it travels.
+  <span class="quote-cite">&mdash; &sect;1, Introduction (key insight)</span>
+</blockquote>
+<blockquote>
+  By including phase information, our encoder can more effectively capture the characteristics
+  of both the sound source and the acoustic channel, which are essential for understanding the
+  physical world.
+  <span class="quote-cite">&mdash; &sect;3.2, Audio Encoder</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that could be ingested next (channel / audio-LLM lineage):</p>
+<ul>
+  <li><strong>Gemmeke et al. 2017 &mdash; AudioSet</strong> (ICASSP) &mdash; the source-clip
+    corpus the channel simulator convolves against.</li>
+  <li><strong>Radford et al. 2023 &mdash; Whisper</strong> &mdash; the magnitude-only encoder
+    baseline and the magnitude-subnetwork initialization.</li>
+  <li><strong>Deshmukh et al. 2023 &mdash; Pengi</strong>, <strong>Gong et al. 2023 &mdash; LTU</strong>,
+    <strong>Chu et al. 2023/2024 &mdash; Qwen-Audio</strong> &mdash; the audio-LLM line ACORN
+    extends from content understanding to physical awareness.</li>
+  <li><strong>Zheng et al. 2024 &mdash; BAT</strong> &mdash; closest prior on spatial audio
+    reasoning in LLMs; ACORN contrasts its phase handling (per-channel phase vs BAT's
+    interaural phase difference).</li>
+  <li><strong>Wang et al. 2023 &mdash; NEWTON</strong> &mdash; benchmark for LLM physical
+    reasoning (text/vision); the physical-reasoning-in-LLM framing ACORN positions against.</li>
+</ul>
+<p>Related papers already (or being) ingested in this knowledge base:</p>
+<ul>
+  <li><a href="../paper/hear_vision_sound_language_action_sound_centric_manipulation.html">HEAR</a>
+    &mdash; sound-centric manipulation incl. process monitoring (boil/pour); the manipulation
+    counterpart ACORN lacks &mdash; same audio-grounding leg, but closed-loop and on the robot.</li>
+  <li><a href="../paper/the_sound_of_water_physical_properties_pouring.html">The Sound of Water</a>
+    &mdash; infers physical properties (fill level) from pouring audio; <em>source-side</em>
+    process physics vs ACORN's <em>channel-side</em> propagation physics.</li>
+  <li><a href="../paper/audio_vla_contact_audio_perception.html">Audio-VLA</a>,
+    <a href="../paper/sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>,
+    <a href="../paper/maniwav_in_the_wild_audio_visual.html">ManiWAV</a>,
+    <a href="../paper/making_sense_audio_vibration_pouring.html">Making Sense of Audio Vibration</a>
+    &mdash; contact/in-hand acoustic sensing for action; the manipulation-audio modality ACORN
+    does not address (it uses ambient propagated sound).</li>
+  <li><a href="../paper/octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+    &mdash; the tactile analogue: language-grounded reasoning over a non-visual modality but
+    on <em>static</em> object properties, the same passive-recognition limitation as ACORN.</li>
+  <li><a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; the anchor: symbolic, dynamic, action-grounded predicates on vision; the structural
+    opposite of ACORN's neural, static, passive audio attributes.</li>
+</ul>
+
+</body>
+</html>

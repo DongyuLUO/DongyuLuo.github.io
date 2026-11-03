@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Grounding Dynamic State-Change Concepts on Multimodal Sensing for Closed-Loop Manipulation</title>
+<meta name="type" content="brainstorm">
+<meta name="authors" content="Weiyu Liu (with Claude)">
+<meta name="year" content="2026">
+<meta name="tags" content="predicate-learning, planning-abstractions, learning-from-language, neuro-symbolic, multimodal, multisensory, tactile-sensing, audio-sensing, thermal-sensing, state-change, closed-loop, process-monitoring, manipulation, long-horizon-manipulation">
+<meta name="status" content="brainstormed">
+<meta name="ingested" content="2026-06-25">
+<meta name="last_updated" content="2026-06-25">
+<meta name="source_prompt" content="Weiyu: are there works that ground manipulation concepts (dynamic, state-change) on multimodal sensory data? refine + novelty check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.18em; margin-top: 1.9em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  h3 { font-size: 1.02em; margin-top: 1.3em; color: #333; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .thesis { background: #eef4ff; border-left: 4px solid #2962ff; padding: 0.7em 1em; margin: 1em 0; }
+  .gap { background: #fff3e0; border-left: 4px solid #ff9800; padding: 0.7em 1em; margin: 1em 0; }
+  table { border-collapse: collapse; width: 100%; font-size: 0.88em; margin: 1em 0; }
+  th, td { border: 1px solid #ddd; padding: 0.4em 0.6em; text-align: left; vertical-align: top; }
+  th { background: #f5f5f5; }
+  .yes { color: #2e7d32; font-weight: 600; }
+  .no { color: #c62828; }
+  .partial { color: #ef6c00; }
+</style>
+</head>
+<body>
+
+<h1>Grounding Dynamic State-Change Concepts on Multimodal Sensing for Closed-Loop Manipulation</h1>
+<p class="meta">Brainstorm seed &middot; 2026-06-25 &middot; status: brainstormed &middot;
+  anchor: <a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a> &middot;
+  <a href="../../index.html">Index</a></p>
+
+<div class="thesis">
+<strong>Thesis.</strong> Existing work that grounds concepts on non-visual sensing grounds <em>static
+properties</em> (hardness, roughness, material) and uses them for <em>one-shot selection</em> (grasp this
+object this way). But manipulation is <em>transformation</em>: washing, heating, wetting, dissolving,
+loosening. The concepts that matter there are <em>dynamic</em> &mdash; about object <strong>state</strong>
+and <strong>state-transition</strong> &mdash; and the signal that reveals them often lives in a
+<em>non-visual</em> modality (thermal for "hot enough", acoustic for "coming to a boil", friction-tactile
+for "slippery now that it's wet"). The proposal: <strong>ground named, learned, transferable dynamic
+state-change concepts on multimodal non-visual sensing, monitor them over time, and use their value as the
+trigger for reasoned closed-loop correction</strong> &mdash; across a family of transformation tasks.
+</div>
+
+<h2>The reframe: ground verbs, not adjectives</h2>
+
+<p>The cleanest way to state the gap relative to the corpus. Tactile-language models like
+<a href="../paper/octopi_object_property_reasoning_tactile_language.html">Octopi</a> and
+<a href="../paper/touch_vision_language_dataset_multimodal_alignment.html">TVL</a> ground
+<em>adjectives</em> &mdash; <code>is_rough</code>, <code>is_soft</code>, <code>is_metal</code> &mdash;
+time-invariant unary predicates that enter a plan as <strong>preconditions for selection</strong>. Manipulation
+needs <em>verbs</em>: <code>heating</code>, <code>wetting</code>, <code>loosening</code>,
+<code>dissolving</code>, <code>coming_to_a_boil</code>. In <a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+ontology, prior multimodal grounding does <strong>precondition predicates</strong>; this proposal grounds
+<strong>effect predicates and process-monitors</strong> &mdash; the <em>temporal derivative</em> of state.
+The robot does not just need to know an object <em>is</em> slippery; it needs to detect that it
+<em>became</em> slippery, and reason about what to do differently.</p>
+
+<h2>A taxonomy of dynamic manipulation concepts</h2>
+
+<p>These are not all the same; the distinctions drive the method and the benchmark design.</p>
+
+<ol>
+  <li><strong>Threshold / progress states</strong> &mdash; <em>water hot enough, dish clean enough, dough
+  kneaded enough.</em> A latent quantity must cross a goal; monitor it, decide continue / intensify / stop.
+  (Weiyu's kettle: "if water is too cold, make it hotter.") Closest existing perception:
+  <a href="../paper/the_sound_of_water_physical_properties_pouring.html">The Sound of Water</a> (fill level
+  from pour sound), <a href="../paper/making_sense_audio_vibration_pouring.html">Making Sense of Audio
+  Vibration</a> (liquid height) &mdash; but both regress a scalar, with no named concept and (mostly) no loop.</li>
+
+  <li><strong>Strategy-switching transitions</strong> &mdash; <em>the dish became slippery after getting wet.</em>
+  A state change that should trigger a <em>qualitatively different</em> policy, not a monotonic gain bump.
+  Weiyu's example is sharp because the correct response is <em>more grip force AND gentler handling</em> &mdash;
+  non-monotonic and multi-attribute, requiring an understanding of <em>why</em> (wet &rarr; slippery, and
+  often more fragile/deformable when wet). A reactive slip controller cannot produce "be gentler"; only
+  reasoning over a grounded state-change concept can.</li>
+
+  <li><strong>Process-onset events</strong> &mdash; <em>coming to a boil, the pour started splashing, the seal
+  broke.</em> Temporal patterns over a stream, frequently legible <em>only</em> in one non-visual modality
+  (sound for boiling, contact-mic for splash/impact). Closest:
+  <a href="../paper/hear_vision_sound_language_action_sound_centric_manipulation.html">HEAR</a> (boil/pour stages
+  from streaming audio), <a href="../paper/sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>
+  (in-hand acoustics, but static state).</li>
+
+  <li><strong>Latent cross-modal states</strong> &mdash; <em>water temperature, internal fill level,
+  sealed-vs-open.</em> Invisible; must be inferred from thermal / acoustic / tactile. The <strong>thermal</strong>
+  branch is nearly empty: <a href="../paper/heat_induced_food_state_changes_time_series_vlm.html">Heat-Induced
+  Food State Changes</a> grounds a dynamic heat state in language but from <em>vision (VLM)</em>, not thermal
+  sensing; the <a href="../paper/material_recognition_thermal_tactile_database.html">thermal material-recognition</a>
+  line is static.</li>
+</ol>
+
+<h2>Why this is a BLADE-shaped problem</h2>
+
+<p>BLADE learns predicates with <strong>preconditions and effects</strong> and grounds them with <em>visual</em>
+classifiers. The effects are exactly state-changes &mdash; but they are read off vision. This proposal is
+"BLADE for the verbs, on the modalities where the verbs actually register." Concretely, three things change:</p>
+<ul>
+  <li><strong>The classifier's input</strong> is a time-series over a non-visual stream (a tactile/audio/thermal
+  window), not a single RGB frame.</li>
+  <li><strong>The predicate is temporal</strong> &mdash; it asserts a transition (<code>became_slippery</code>,
+  <code>reached_boil</code>), so its semantics are over an interval, not an instant.</li>
+  <li><strong>Its value is a correction trigger</strong> &mdash; a violated/changed effect predicate drives
+  replanning or a control-parameter adjustment, closing a loop that BLADE leaves open.</li>
+</ul>
+
+<h2>Three framing spines (keep all alive)</h2>
+
+<p>Per Weiyu's call, hold all three; they are not mutually exclusive and could be three contributions of one
+project or a staged plan.</p>
+
+<h3>Spine 1 &mdash; Planner-level predicates (BLADE lineage; strongest novelty)</h3>
+<p>Learn multimodal, temporal <em>effect/precondition</em> predicates; monitor them online; a violated
+predicate triggers symbolic replanning. Differentiates hardest from VLAs and from
+<a href="../paper/reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a> (whose symbolic
+layer is an LLM <em>text summary</em>, not grounded predicates). Highest systems cost. Contrast points already
+in corpus: <a href="../paper/grounding_predicates_through_actions.html">Grounding Predicates through Actions</a>
+(change predicates, but vision + offline), <a href="../paper/visualpredicator_learning_abstract_world_models_with_neuro_symbolic_predicates.html">VisualPredicator</a>
+(neuro-symbolic predicates via VLM, vision).</p>
+
+<h3>Spine 2 &mdash; Policy-level reasoned correction</h3>
+<p>The grounded state-change feeds an LLM/VLM that adjusts control parameters (force, impedance, heat, speed) or
+switches strategy. Faster to demo; more crowded. Closest:
+<a href="../paper/tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a> (force-word grounding +
+CoT increases force on a failed wipe &mdash; but the concept is a force-<em>adverb</em>, and the correction is
+monotonic), <a href="../paper/cltp_contrastive_language_tactile_pretraining.html">CLTP</a> (LLM emits "reduce
+gripping force" from tactile, but static contact geometry),
+<a href="../paper/hear_vision_sound_language_action_sound_centric_manipulation.html">HEAR</a> (audio stages
+condition continuous action). The differentiator: a <em>non-monotonic, multi-attribute</em> correction reasoned
+from a <em>named state-change</em> ("it's wet &rarr; gentler <em>and</em> firmer").</p>
+
+<h3>Spine 3 &mdash; Perception + transferable benchmark</h3>
+<p>Nail multimodal dynamic-concept grounding and ship a benchmark spanning a <em>family</em> of transformations
+(pour / boil / wash / knead / heat), leaving the loop for v2. Lowest systems risk; clean dataset contribution;
+attacks the field's biggest weakness &mdash; everything is one task. Contrast:
+<a href="../paper/look_for_the_change_object_states_state_modifying_actions.html">Look for the Change</a> /
+ChangeIt and <a href="../paper/continuous_object_state_recognition_cooking_vlm.html">Continuous Object State
+Recognition</a> are single-modality (vision) and either passive or one-domain.</p>
+
+<h2>Novelty landscape &mdash; what's done, what's open</h2>
+
+<p>Honest verdict from a four-scout sweep (state-change recognition / acoustic process monitoring /
+tactile-thermal dynamic state / multimodal-temporal predicate grounding): <strong>not done as a whole, but no
+longer wide open.</strong> A frontier wave (Nov 2025 &rarr; Mar 2026) is converging right next to this idea; it
+must be positioned against deliberately. Each closest paper drops at least one of the four required axes.</p>
+
+<table>
+  <tr>
+    <th>Closest prior work</th>
+    <th>Dynamic state-<em>change</em> concept</th>
+    <th>Non-visual / multimodal</th>
+    <th>Named / learned concept</th>
+    <th>Closed-loop correction</th>
+  </tr>
+  <tr>
+    <td><a href="../paper/reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a> (CoRL 2023) &mdash; <em>closest overall</em></td>
+    <td class="partial">partial (failure events)</td>
+    <td class="yes">yes (incl. audio)</td>
+    <td class="no">no (LLM text summary)</td>
+    <td class="yes">yes (post-hoc)</td>
+  </tr>
+  <tr>
+    <td><a href="../paper/hear_vision_sound_language_action_sound_centric_manipulation.html">HEAR</a> (2026) &mdash; <em>closest on audio</em></td>
+    <td class="yes">yes (boil/pour stages)</td>
+    <td class="yes">yes (audio)</td>
+    <td class="partial">partial (scripted stages)</td>
+    <td class="yes">yes</td>
+  </tr>
+  <tr>
+    <td><a href="../paper/tactile_vla_physical_knowledge_generalization.html">Tactile-VLA-CoT</a> (2025) &mdash; <em>closest on tactile</em></td>
+    <td class="no">no (force adverb)</td>
+    <td class="yes">yes (tactile)</td>
+    <td class="partial">partial (soft/hard)</td>
+    <td class="yes">yes (monotonic)</td>
+  </tr>
+  <tr>
+    <td><a href="../paper/real_world_cooking_robot_system_from_recipes_with_foundation_models_and_pddl.html">Kanazawa cooking robot</a> (2024)</td>
+    <td class="yes">yes (food state)</td>
+    <td class="no">no (VLM/vision)</td>
+    <td class="partial">partial (VLM labels)</td>
+    <td class="yes">yes (PDDL re-ground)</td>
+  </tr>
+  <tr>
+    <td><a href="../paper/dynamic_concept_learner_physical_concepts_visual_reasoning.html">Dynamic Concept Learner</a> (ICLR 2021)</td>
+    <td class="yes">yes (events)</td>
+    <td class="no">no (video)</td>
+    <td class="yes">yes (neuro-symbolic)</td>
+    <td class="no">no (disembodied)</td>
+  </tr>
+  <tr>
+    <td><a href="../paper/the_sound_of_water_physical_properties_pouring.html">The Sound of Water</a> (2025)</td>
+    <td class="partial">partial (fill/rate)</td>
+    <td class="yes">yes (audio)</td>
+    <td class="no">no (scalar regress)</td>
+    <td class="no">no (perception only)</td>
+  </tr>
+  <tr>
+    <td><a href="../paper/code_as_monitor_constraint_aware_failure_detection.html">Code-as-Monitor</a> / <a href="../paper/doremi_grounding_language_plans_detecting_recovering.html">DoReMi</a></td>
+    <td class="partial">partial (constraints)</td>
+    <td class="no">no (vision)</td>
+    <td class="partial">partial (LLM text/code)</td>
+    <td class="yes">yes</td>
+  </tr>
+  <tr>
+    <td><a href="../paper/fino_net_multimodal_manipulation_failure_detection.html">FINO-Net</a> (2023)</td>
+    <td class="partial">partial (failure)</td>
+    <td class="yes">yes (RGB-D+audio+proprio)</td>
+    <td class="no">no (flat classifier)</td>
+    <td class="partial">partial (detect only)</td>
+  </tr>
+</table>
+
+<div class="gap">
+<strong>The defensible gap (one line):</strong> <em>learned, named, <strong>transferable</strong> dynamic
+state-change predicates &mdash; with precondition/effect semantics &mdash; grounded on <strong>non-visual</strong>
+multimodal sensing (thermal, acoustic, tactile/friction), monitored online, used as the trigger for
+<strong>reasoned</strong> closed-loop correction across a <strong>family</strong> of transformation tasks.</em>
+Existing closed-loop semantic-correction work is vision-only at the symbol level
+(<a href="../paper/code_as_monitor_constraint_aware_failure_detection.html">Code-as-Monitor</a>,
+<a href="../paper/doremi_grounding_language_plans_detecting_recovering.html">DoReMi</a>,
+<a href="../paper/inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>)
+or non-symbolic at the multimodal level
+(<a href="../paper/reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>'s text,
+<a href="../paper/fino_net_multimodal_manipulation_failure_detection.html">FINO-Net</a>'s classifier); existing
+tactile-language work grounds only static properties for one-shot grasping
+(<a href="../paper/octopi_object_property_reasoning_tactile_language.html">Octopi</a>); existing change-concept
+grounding is vision-only and disembodied
+(<a href="../paper/dynamic_concept_learner_physical_concepts_visual_reasoning.html">DCL</a>,
+<a href="../paper/look_for_the_change_object_states_state_modifying_actions.html">Look for the Change</a>).
+</div>
+
+<h2>Candidate task suite (generality via concept)</h2>
+
+<p>The strongest defense against "HEAR already did boil/pour" is to show the concept <em>transfers</em>. A suite
+where the same learned change-predicates recur across physically different processes:</p>
+<ul>
+  <li><strong>Heat the water / boil the kettle</strong> &mdash; thermal + acoustic; <code>hot_enough</code>,
+  <code>coming_to_a_boil</code>; correction = adjust heat / stop.</li>
+  <li><strong>Wash the slippery dish</strong> &mdash; friction-tactile; <code>became_slippery</code>,
+  <code>fragile_when_wet</code>; correction = more grip + gentler (non-monotonic).</li>
+  <li><strong>Pour to a level / pour without splashing</strong> &mdash; acoustic; <code>nearly_full</code>,
+  <code>splashing</code>; correction = slow / stop / re-aim.</li>
+  <li><strong>Knead / mix to consistency</strong> &mdash; tactile-force + sound; <code>kneaded_enough</code>,
+  <code>dough_stiffening</code>; correction = continue / stop.</li>
+  <li><strong>Tighten / seat a part</strong> &mdash; force + acoustic click; <code>seated</code>,
+  <code>cross-threaded</code>; correction = back off / re-seat.</li>
+</ul>
+<p>The claim to defend: <em>one</em> grounding+monitoring mechanism yields predicates that transfer across these,
+because they share an abstract structure (threshold / transition / onset) even though the physics differ.</p>
+
+<h2>Task &times; modality &times; annotation catalog</h2>
+
+<p>A working design matrix for the task suite, organized on three axes. The empty cells point at the
+research targets; fill the <em>Status</em> column in as the project builds.</p>
+
+<p class="meta"><strong>Concept type:</strong>
+<code>PROP</code> static property (intrinsic) &middot;
+<code>STATE</code> current state (read at an instant) &middot;
+<code>CHANGE</code> transition/process (temporal) &middot;
+<code>EVENT</code> discrete onset &middot;
+<code>PROGRESS</code> latent quantity monitored to a threshold &middot;
+<code>REL</code> relational/multi-object.<br>
+<strong>Observability:</strong> <code>[1]</code> direct from one sensor &middot;
+<code>[N]</code> inferred from several sensors (or sensor + reasoning).<br>
+<strong>Status:</strong> <span class="yes">grounded</span> (a corpus paper does it) &middot;
+<span class="partial">emerging</span> (partially / adjacent) &middot;
+<span style="color:#2962ff;font-weight:600">novel</span> (open).</p>
+
+<h3>Baseline &mdash; what existing work already grounds</h3>
+<p>Note the clustering in the <code>PROP</code> / <code>[1]</code> corner: static properties, single sensor,
+used for one-shot selection. That corner is saturated; everything below is sparser-to-empty.</p>
+<table>
+  <tr><th>Task</th><th>Modality</th><th>Concept</th><th>Annotation</th><th>Obs</th><th>Status / grounding</th></tr>
+  <tr><td>Property-conditioned grasp</td><td>tactile</td><td>PROP</td><td>"grasp the soft / rough / bumpy one"</td><td>[1]</td><td><span class="yes">grounded</span> &mdash; <a href="../paper/octopi_object_property_reasoning_tactile_language.html">Octopi</a>, <a href="../paper/touch_vision_language_dataset_multimodal_alignment.html">TVL</a>, <a href="../paper/binding_touch_to_everything_unitouch.html">UniTouch</a>, <a href="../paper/touch100k_touch_language_vision_dataset.html">Touch100k</a></td></tr>
+  <tr><td>Force-word grasp</td><td>force</td><td>PROP&rarr;action</td><td>"grasp it softly / firmly"</td><td>[1]</td><td><span class="yes">grounded</span> &mdash; <a href="../paper/bi_lat_bilateral_control_language_action_chunking.html">Bi-LAT</a>, <a href="../paper/tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a></td></tr>
+  <tr><td>Material / contents ID</td><td>active acoustic</td><td>PROP/STATE</td><td>"is the bottle full or empty?"</td><td>[1]</td><td><span class="yes">grounded</span> &mdash; <a href="../paper/sonicsense_in_hand_acoustic_vibration.html">SonicSense</a></td></tr>
+  <tr><td>Fill level while pouring</td><td>passive acoustic</td><td>PROGRESS</td><td>"the cup is nearly full"</td><td>[1]</td><td><span class="yes">grounded</span> &mdash; <a href="../paper/the_sound_of_water_physical_properties_pouring.html">Sound of Water</a>, <a href="../paper/making_sense_audio_vibration_pouring.html">Audio Vibration</a></td></tr>
+  <tr><td>Boil / pour stage</td><td>passive acoustic</td><td>CHANGE/EVENT</td><td>"it's coming to a boil"</td><td>[1]</td><td><span class="partial">emerging</span> &mdash; <a href="../paper/hear_vision_sound_language_action_sound_centric_manipulation.html">HEAR</a> (scripted stages)</td></tr>
+  <tr><td>Material via heat</td><td>thermal</td><td>PROP</td><td>"this is metal, not plastic"</td><td>[1]</td><td><span class="yes">grounded</span> &mdash; <a href="../paper/material_recognition_thermal_tactile_database.html">Thermal Tactile Material Recog.</a></td></tr>
+  <tr><td>Food state (heat-induced)</td><td>vision (VLM)</td><td>CHANGE</td><td>"the egg is cooked now"</td><td>[1]</td><td><span class="partial">emerging</span> &mdash; <a href="../paper/heat_induced_food_state_changes_time_series_vlm.html">Heat-Induced Food State</a>, <a href="../paper/continuous_object_state_recognition_cooking_vlm.html">Continuous Obj. State</a> (vision, not non-visual)</td></tr>
+</table>
+
+<h3>Tactile (vision-based GelSight/DIGIT + taxel/shear)</h3>
+<table>
+  <tr><th>Task</th><th>Concept</th><th>Annotation</th><th>Obs</th><th>Status</th></tr>
+  <tr><td>Grip stability</td><td>STATE</td><td>"the grip is secure / about to slip"</td><td>[1]</td><td><span class="partial">emerging</span> (slip detectors exist, not language-grounded)</td></tr>
+  <tr><td>Slip onset during lift</td><td>EVENT</td><td>"it's starting to slip"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span> annotation</td></tr>
+  <tr><td><strong>Became slippery after wetting</strong></td><td>CHANGE</td><td>"it got slippery when it got wet"</td><td>[N]</td><td><span style="color:#2962ff;font-weight:600">novel</span> &mdash; friction&darr; + thermal/vision; <em>the dish example</em></td></tr>
+  <tr><td>Knead to consistency</td><td>PROGRESS</td><td>"the dough is kneaded enough"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+  <tr><td>Fabric / cloth config</td><td>STATE</td><td>"the towel is bunched / folded over"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+  <tr><td>Ripeness / bruising</td><td>PROP</td><td>"the peach is ripe / has a soft spot"</td><td>[1]</td><td><span class="partial">emerging</span> (compliance, not named/dynamic)</td></tr>
+  <tr><td>Cross-thread detect</td><td>EVENT</td><td>"the screw cross-threaded"</td><td>[N]</td><td><span style="color:#2962ff;font-weight:600">novel</span> (tactile + torque)</td></tr>
+</table>
+
+<h3>Force / torque &amp; proprioception</h3>
+<table>
+  <tr><th>Task</th><th>Concept</th><th>Annotation</th><th>Obs</th><th>Status</th></tr>
+  <tr><td>Insertion seating</td><td>EVENT/STATE</td><td>"the peg is fully seated"</td><td>[N]</td><td><span style="color:#2962ff;font-weight:600">novel</span> (force drop + click)</td></tr>
+  <tr><td>Fastener tightness</td><td>PROGRESS</td><td>"the bolt is tight enough"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span> (named threshold)</td></tr>
+  <tr><td>Jam / stuck</td><td>STATE</td><td>"the drawer is stuck"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+  <tr><td>Unexpected mass</td><td>PROP</td><td>"it's heavier than it looks"</td><td>[N]</td><td><span style="color:#2962ff;font-weight:600">novel</span> (force vs visual size prior)</td></tr>
+  <tr><td>Cable tension</td><td>STATE</td><td>"the cable is taut / slack"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+</table>
+
+<h3>Passive acoustic (contact / airborne sound)</h3>
+<table>
+  <tr><th>Task</th><th>Concept</th><th>Annotation</th><th>Obs</th><th>Status</th></tr>
+  <tr><td>Boiling onset</td><td>CHANGE/EVENT</td><td>"the water's about to boil"</td><td>[1]</td><td><span class="partial">emerging</span> (<a href="../paper/hear_vision_sound_language_action_sound_centric_manipulation.html">HEAR</a>)</td></tr>
+  <tr><td>Splashing during pour</td><td>EVENT</td><td>"it's splashing &mdash; slow down"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span> (corrective trigger)</td></tr>
+  <tr><td>Simmer vs rolling boil</td><td>STATE</td><td>"it's simmering, not boiling yet"</td><td>[N]</td><td><span style="color:#2962ff;font-weight:600">novel</span> &mdash; <em>in-between state</em> (audio + thermal)</td></tr>
+  <tr><td>Frying readiness / done</td><td>CHANGE</td><td>"the oil is hot / it's done frying"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+  <tr><td>Fracture / crack</td><td>EVENT</td><td>"it cracked"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+  <tr><td>Drill breakthrough</td><td>EVENT</td><td>"the drill broke through"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+  <tr><td>Tool malfunction</td><td>STATE</td><td>"the gears are grinding &mdash; something's wrong"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+</table>
+
+<h3>Active acoustic (probe by tapping / vibrating)</h3>
+<table>
+  <tr><th>Task</th><th>Concept</th><th>Annotation</th><th>Obs</th><th>Status</th></tr>
+  <tr><td>Fill level by tap</td><td>PROGRESS</td><td>"tap it &mdash; it's about half full"</td><td>[1]</td><td><span class="partial">emerging</span> (<a href="../paper/vibecheck_active_acoustic_tactile_sensing.html">VibeCheck</a>)</td></tr>
+  <tr><td>Hidden structure</td><td>PROP</td><td>"there's a stud / cavity behind here"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+  <tr><td>Clog / blockage</td><td>STATE</td><td>"the pipe is partly clogged"</td><td>[N]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+  <tr><td>Hairline defect</td><td>PROP</td><td>"this part has a crack inside"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+</table>
+
+<h3>Thermal / temperature <span class="meta">(the emptiest, highest-novelty branch)</span></h3>
+<table>
+  <tr><th>Task</th><th>Concept</th><th>Annotation</th><th>Obs</th><th>Status</th></tr>
+  <tr><td><strong>Heat to target</strong></td><td>PROGRESS</td><td>"the water is hot enough now"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span> &mdash; <em>pure non-visual dynamic state; white space</em></td></tr>
+  <tr><td>Preheat readiness</td><td>STATE</td><td>"the pan is preheated"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+  <tr><td>Cooling to usable</td><td>CHANGE</td><td>"the coffee has cooled enough to drink"</td><td>[1]</td><td><span style="color:#2962ff;font-weight:600">novel</span></td></tr>
+  <tr><td>Cook-through (interior)</td><td>STATE</td><td>"the chicken is cooked through"</td><td>[N]</td><td><span style="color:#2962ff;font-weight:600">novel</span> (probe thermal + time + audio)</td></tr>
+  <tr><td>Burn / hot-spot</td><td>EVENT</td><td>"it's starting to burn"</td><td>[N]</td><td><span style="color:#2962ff;font-weight:600">novel</span> (thermal spike + smell)</td></tr>
+  <tr><td>Tool-too-hot-for-material</td><td>REL</td><td>"the iron is too hot for silk"</td><td>[N]</td><td><span style="color:#2962ff;font-weight:600">novel</span> (thermal + material ID)</td></tr>
+  <tr><td>Melting / solidifying</td><td>CHANGE</td><td>"the butter is melting / the chocolate set"</td><td>[N]</td><td><span style="color:#2962ff;font-weight:600">novel</span> (thermal + tactile compliance)</td></tr>
+</table>
+
+<h3>Moisture / chemical / other <span class="meta">("and more")</span></h3>
+<table>
+  <tr><th>Task</th><th>Modality</th><th>Concept</th><th>Annotation</th><th>Obs</th></tr>
+  <tr><td>Dampness</td><td>moisture</td><td>STATE</td><td>"the cloth is still damp"</td><td>[1]</td></tr>
+  <tr><td>Saturation</td><td>moisture + force</td><td>PROGRESS</td><td>"the sponge is soaked &mdash; wring it"</td><td>[N]</td></tr>
+  <tr><td>Spoilage</td><td>gas / e-nose</td><td>CHANGE</td><td>"the milk has gone off"</td><td>[N]</td></tr>
+  <tr><td>Gas leak</td><td>gas</td><td>EVENT</td><td>"there's a gas leak"</td><td>[1]</td></tr>
+  <tr><td>Greasy vs just wet</td><td>tactile + chemical</td><td>STATE</td><td>"the surface is oily, not just wet"</td><td>[N]</td></tr>
+  <tr><td>Tool bogging down</td><td>IMU / vibration</td><td>CHANGE</td><td>"the drill is bogging down"</td><td>[1]</td></tr>
+  <tr><td>Air leak at seal</td><td>airflow / acoustic</td><td>STATE</td><td>"the seal is leaking air"</td><td>[N]</td></tr>
+</table>
+
+<h3>The sweet spot &mdash; cross-modal <em>inferred</em> concepts <code>[N]</code></h3>
+<p>These exist only in the <em>joint</em> signal &mdash; no single sensor reports them &mdash; so resolving them
+needs fusion + reasoning. This is where the idea most clearly beats both single-sensor perception and
+end-to-end policies, and it's almost entirely unclaimed:</p>
+<ul>
+  <li><strong>"Slippery <em>and</em> fragile now that it's wet"</strong> &mdash; tactile friction&darr; + thermal (cooler) + vision (sheen). Drives the non-monotonic <em>more-grip-yet-gentler</em> correction.</li>
+  <li><strong>"Soaked / saturated"</strong> &mdash; moisture + force (heavier) + tactile (squish).</li>
+  <li><strong>"Sealed and full" vs "open and full" vs "sealed and empty"</strong> &mdash; active-acoustic tap &times; weight &times; vision: a 2&times;2 of states from three sensors.</li>
+  <li><strong>"Oily vs wet vs icy"</strong> &mdash; three low-friction causes that <em>feel</em> alike tactilely but separate with thermal (icy=cold, oily=neutral, wet=evaporative-cool) + smell. A clean disambiguation task.</li>
+  <li><strong>"Cooked but not burnt"</strong> &mdash; thermal + sizzle audio + smell + color. The target is a <em>band</em>, not a threshold.</li>
+  <li><strong>"Simmering (not still, not boiling)"</strong> &mdash; an intermediate process state from audio + thermal; where scalar regressors fail and concepts win.</li>
+</ul>
+<p>The throughline: the harder and more useful concepts are <em>dynamic AND inferred</em> (the
+<code>CHANGE</code>/<code>PROGRESS</code> &times; <code>[N]</code> corner), and they're nearly all open.</p>
+
+<h3>"Hero" tasks (each exercises many cells &mdash; benchmark anchors)</h3>
+<table>
+  <tr><th>Hero task</th><th>Concepts exercised</th><th>Modalities</th><th>The money correction</th></tr>
+  <tr><td><strong>Wash a slippery dish</strong></td><td>became-slippery, fragile-when-wet, clean-enough</td><td>tactile, thermal, moisture, vision</td><td>wet &rarr; firmer grip <em>and</em> gentler motion</td></tr>
+  <tr><td><strong>Make tea in a kettle</strong></td><td>hot-enough, coming-to-boil, nearly-full, cooled-to-drinkable</td><td>thermal, passive + active acoustic</td><td>adjust heat; stop pour; wait to serve</td></tr>
+  <tr><td><strong>Fry an egg</strong></td><td>oil-hot, cooking, cooked-not-burnt</td><td>thermal, audio, smell, vision</td><td>lower heat at "almost burnt"</td></tr>
+  <tr><td><strong>Assemble a part</strong></td><td>seated, cross-threaded, tight-enough</td><td>force, torque, audio</td><td>back off + re-seat on cross-thread</td></tr>
+  <tr><td><strong>Wring out a sponge</strong></td><td>saturated, wrung-enough</td><td>moisture, force, tactile</td><td>stop when force/water plateaus</td></tr>
+</table>
+
+<p>Mapping every row onto (concept-type &times; observability): <code>PROP</code>&times;<code>[1]</code> is
+saturated (don't go there); <code>CHANGE</code>/<code>PROGRESS</code>&times;<code>[1]</code> is partly taken on
+audio but <strong>wide open on thermal and tactile</strong>; <strong>anything &times; <code>[N]</code> is
+almost entirely empty</strong>. Cross-modal inferred concepts are the cleanest contribution &mdash; and the
+reason the "reasoned correction" story is <em>necessary</em> (you cannot reflex your way to
+"fragile-because-wet").</p>
+
+<h2>Open research questions</h2>
+<ol>
+  <li><strong>Representation.</strong> How to represent a temporal change-predicate over a multimodal window so
+  it is both classifier-learnable and planner-legible? (Event boundary + pre/post embedding? A learned monitor
+  with a calibrated threshold? A code-as-monitor over sensor features rather than vision?)</li>
+  <li><strong>Acquisition.</strong> Where does the grounding signal come from &mdash; language-annotated
+  multimodal demos (à la BLADE/<a href="../paper/touch100k_touch_language_vision_dataset.html">Touch100k</a>),
+  LLM/VLM priors about "what boiling sounds like" (à la
+  <a href="../paper/teaching_physical_awareness_to_llms_through_sounds.html">Teaching Physical Awareness through
+  Sounds</a>), or self-supervised onset detection from causal ordering (à la
+  <a href="../paper/look_for_the_change_object_states_state_modifying_actions.html">Look for the Change</a>)?</li>
+  <li><strong>Usage / loop.</strong> Predicate &rarr; symbolic replan (Spine 1) vs. predicate &rarr; control-param
+  correction (Spine 2)? When is each right? Does <a href="../paper/interactive_perception_action_in_perception.html">interactive
+  perception</a> (act to disambiguate the state) belong in the loop?</li>
+  <li><strong>Reasoned correction.</strong> How to get the <em>non-monotonic, causal</em> correction
+  ("wet &rarr; gentler <em>and</em> firmer") rather than a reflex &mdash; and how to evaluate that it's reasoning,
+  not pattern-matching?</li>
+  <li><strong>Transfer.</strong> Do change-predicates learned on one process generalize to another with the same
+  abstract type? This is the generality-via-concept bet.</li>
+</ol>
+
+<h2>Positioning sentence (for a paper intro / proposal)</h2>
+<blockquote>
+Robots that <em>transform</em> the world &mdash; cooking, cleaning, assembling &mdash; must track concepts that
+are about <em>change</em>, and much of that change registers in touch, sound, and heat rather than in pixels.
+We learn named, transferable predicates for object state-<em>transitions</em>, ground them on multimodal
+non-visual sensing, and monitor them online so that a violated effect becomes the trigger for reasoned
+closed-loop correction &mdash; extending compositional predicate-based manipulation from the visual properties
+of objects to the multisensory dynamics of processes.
+</blockquote>
+
+<h2>Next steps</h2>
+<ul>
+  <li>Read the two threats end-to-end before claiming novelty:
+  <a href="../paper/hear_vision_sound_language_action_sound_centric_manipulation.html">HEAR</a> and
+  <a href="../paper/reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>; draft the
+  one-paragraph "how we differ" for each.</li>
+  <li>Pick the lead spine for a first paper (recommendation: a Spine-3 benchmark + a Spine-2 demo on
+  <em>wash-the-slippery-dish</em> as the headline non-monotonic-correction result, with Spine-1 as the framing
+  story).</li>
+  <li>Promote to a <a href="../../knowledge/grant/">grant brainstorm</a> or a related-work draft when the spine is
+  chosen &mdash; the corpus now has the anchors for an airtight related-work section.</li>
+</ul>
+
+<h2>Related (in corpus)</h2>
+<ul>
+  <li><a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a> &mdash; the anchor; this idea grounds its <em>effects</em> on non-visual sensing.</li>
+  <li>Static-property contrast: <a href="../paper/octopi_object_property_reasoning_tactile_language.html">Octopi</a>, <a href="../paper/touch_vision_language_dataset_multimodal_alignment.html">TVL</a>, <a href="../paper/binding_touch_to_everything_unitouch.html">UniTouch</a>.</li>
+  <li>Closest prior art: <a href="../paper/hear_vision_sound_language_action_sound_centric_manipulation.html">HEAR</a>, <a href="../paper/reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>, <a href="../paper/tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>, <a href="../paper/real_world_cooking_robot_system_from_recipes_with_foundation_models_and_pddl.html">Kanazawa cooking robot</a>, <a href="../paper/cltp_contrastive_language_tactile_pretraining.html">CLTP</a>.</li>
+  <li>State-change &amp; concept grounding: <a href="../paper/look_for_the_change_object_states_state_modifying_actions.html">Look for the Change</a>, <a href="../paper/dynamic_concept_learner_physical_concepts_visual_reasoning.html">Dynamic Concept Learner</a>, <a href="../paper/continuous_object_state_recognition_cooking_vlm.html">Continuous Object State Recognition</a>, <a href="../paper/heat_induced_food_state_changes_time_series_vlm.html">Heat-Induced Food State</a>, <a href="../paper/grounding_predicates_through_actions.html">Grounding Predicates through Actions</a>, <a href="../paper/visualpredicator_learning_abstract_world_models_with_neuro_symbolic_predicates.html">VisualPredicator</a>.</li>
+  <li>Closed-loop / monitoring: <a href="../paper/code_as_monitor_constraint_aware_failure_detection.html">Code-as-Monitor</a>, <a href="../paper/doremi_grounding_language_plans_detecting_recovering.html">DoReMi</a>, <a href="../paper/inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>, <a href="../paper/fino_net_multimodal_manipulation_failure_detection.html">FINO-Net</a>.</li>
+  <li>Sensing channels: <a href="../paper/the_sound_of_water_physical_properties_pouring.html">The Sound of Water</a>, <a href="../paper/sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>, <a href="../paper/making_sense_audio_vibration_pouring.html">Making Sense of Audio Vibration</a>, <a href="../paper/teaching_physical_awareness_to_llms_through_sounds.html">Teaching Physical Awareness through Sounds</a>, <a href="../paper/interactive_perception_action_in_perception.html">Interactive Perception</a>, <a href="../paper/material_recognition_thermal_tactile_database.html">Thermal Tactile Material Recognition</a>.</li>
+</ul>
+
+</body>
+</html>

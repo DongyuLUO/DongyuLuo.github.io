@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Ego-Exo4D</title>
+<meta name="type" content="paper">
+<meta name="authors" content="">
+<meta name="year" content="2023">
+<meta name="venue" content="datasets.bot public catalog">
+<meta name="arxiv_id" content="2311.18259">
+<meta name="url" content="https://arxiv.org/abs/2311.18259">
+<meta name="pdf" content="https://arxiv.org/abs/2311.18259">
+<meta name="tags" content="datasets-bot,open-data,physical,audio,language,point-cloud,rgb,custom">
+<meta name="status" content="datasets-bot-crosscheck">
+<meta name="ingested" content="2026-06-28">
+<meta name="source_prompt" content="datasets.bot public catalog cross-check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .meta { color: #777; font-size: 0.9em; }
+  a { color: #2962ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>Ego-Exo4D</h1>
+<p class="meta">Meta FAIR (Project Aria) and 15+ university partners &middot; 2023 &middot; datasets.bot &middot; <a href="https://datasets.bot/datasets/ego-exo4d">datasets.bot page</a></p>
+<p><strong>One-liner.</strong> Meta FAIR large-scale multimodal dataset: time-synced egocentric (Aria) + exocentric (GoPro) video of skilled human activities.</p>
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Ego-Exo4D is a large-scale multimodal, multiview video dataset of skilled human activities (cooking, music, soccer, health, basketball, dance, bike repair, rock climbing) captured simultaneously from first-person Aria glasses and third-person GoPro cameras. It contains 1,286.3 hours of video from 740 camera wearers across 13 cities and 123 scene contexts, with multichannel audio, eye gaze, 3D point clouds, camera poses, IMU, and multiple paired language descriptions including expert commentary. It ships four benchmark tasks: keystep/fine-grained activity recognition, proficiency estimation, ego-exo relation/cross-view translation, and 3D hand/body pose estimation. License: custom. Download: https://ego4d.dev/request/ego-exo4d.</li>
+  <li><strong>Hardware / simulator:</strong> Embodiment: human. Environment: outdoor, kitchen. Realness: physical.</li>
+</ul>
+<h2>Schema</h2>
+<p>takes -&gt; per-take {ego Aria VRS (RGB + 2 SLAM/fisheye + eye-tracking), 4-5 exo GoPro mp4, audio, gaze, IMU, 6DoF camera poses, 3D point cloud, JSON annotations}</p>
+<h2>Links</h2>
+<ul>
+  <li><a href="https://datasets.bot/datasets/ego-exo4d">datasets.bot page</a></li>
+  <li><a href="https://ego-exo4d-data.org/">Homepage</a></li>
+  <li><a href="https://arxiv.org/abs/2311.18259">Paper</a></li>
+  <li><a href="https://ego4d.dev/request/ego-exo4d">Download</a></li>
+</ul>
+</body>
+</html>

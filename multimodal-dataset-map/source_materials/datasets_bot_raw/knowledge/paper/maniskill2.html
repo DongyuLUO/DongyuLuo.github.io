@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ManiSkill2</title>
+<meta name="type" content="paper">
+<meta name="authors" content="">
+<meta name="year" content="2023">
+<meta name="venue" content="datasets.bot public catalog">
+<meta name="arxiv_id" content="2302.04659">
+<meta name="url" content="https://arxiv.org/abs/2302.04659">
+<meta name="pdf" content="https://arxiv.org/abs/2302.04659">
+<meta name="tags" content="datasets-bot,open-data,manipulator,simulated,depth,point-cloud,proprioception,segmentation,rgb,hdf5">
+<meta name="status" content="datasets-bot-crosscheck">
+<meta name="ingested" content="2026-06-28">
+<meta name="source_prompt" content="datasets.bot public catalog cross-check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .meta { color: #777; font-size: 0.9em; }
+  a { color: #2962ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>ManiSkill2</h1>
+<p class="meta">UC San Diego (Hao Su Lab / SAPIEN) &middot; 2023 &middot; datasets.bot &middot; <a href="https://datasets.bot/datasets/maniskill2">datasets.bot page</a></p>
+<p><strong>One-liner.</strong> Large-scale simulated manipulation benchmark (UCSD/SAPIEN): 20 task families, 2000+ objects, 4M+ demo frames.</p>
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> ManiSkill2 is a unified, fully simulated robotic manipulation benchmark built on the SAPIEN physics engine, covering 20 manipulation task families with 2000+ object models and 4M+ verified demonstration frames. It spans stationary and mobile-base, single- and dual-arm, and rigid- and soft-body tasks, with RGB, depth/RGBD, and point-cloud observations and a unified evaluation protocol for RL, imitation learning, and sense-plan-act methods. Robots are Franka Panda arms (single or dual) mounted on stationary or mobile bases. License: custom. Download: https://huggingface.co/datasets/haosulab/ManiSkill2.</li>
+  <li><strong>Hardware / simulator:</strong> Embodiment: franka_panda. Environment: simulation, tabletop. Realness: simulated.</li>
+</ul>
+<h2>Schema</h2>
+<p>HDF5 trajectory files (trajectory.{obs_mode}.{control_mode}.h5) + JSON metadata; per-episode steps with observation (rgb/rgbd/pointcloud/state) and action</p>
+<h2>Links</h2>
+<ul>
+  <li><a href="https://datasets.bot/datasets/maniskill2">datasets.bot page</a></li>
+  <li><a href="https://maniskill2.github.io/">Homepage</a></li>
+  <li><a href="https://arxiv.org/abs/2302.04659">Paper</a></li>
+  <li><a href="https://huggingface.co/datasets/haosulab/ManiSkill2">Download</a></li>
+</ul>
+</body>
+</html>

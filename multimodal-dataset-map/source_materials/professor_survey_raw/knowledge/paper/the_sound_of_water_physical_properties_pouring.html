@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Sound of Water: Inferring Physical Properties from Pouring Liquids</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Bagad, Tapaswi, Snoek, Zisserman">
+<meta name="year" content="2025">
+<meta name="venue" content="ICASSP 2025 (short version); arXiv preprint (full)">
+<meta name="arxiv_id" content="2411.11222">
+<meta name="url" content="https://arxiv.org/abs/2411.11222">
+<meta name="pdf" content="../../raw/papers/the_sound_of_water_physical_properties_pouring.pdf">
+<meta name="tags" content="audio-sensing, acoustic-sensing, state-estimation, physical-reasoning, pouring, process-monitoring, self-supervised-learning, multimodal">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-25">
+<meta name="source_prompt" content="related-work ingest: dynamic state-change concept grounding for manipulation">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .adjacent { background: #e3f2fd; border-left: 4px solid #2962ff;
+              padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<!-- Off-genre: vision/audio physical-reasoning paper, no robot, no control loop.
+     Section headers kept per template; "Why I care" marks it as adjacent/contrast. -->
+<body>
+
+<h1>The Sound of Water: Inferring Physical Properties from Pouring Liquids</h1>
+<p class="meta">
+  Piyush Bagad, Makarand Tapaswi, Cees G. M. Snoek, Andrew Zisserman
+  &middot; Oxford / IIIT Hyderabad / Amsterdam
+  &middot; 2025 &middot; ICASSP 2025 (short version)
+  &middot; <a href="https://arxiv.org/abs/2411.11222">arXiv:2411.11222</a>
+  &middot; <a href="../../raw/papers/the_sound_of_water_physical_properties_pouring.pdf">PDF</a>
+</p>
+
+<div class="adjacent">
+  <strong>Adjacent / contrast paper.</strong> This is a vision-and-audio physical-reasoning
+  paper with <em>no robot and no control loop</em>. It is the strongest existing demonstration
+  of recovering a <em>dynamic, time-varying process state</em> (fill level, flow rate,
+  time-to-fill) from audio alone &mdash; but it is perception-only, scalar-valued, has no named
+  symbolic concept, and never closes a loop. See "Why I care" for exactly which axis of the
+  dynamic-state-change idea it covers vs. misses.
+</div>
+
+<p><strong>One-liner.</strong> Using only the <em>sound</em> of liquid pouring into a vessel,
+this paper shows &mdash; first in theory, then empirically &mdash; that the pitch (fundamental
+frequency) of the pouring sound determines the air-column length, and hence physical properties
+like fill level, container size/shape, pour rate, and time-to-fill; it trains a wav2vec2-based
+pitch detector with no manual pitch labels by pre-training on physics-simulated audio and
+fine-tuning with a physics-derived visual co-supervision signal from video.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Humans can infer liquid level, time-to-fill, container size, and even temperature merely from
+the sound of pouring, and use that inference to adaptively control their action (e.g., stop pouring
+to avoid spillage) &mdash; an instance of Gibson's affordance theory. The paper asks whether machines
+can do the same <em>from sound alone</em>. The crux (after Berg &amp; Stork): as liquid fills, a
+sound of increasing pitch with odd harmonics is heard, and that pitch is a deterministic function
+of physical properties. Four obstacles: (1) the task needs fine-grained, time-sensitive audio
+understanding, whereas contemporary audio models target coarse sound <em>classification</em>;
+(2) the pouring physics is not fully worked out for a general container/liquid setup; (3) no clean,
+controlled, large dataset existed; (4) supervision (pitch annotations or true physical properties)
+is hard to obtain at scale. The work targets cheap smartphone recordings &mdash; no bespoke force/IMU
+rigs &mdash; explicitly in contrast to prior multimodal liquid-state estimation (e.g., Wilson et al.)
+that fuses vision+audio+haptics with specialized equipment.</p>
+
+<h2>Method</h2>
+<p><strong>Physics (the core insight).</strong> Modeling a cylindrical vessel as an organ pipe closed
+at one end, the <em>axial</em> resonance fundamental frequency is
+<em>f(t) = c / (4 (l(t) + &beta;R))</em>, where <em>l(t)</em> is the air-column length, <em>R</em> the
+radius, <em>c</em> the speed of sound, and <em>&beta;&asymp;0.62</em> an end-correction factor. Working
+in wavelength <em>&lambda;(t) = c/f(t) = 4(l(t)+&beta;R)</em> makes the relation <em>linear</em> in
+<em>l(t)</em>, so "audio is effectively a <em>metric ruler</em>" for the video. From <em>&lambda;(t)</em>
+plus boundary conditions (<em>l(T)=0</em> at fill time <em>T</em>) the paper derives closed forms for:
+air-column length (Eq. 5), container height/radius (Eq. 6), volume flow rate (Eq. 7), and time-to-fill
+(Eq. 8). A subtler <em>radial</em> resonance (musical-glasses-like, frequency <em>decreasing</em> with
+level) is also characterized but not used for estimation.</p>
+
+<p><strong>Audio network.</strong> A <code>wav2vec2</code> backbone (pre-trained on speech, which already
+has pitch dynamics) is repurposed for pitch detection: 1D-CNN encoder over 25ms windows (20ms hop),
+sinusoidal position embeddings, a 12-block Transformer, and a linear head producing a softmax
+<em>distribution over K=64 wavelength bins</em> (range [0,100], so ~1.56 cm/bin) per time step.
+Predicting <em>wavelength</em> (not frequency) bakes in linearity with air-column length.</p>
+
+<p><strong>Training without pitch labels (two stages).</strong> (1) <em>Synthetic pre-training:</em>
+a DDSP autoencoder (pitch/loudness/residual latents) is trained to reconstruct real pouring sounds,
+then driven with physics-derived pitch profiles (sample <em>R~U[1,5]</em>cm, <em>H~U[5,25]</em>cm,
+linear <em>l(t)</em>, invert Eq. 3 for pitch) to generate 10,000 synthetic pouring clips with perfect
+ground-truth pitch; the network is trained with a KL loss against Gaussian-blurred target bins.
+(2) <em>Physics-inspired visual co-supervision:</em> to cross the sim2real gap without real pitch
+labels, a frozen-DINO + Transformer video network predicts air-column length <em>l<sub>px</sub>(t)</em>
+and radius <em>R<sub>px</sub></em> in <em>pixels</em> (pseudo-labels from temporal differencing + SAM
+container segmentation). A per-video scale factor <em>&alpha;</em> (encoding depth/intrinsics, estimated
+as an RMS-energy-weighted ratio of audio wavelength to pixel length) ties the two:
+<em>&alpha;&middot;(&lambda;(t)/4) = l<sub>px</sub>(t) + &beta;R<sub>px</sub></em> (Eq. 10). The audio net
+is fine-tuned with an MSE loss against this video-derived signal.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> New <em>Sound of Water 50</em> dataset &mdash; 805 videos
+    of a hand pouring liquid across 50 containers (4 shapes: cylindrical, semi-conical, bottleneck,
+    hemispherical; 5 materials: glass, plastic, ceramic, steel, cardboard; 2 liquids: hot/normal water),
+    smartphone-recorded, fixed camera, ~constant-but-randomized flow rate per video, durations 3.5&ndash;30.1s
+    (mean 10.44s). Four splits (Table 1): Train (18 transparent cylinder-like containers, 195 videos),
+    Test I (seen containers, distinct videos), Test II (unseen cylinder-like), Test III (434 videos, unseen,
+    for shape classification). Also evaluated on the Wilson et al. weight dataset (136 sequences, 6 containers).</li>
+  <li><strong>Hardware / simulator:</strong> No robot. Smartphone camera in a domestic setting; DDSP-based
+    synthetic-audio generator (10,000 clips) for pre-training.</li>
+  <li><strong>Baselines:</strong> Pitch detectors &mdash; Yin, CREPE, PESTO, and per-frame argmax on
+    spectrogram. Mass estimation &mdash; k-NN, Linear SVM, SoundNet-5/8, TCN, and PSNN (Wilson et al.).
+    Ablation: audio-only (synthetic-only) vs. co-supervised.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (only optimizer/epochs given: pre-train 100 epochs,
+    batch 32, Adam lr 1e&minus;4; fine-tune 5 epochs, lr 1e&minus;6).</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Air-column length (Table 2, MAE in cm).</strong> The co-supervised model reaches
+0.60 cm (Test I) / 0.71 cm (Test II), vs. audio-only 0.78 / 0.82, and far below all pitch-detector
+baselines (best baseline argmax 4.60 / 5.11; CREPE 7.61 / 9.40; Yin 30.80 / 27.30) &mdash; an order of
+magnitude better.</p>
+
+<table>
+  <tr><th>Method</th><th>Test I (seen) &darr;</th><th>Test II (unseen) &darr;</th></tr>
+  <tr><td>Yin</td><td>30.80</td><td>27.30</td></tr>
+  <tr><td>PESTO</td><td>11.70</td><td>10.60</td></tr>
+  <tr><td>CREPE</td><td>7.61</td><td>9.40</td></tr>
+  <tr><td>argmax on spectrogram</td><td>4.60</td><td>5.11</td></tr>
+  <tr><td>Ours (audio-only)</td><td>0.78</td><td>0.82</td></tr>
+  <tr><td><strong>Ours (co-supervised)</strong></td><td><strong>0.60</strong></td><td><strong>0.71</strong></td></tr>
+</table>
+
+<p><strong>Other physical properties (Table 3, MAE).</strong> Co-supervision helps most where the signal
+is weak (end of pour). Static: height 2.27 cm / radius 1.39 cm (Test I, co-sup vs. synthetic 2.23 / 1.62).
+Dynamic: flow rate 22.50 ml/s (vs. 25.20 audio-only); time-to-fill (given 25%/50%/75% partial audio)
+4.16 / 1.49 / 1.07 s on Test I. Co-supervision notably improves radius and flow-rate (both depend on
+reliable late-audio &lambda; and its slope).</p>
+
+<p><strong>Emergent shape &amp; weight.</strong> A 3-way shape classifier on the co-supervised features
+(Test III, unseen containers) hits 90.91% sample / 92.47% mean-class accuracy (vs. 88.63 / 89.44 without
+co-supervision) &mdash; pitch features implicitly encode container shape. Linear-probing the features for
+<em>liquid weight</em> on the Wilson et al. dataset gives 1.20 oz mean MAE, beating all baselines and
+competitive with the strong supervised fine-tuned PSNN (1.35 oz), using no vision at test time.
+Generalizes qualitatively to unseen shapes (cups, teapots, freeform glasses), materials, in-the-wild
+YouTube videos, and even flute sounds (same physics).</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The pitch detector struggles with <em>hemispherical</em> containers (too much room for air to escape
+    &rarr; very weak resonance) and with <em>bottleneck</em> containers showing multiple frequency modes it
+    can't disentangle (Fig. 15).</li>
+  <li>The physics derivation assumes cylindrical geometry; training is on cylinder-like transparent
+    containers, with non-cylindrical generalization shown only qualitatively.</li>
+  <li>Time-to-fill assumes a constant flow rate; pausing mid-pour makes it ill-defined.</li>
+  <li>It generalizes to flute (same resonance principle) but not to other instruments / polyphonic music.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>Everything is <em>scalar regression</em> &mdash; air-column length, radius, flow rate, time-to-fill.
+    There is no <em>named, discrete concept</em> ("full", "about to overflow", "started boiling"); the
+    "state" is a continuous physical quantity, not a predicate or symbol.</li>
+  <li>Strictly <em>open-loop perception</em>: the model estimates properties from a recorded clip but never
+    feeds them to an actuator or replanner. The motivating affordance ("stop pouring to avoid spillage")
+    is invoked rhetorically, never executed.</li>
+  <li>The closed-form physics is what makes audio a "metric ruler" &mdash; elegant, but it also means the
+    method is <em>tied to a specific, well-modeled process</em> (pouring into an organ-pipe geometry). It
+    would not transfer to processes without such a clean acoustic model (e.g., "became slippery after
+    wetting").</li>
+  <li>Co-supervision is a clever label-free trick, but it requires a <em>video</em> of the same event with
+    a segmentable container &mdash; so the "sound alone" claim holds only at test time, not at training time.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>For the dynamic-state-change-grounding idea, this is the <strong>strongest existing
+dynamic-process-from-audio perception result</strong> &mdash; and a precise illustration of where pure
+perception stops short of what I want.</p>
+<ul>
+  <li><strong>Axis it covers (well):</strong> grounding a <em>dynamic, time-varying process</em>
+    (fill level, pour rate, time-to-fill monitored over the whole pour) on a <em>non-visual</em> modality
+    (audio), with a verified physical mechanism. This is exactly the "process state from sound, monitored
+    over time" capability my idea needs as a perceptual front-end &mdash; e.g., a <code>is_full(cup)</code>
+    or "about-to-overflow" precondition could in principle be read off this signal.</li>
+  <li><strong>Axes it misses:</strong> (1) <em>scalar, not symbolic</em> &mdash; no named concept, no
+    predicate, just a continuous estimate (contrast <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+    discrete pre/effect predicates); (2) <em>passive recognition, not closed-loop correction</em> &mdash;
+    no controller, no replanning, no "stop when full"; (3) <em>state, not state-transition</em> &mdash; it
+    tracks a quantity continuously but never names the <em>event</em> of crossing a threshold
+    ("became full", "started overflowing").</li>
+  <li><strong>Relation to BLADE:</strong> BLADE grounds discrete predicates on <em>vision</em> and composes
+    them via planning, but its preconditions/effects are categorical and visual. This paper is the missing
+    perceptual primitive for a <em>dynamic, audio-grounded</em> predicate &mdash; if I want
+    <code>is_full</code> or <code>pour_rate_ok</code> as a BLADE-style predicate driven by sound, this is the
+    classifier-input front-end, and the gap to fill is: turn the scalar into a named predicate and wire it
+    into a replanning loop.</li>
+  <li>Contrast with the static-property audio line (<a href="../paper/octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+    on tactile, SonicSense/See-Hear-Feel on acoustic material ID): those ground <em>static</em> properties;
+    this is the cleanest <em>dynamic</em> counterpart. Pairs naturally with the pouring-process line
+    (<a href="../paper/hear_vision_sound_language_action_sound_centric_manipulation.html">HEAR</a>,
+    Making Sense of Audio Vibration, ManiWAV) where the audio <em>does</em> enter a control/VLA loop &mdash;
+    this paper is the deepest physics, those are the closest to my closed-loop target.</li>
+</ul>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  The LHS is observable from the audio of liquid pouring while the RHS is observable from a video of
+  liquid pouring (up to a scale factor). Fascinatingly, this implies that the audio is effectively a
+  <em>metric ruler</em> for objects in the video.
+  <span class="quote-cite">&mdash; &sect;3.1, Axial resonance</span>
+</blockquote>
+
+<blockquote>
+  Such inference (e.g., time to fill) allows us to adaptively control our actions (e.g., stopping
+  pouring to prevent spillage) conforming to the affordance theory by Gibson.
+  <span class="quote-cite">&mdash; &sect;1, Introduction</span>
+</blockquote>
+
+<blockquote>
+  This shows: (i) a model trained to detect pitch implicitly encodes container shape, and (ii)
+  co-supervision further improves shape recognition.
+  <span class="quote-cite">&mdash; &sect;6.2, Recognizing container shape</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Cited works plausibly worth ingesting (not in corpus; no local PDFs yet):</p>
+<ul>
+  <li><strong>Wilson et al.</strong> &mdash; audio-visual CNN supervised to predict liquid mass from
+    instantaneous video+audio; the closest prior and the mass-estimation evaluation set here. Methodological
+    contrast (instantaneous, supervised, no physics).</li>
+  <li><strong>Cabe &amp; Pittenger</strong> &mdash; psychoacoustics of filling-level / time-to-fill perception;
+    the human-capability anchor the paper measures against.</li>
+  <li><strong>wav2vec2 (Baevski et al.)</strong> and <strong>CREPE / PESTO</strong> &mdash; the backbone and
+    the pitch-detection baselines.</li>
+  <li><strong>DDSP (Engel et al.)</strong> &mdash; the differentiable-DSP synthesizer used to generate the
+    physics-conditioned training audio.</li>
+</ul>
+<p>Related papers already in the corpus:</p>
+<ul>
+  <li><a href="../paper/hear_vision_sound_language_action_sound_centric_manipulation.html">HEAR</a> &mdash;
+    sound-centric manipulation incl. pour/boil monitoring; the closed-loop, language-conditioned counterpart
+    to this perception-only result.</li>
+  <li><a href="../paper/octopi_object_property_reasoning_tactile_language.html">Octopi</a> &mdash; static
+    tactile-property reasoning; the static-vs-dynamic contrast on a different non-visual modality.</li>
+  <li><a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a> &mdash;
+    the predicate-grounding anchor; this paper supplies a candidate audio front-end for a dynamic predicate
+    that BLADE currently lacks.</li>
+</ul>
+
+</body>
+</html>

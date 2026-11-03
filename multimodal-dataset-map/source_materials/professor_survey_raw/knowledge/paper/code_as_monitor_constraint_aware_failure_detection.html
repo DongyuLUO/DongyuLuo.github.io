@@ -1,0 +1,321 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Code-as-Monitor: Constraint-aware Visual Programming for Reactive and Proactive Robotic Failure Detection</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Zhou, Su, Chi, Zhang, Wang, Huang, Sheng, Wang">
+<meta name="year" content="2025">
+<meta name="venue" content="CVPR 2025">
+<meta name="arxiv_id" content="2412.04455">
+<meta name="url" content="https://arxiv.org/abs/2412.04455">
+<meta name="pdf" content="../../raw/papers/code_as_monitor_constraint_aware_failure_detection.pdf">
+<meta name="tags" content="vlm, failure-detection, closed-loop, replanning, temporal-reasoning, manipulation, foundation-models, process-monitoring, state-change">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-25">
+<meta name="source_prompt" content="related-work ingest: dynamic state-change concept grounding for manipulation">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1>Code-as-Monitor: Constraint-aware Visual Programming for Reactive and Proactive Robotic Failure Detection</h1>
+<p class="meta">
+  Enshen Zhou*, Qi Su*, Cheng Chi&dagger;, Zhizheng Zhang, Zhongyuan Wang, Tiejun Huang, Lu Sheng&dagger;, He Wang&dagger;
+  &middot; Beihang University / Peking University / BAAI / Galbot
+  &middot; CVPR 2025
+  &middot; <a href="https://arxiv.org/abs/2412.04455">arXiv:2412.04455</a>
+  &middot; <a href="../../raw/papers/code_as_monitor_constraint_aware_failure_detection.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Code-as-Monitor (CaM) recasts both reactive and
+proactive open-set failure detection as <em>spatio-temporal constraint
+satisfaction</em>: a VLM writes monitor code over compact geometric
+&ldquo;constraint elements&rdquo; (points, lines, surfaces) abstracted from the
+scene, and the code &mdash; evaluated cheaply every frame via a tracker rather
+than re-querying the VLM &mdash; returns a boolean + reason that triggers
+replanning, yielding real-time closed-loop correction.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Robots in long-horizon tasks fail unpredictably, so closed-loop systems need
+to detect failures. The paper distinguishes two modes (following Crandall et
+al. [29]): <em>reactive</em> detection identifies a failure <em>after</em> it
+occurs (the lobster has landed on the table &mdash; a delivery failure), and
+<em>proactive</em> detection prevents a <em>foreseeable</em> failure (a tilting
+pan will cause the lobster to fall, so correct the tilt now). Both are hard in
+the open-set regime where failures are not predefined. Prior VLM-based
+detectors treat this as visual question answering (VQA): they query the
+VLM/LLM repeatedly during execution, which is slow, coarse-grained in 3D
+spatial reasoning, and (per the paper) inadequate for the high-precision,
+high-frequency monitoring proactive detection demands &mdash; e.g. catching a
+2&nbsp;cm displacement or a 180&deg; rotation. Proactive open-set detection in
+particular is barely explored; prior proactive work [2, 10] is confined to
+predefined failures.</p>
+
+<h2>Method</h2>
+<p>CaM is three modules (Fig 2): a Constraint <strong>Generator</strong>, a
+constraint <strong>Painter</strong>, and a <strong>Monitor</strong>.</p>
+
+<p><strong>1. Constraint Generator.</strong> Given the global task instruction
+<em>L<sub>global</sub></em>, multi-view RGB-D observations, the previous
+subgoal, and any failure feedback from the Monitor, a VLM (GPT-4o) generates
+the next subgoal <em>l<sub>next</sub></em> plus its associated <em>textual
+constraints</em> &mdash; split into <em>C<sub>d</sub></em> (constraints that must
+be <em>maintained during</em> subgoal execution, e.g. &ldquo;pan handle must be
+grasped,&rdquo; &ldquo;pan should remain horizontal during transfer&rdquo;) and
+<em>C<sub>u</sub></em> (constraints that must hold <em>upon completion</em>,
+e.g. &ldquo;pan directly above the stove&rdquo;). This split is exactly how the
+authors unify reactive (a during/completion constraint already violated) and
+proactive (a during-constraint trending toward violation) detection.</p>
+
+<p><strong>2. Constraint Painter.</strong> For each textual constraint, the
+Painter abstracts the relevant entities/parts into compact <em>constraint
+elements</em> &mdash; sets of 3D points representing geometric primitives
+(points, lines, surfaces). The pipeline (Fig 3): a trained multi-granularity
+<strong>constraint-aware segmentation model (ConSeg)</strong> produces both
+instance-level masks and fine-grained <em>part-level</em> masks plus an element
+type description for each constraint &times; view; these masks are projected to
+3D, voxelized (voxel size set by element type, e.g. a surface needs &ge;3
+points), clustered, and one representative point per voxel is filtered down to
+a target count, then connected per instance mask into the element <em>e</em>.
+End-effector points (fingertips, hand center) come directly from forward
+kinematics, bypassing perception. Elements are aggregated into
+<em>E</em> = {e<sup>0</sup>, &hellip;, e<sup>n+k</sup>} and numerically
+annotated with unique colors/labels across all views. <strong>ConSeg</strong>
+itself is built on LISA [27] (a LLaVA VLM + SAM encoder/decoder) with LoRA
+fine-tuning; it does two inference passes (instance-level, then part-level) and
+emits a <code>&lt;SEG&gt;</code> token plus a textual element-type description.</p>
+
+<p><strong>3. Real-time Monitor.</strong> The annotated multi-view images
+<em>O<sub>E</sub></em> serve as <em>visual prompts</em>: GPT-4o is given them
+plus the constraints and next subgoal, and writes <em>monitor code</em> &mdash; a
+function that reads the elements&rsquo; current 3D positions, performs NumPy
+arithmetic on them (e.g. computes the angle between the pan-surface normal and
+the world z-axis, or the distance between bread-points and pan-points), and
+returns <code>False</code> + a reason string when a tolerance is exceeded (e.g.
+pan surface tilt &gt; 15&deg;). Crucially, after generation the elements are
+tracked frame-to-frame with an off-the-shelf tracker (<strong>Co-Tracker
+[24]</strong>), so the monitor code can be re-evaluated every frame at ~1&nbsp;Hz
+<em>without calling the VLM again</em> &mdash; this is what makes high-precision
+real-time monitoring affordable. On <code>False</code>, execution halts
+immediately and the reason string becomes the feedback <em>f<sub>pre</sub></em>
+fed back to the Generator for re-planning; otherwise the subgoal completes and
+the cycle repeats.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Three simulators &mdash; CLIPort
+    [57] (Stack in Order, Sweep Half the Blocks), Omnigibson [31] (Slot Pen,
+    Stow Book, Pour Tea), RLBench [22] &mdash; plus a real-world setting (Simple
+    Pick &amp; Place, Reasoning Pick &amp; Place in cluttered scenes). ConSeg is
+    trained on BridgeData V2 [64]: 10,181 trajectories / 219,356 images, with
+    GPT-4o decomposing instructions into subgoals/constraints/object
+    associations and Grounded SAM [53] + Semantic SAM [32] giving
+    instance/part masks, refined into LISA-format training data. Segmentation
+    evaluated on ReasonSeg [27] and a proposed ConstraintSeg benchmark
+    (gIoU / cIoU).</li>
+  <li><strong>Hardware / simulator:</strong> CLIPort uses a UR5 with suction cup
+    + spatula (pre-trained CLIPort policy); Omnigibson uses a Fetch with gripper
+    (ReKep [21] policy); RLBench uses a Franka + gripper (ARP [73] policy);
+    real-world uses a UR5 with a Leap Hand [55], controlled by an open-loop
+    DexGraspNet 2.0 [72] grasping policy. ConSeg fine-tuned per-simulator on
+    100 trajectories each (not fine-tuned for real-world, to test
+    generalization). Frames captured at 1&nbsp;Hz.</li>
+  <li><strong>Baselines:</strong> DoReMi [16] (DRM) in all settings (frequent
+    VQA-based intermediate-failure detection); Inner Monologue [20] (IM) in
+    CLIPort (detects failures only at subgoal completion); ReKep [21] alone in
+    Omnigibson; DexGraspNet 2.0 (DGN) alone in real-world. Segmentation
+    baselines: OVSeg, GRES, X-Decoder, SEEM, PixelLM, LISA-13B, and a
+    Foundation-Model-Combination (FMC = GPT-4o + Grounded SAM + Semantic SAM).</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (uses off-the-shelf GPT-4o
+    and Co-Tracker; ConSeg is a LoRA-tuned LLaVA/SAM stack).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: across simulators CaM achieves <strong>28.7% higher success rate
+and 31.8% lower execution time</strong> than baselines under severe
+disturbances.</p>
+<ul>
+  <li><strong>CLIPort (Table 1).</strong> Under the most severe disturbance
+    (p=0.3, q=3) in Stack in Order, CaM hits 88.33% vs DoReMi&rsquo;s 76.67%
+    (+17.5% abs.); on Sweep Half the Blocks CaM reaches 75.00% &mdash; ~4.5&times;
+    DoReMi (16.67) &mdash; because counting block-points in a designated surface
+    region beats VLM image-counting. Execution time on Stack-in-Order
+    (p=0.15) drops to 21.0s vs IM 34.8 / DRM 26.0 (38.7% / 19.2% faster).</li>
+  <li><strong>Omnigibson (Table 2).</strong> CaM beats ReKep and DoReMi on
+    Slot Pen, Stow Book, and Pour Tea under point-, line-, and surface-level
+    disturbances. In Pour Tea, only CaM detects surface-level failures (teapot
+    pitch/roll changes) that DoReMi&rsquo;s single-image VQA misses (DoReMi 0%
+    on some Pour Tea disturbances). CaM cuts execution time 34.8% and token
+    count 52.2% vs DoReMi by monitoring tilt angle in real-time instead of
+    frequent VLM calls.</li>
+  <li><strong>Real-world (Tables 3&ndash;4).</strong> On Simple Pick &amp; Place
+    with a Leap Hand, CaM surpasses DoReMi by ~20.4% across object types
+    (deformable, transparent, small-rigid, large-geometric). On long-horizon
+    Reasoning Pick &amp; Place in clutter, only CaM closes the loop around the
+    open-loop DexGraspNet policy (e.g. 60% vs 10% on &ldquo;clear all objects
+    except animals&rdquo;), and dynamically re-targets when a human moves an
+    object mid-task.</li>
+  <li><strong>Segmentation (Table 5).</strong> ConSeg matches LISA/PixelLM on
+    ReasonSeg but beats all baselines on ConstraintSeg by ~40% at the part
+    level (60.2 gIoU / 65.3 cIoU part-level).</li>
+  <li><strong>Ablations (Tables 4, 6, 7).</strong> Multi-view raises Stow-Book
+    success 40%&rarr;65% (single-view causes occlusion + line/point
+    misinterpretation); constraint-aware segmentation beats DINOv2 semantic
+    points (65% vs 42.5%); pre-formed elements beat unconnected 3D points (65%
+    vs 55%). Using constraint <em>elements</em> rather than raw entities lifts
+    real-world success 20%&rarr;60% &mdash; raw entities give inaccurate/slow 3D
+    tracking and resist arithmetic in code.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The system depends on the VLM (GPT-4o) generating correct constraints and
+    correct monitor code; the paper notes no standard exists for evaluating
+    proactive-detection accuracy, and they deliberately do not report a
+    failure-judgment success rate because the code runs continuously in
+    real-time (Sec 4.1, Task Settings).</li>
+  <li>ConSeg used in real-world is <em>not</em> fine-tuned and the training data
+    is limited to pick-and-place tasks; generalization to tool-use, articulated
+    objects, and long-horizon complex tasks is validated qualitatively but the
+    distribution gap is acknowledged.</li>
+  <li>Tracking quality (Co-Tracker) and accurate 3D element formation are
+    explicit bottlenecks &mdash; the ablations show unconnected/raw-entity points
+    degrade both tracking and in-code arithmetic.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>Every constraint is <strong>geometric and vision-derived</strong>: angles,
+    distances, and counts over 3D point sets projected from RGB-D. There is no
+    pathway for a constraint like &ldquo;water has come to a boil,&rdquo;
+    &ldquo;surface became slippery,&rdquo; or &ldquo;pan is hot enough&rdquo; &mdash;
+    these have no visual geometric signature and no non-visual sensor feeds the
+    monitor. The teaser&rsquo;s &ldquo;careful not to let the lobster drop&rdquo;
+    is reduced to a pan-tilt angle, not a thermal/contact state.</li>
+  <li>The constraints are authored fresh per subgoal by GPT-4o, not
+    <em>learned</em>. There is no library of reusable, grounded
+    change-predicates with preconditions/effects; the &ldquo;abstraction&rdquo;
+    is a per-subgoal code snippet, semantically opaque and not composable across
+    tasks the way a symbolic operator is.</li>
+  <li>&ldquo;Temporal&rdquo; here means per-frame re-evaluation of a static
+    geometric predicate over a tracked element &mdash; spatio-<em>temporal</em>
+    combinational dynamics &mdash; not modeling a state <em>transition</em> over
+    time (no notion of &ldquo;became X after action Y&rdquo;).</li>
+  <li>The whole loop hinges on a closed-vocabulary-free but ultimately
+    GPT-4o-bounded constraint proposal; the same scaling/consistency questions
+    that haunt LLM operator proposal apply, untested past these task suites.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>CaM is the cleanest existing instantiation of the <strong>closed-loop
+monitoring axis</strong> of the dynamic-state-change idea: a perception module
+evaluates time-varying constraints during execution and uses violations to
+drive semantic replanning &mdash; exactly the reactive+proactive correction loop
+I want, and a sharper failure-detection mechanism than
+<a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>&rsquo;s
+replan-after-each-behavior (BLADE replans on <em>completion</em>; CaM monitors
+<em>continuously</em> and can abort mid-behavior). The unification of reactive
+and proactive detection as one constraint-satisfaction formulation, split into
+&ldquo;maintain-during&rdquo; vs &ldquo;hold-on-completion,&rdquo; is a framing
+worth borrowing.</p>
+<p>But it sits on the <strong>far vision-only side</strong> of my idea and
+<em>contradicts</em> two of its commitments. (1) <strong>Vision-only,
+geometric constraints</strong>: every monitored predicate is a distance/angle/
+count over RGB-D-projected points. The dynamic concepts I care about
+&mdash; &ldquo;hot enough now,&rdquo; &ldquo;slippery after wetting,&rdquo;
+&ldquo;coming to a boil&rdquo; &mdash; live in tactile/thermal/audio signals that
+CaM has no channel for; a tilting-pan proxy is the closest it gets, and it is a
+geometric stand-in, not a sensed state. (2) <strong>VLM-authored code, not
+learned multimodal change-predicates</strong>: CaM&rsquo;s constraints are
+per-subgoal GPT-4o programs, whereas BLADE-style and my target work want
+<em>learned</em>, grounded, composable predicates with effects over time. So
+CaM is the right <em>loop architecture</em> wrapped around the wrong
+<em>sensing and representation</em> &mdash; an excellent foil: &ldquo;take
+CaM&rsquo;s reactive+proactive constraint loop, but replace VLM-on-pixels
+geometric constraints with learned multimodal (tactile/audio/thermal)
+state-change predicates.&rdquo; The contrast pairs naturally with
+<a href="../paper/reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>
+(multimodal-but-retrospective explanation) and
+<a href="../paper/inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>
+(textual closed-loop feedback): CaM is the most precise, real-time, but most
+narrowly-visual of the three.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We formulate both tasks as a unified set of spatio-temporal constraint
+  satisfaction problems and use VLM-generated code to evaluate them for
+  real-time monitoring.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  We further introduce constraint elements that abstract constraint-related
+  entities or their parts into compact geometric elements&hellip; leveraging
+  these elements as visual prompts.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  By tracking the elements using CoTracker, we achieve real-time detection via
+  VLMs without frequent calls, reducing the computational cost.
+  <span class="quote-cite">&mdash; &sect;3.3, Real-time Monitor Module</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[16] Guo et al. &mdash; DoReMi</strong> &mdash; the primary
+    VQA-based reactive-detection baseline CaM beats; the natural
+    head-to-head for the failure-detection axis.
+    (<a href="../../raw/papers/doremi_grounding_language_plans_detecting_recovering.pdf">PDF if ingested</a>)</li>
+  <li><strong>[20] Huang et al. &mdash; Inner Monologue</strong> &mdash;
+    completion-only closed-loop baseline.</li>
+  <li><strong>[21] Huang et al. &mdash; ReKep</strong> &mdash; keypoint-constraint
+    relational reasoning; CaM&rsquo;s closest point-based prior, used as the
+    Omnigibson policy and critiqued for imprecise keypoints.</li>
+  <li><strong>[27] Lai et al. &mdash; LISA</strong> &mdash; the reasoning-segmentation
+    backbone ConSeg is built on.</li>
+  <li><strong>[29] Crandall et al. &mdash; Reactive or Proactive?</strong> (HRI)
+    &mdash; source of the reactive/proactive framing.</li>
+  <li><strong>[2, 10] Alvanpour / Diehl &amp; Ramirez-Amaro</strong> &mdash;
+    predefined-failure proactive-detection prior work CaM positions against.</li>
+</ul>
+<p>Related papers already in the corpus:</p>
+<ul>
+  <li><a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; the anchor; CaM is a sharper continuous-monitoring failure detector
+    vs BLADE&rsquo;s replan-on-completion, but BLADE has <em>learned symbolic
+    predicates</em> where CaM has VLM-authored geometric code.</li>
+  <li><a href="../paper/reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>
+    &mdash; multimodal failure explanation + correction, but retrospective; CaM
+    is real-time/proactive but vision-only.</li>
+  <li><a href="../paper/inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>
+    &mdash; textual closed-loop replanning; CaM is the code/geometry-grounded,
+    continuous-monitoring counterpart.</li>
+  <li><a href="../paper/visualpredicator_learning_abstract_world_models_with_neuro_symbolic_predicates.html">VisualPredicator</a>
+    &mdash; neuro-symbolic predicates from a VLM; contrast with CaM&rsquo;s
+    non-learned per-subgoal code constraints.</li>
+  <li>Multimodal-sensing contrasts for the &ldquo;non-visual constraint&rdquo;
+    gap: <a href="../paper/octopi_object_property_reasoning_tactile_language.html">Octopi</a>,
+    <a href="../paper/tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>,
+    <a href="../paper/audio_vla_contact_audio_perception.html">Audio-VLA</a> &mdash;
+    the sensing channels CaM&rsquo;s monitor lacks.</li>
+</ul>
+
+</body>
+</html>

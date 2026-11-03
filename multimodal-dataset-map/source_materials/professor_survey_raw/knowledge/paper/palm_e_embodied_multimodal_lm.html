@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PaLM-E: An Embodied Multimodal Language Model</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Driess, Xia, Sajjadi, Lynch, Chowdhery, Ichter, Wahid, Tompson, Vuong, Yu, Huang, Chebotar, Sermanet, Duckworth, Levine, Vanhoucke, Hausman, Toussaint, Greff, Zeng, Mordatch, Florence">
+<meta name="year" content="2023">
+<meta name="venue" content="ICML 2023">
+<meta name="arxiv_id" content="2303.03378">
+<meta name="url" content="https://arxiv.org/abs/2303.03378">
+<meta name="pdf" content="../../raw/papers/palm_e_embodied_multimodal_lm.pdf">
+<meta name="project_page" content="https://palm-e.github.io">
+<meta name="tags" content="vision-language-action, vla, foundation-models, embodied-agents, multimodal, llm-planning, multimodal-binding, robot-learning, vision-language-models, representation-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>PaLM-E: An Embodied Multimodal Language Model</h1>
+<p class="meta">
+  Driess, Xia, Sajjadi, Lynch, Chowdhery, Ichter, Wahid, Tompson, Vuong, Yu, Huang,
+  Chebotar, Sermanet, Duckworth, Levine, Vanhoucke, Hausman, Toussaint, Greff, Zeng,
+  Mordatch, Florence (Robotics at Google, TU Berlin, Google Research)
+  &middot; 2023
+  &middot; ICML 2023
+  &middot; <a href="https://arxiv.org/abs/2303.03378">arXiv:2303.03378</a>
+  &middot; <a href="../../raw/papers/palm_e_embodied_multimodal_lm.pdf">PDF</a>
+  &middot; <a href="https://palm-e.github.io">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> PaLM-E injects continuous sensor observations
+(images, 3D scene representations, robot state vectors) directly into the token
+embedding space of a frozen-or-finetuned pretrained LLM, turning the LLM into a
+single embodied generalist that outputs natural-language plans for a robot
+control loop &mdash; and the recipe for "encode a non-text modality into vectors
+the same width as word tokens, then interleave them with text" is the structural
+template for adding <em>any</em> sensor (touch, force, audio) to a language model.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>LLMs carry vast world knowledge and strong reasoning, but for real-world
+embodied tasks they are ungrounded: trained on text alone, their representations
+don't connect to the robot's physical percepts. Prior LLM-for-planning work like
+SayCan (<a href="../../raw/papers/do_as_i_can_not_as_i_say.pdf">Ahn et al.</a>,
+cited as [3]) interfaces an LLM with learned affordance functions but feeds the
+LLM <em>only text</em>, which is insufficient when the geometric configuration of
+the scene matters. The authors further show that out-of-the-box SOTA
+vision-language models (PaLI) trained on typical VQA-style data cannot directly
+solve robotic reasoning tasks. The goal: a single model that ingests continuous
+multimodal observations and produces grounded sequential decisions, while
+remaining a competent vision-language and language generalist.</p>
+
+<h2>Method</h2>
+<p>The central architectural idea (Sec 3, Fig 1): inject continuous embodied
+observations into the language embedding space of a pretrained decoder-only LLM,
+forming <em>multimodal sentences</em> &mdash; sequences of tokens where some
+positions are word-token embeddings and others are encoder outputs from arbitrary
+modalities, interleaved freely with text.</p>
+
+<p><strong>Multimodal sentences / token injection.</strong> A normal LLM maps a
+text token <code>w<sub>i</sub></code> to a word-embedding vector
+<code>x<sub>i</sub> = &gamma;(w<sub>i</sub>) &isin; R<sup>k</sup></code> via the
+embedding matrix. PaLM-E replaces selected token positions with encoder outputs:
+each continuous observation <code>O<sub>j</sub></code> is mapped by an encoder
+<code>&phi;<sub>j</sub>: O &rarr; X<sup>q</sup></code> into a sequence of
+<em>q</em> vectors of the same dimension <code>k</code> as word embeddings, which
+are then interleaved into the prefix (Eq. 3). One observation usually becomes
+multiple embedding vectors, and different encoders can be mixed at different
+positions. Crucially, the observation embeddings are <em>not</em> inserted at
+fixed positions (contrast with cross-attention VLMs like Flamingo) but placed
+dynamically within the surrounding text, reusing the LLM's existing positional
+encodings. The whole thing trains end-to-end with a cross-entropy loss over the
+non-prefix (target) text tokens; special text tokens in the input get replaced by
+the encoder embeddings at those locations.</p>
+
+<p><strong>Embodying the output: robot control loop.</strong> PaLM-E is a
+text-generating decoder-only model. For embodied <em>question answering</em> /
+scene description, the text output <em>is</em> the answer. For embodied
+<em>planning/control</em>, PaLM-E generates text decisions that are interpreted as
+a sequence of low-level skills from a (small) pre-existing skill vocabulary; each
+skill is executed by a separately-trained low-level policy (e.g. RT-1, or the
+Lynch et al. Language-Table policies). PaLM-E thus acts as a high-level policy
+that sequences low-level policies, and because execution yields new observations,
+it can <em>replan</em> at each step, giving closed-loop control robust to
+disturbances.</p>
+
+<p><strong>Input &amp; scene representations (Sec 4).</strong> The paper studies
+several encoders mapping a modality into the language embedding space:
+(i) <em>state-estimation vectors</em> &mdash; a robot/scene state vector
+<code>s &isin; R<sup>S</sup></code> (poses, sizes, colors) mapped by an MLP
+<code>&phi;<sub>state</sub></code>; (ii) <em>ViT</em> &mdash; a Vision Transformer
+(ViT-4B from Chen et al., or ViT-22B) producing token embeddings, projected to
+width <code>k</code> by a learned affine map <code>&psi;</code>; (iii) <em>ViT
+token learner (ViT+TL)</em> trained from scratch; (iv) <em>object-centric ViT</em>
+&mdash; given ground-truth instance masks, decompose ViT features per object; and
+(v) <em>Object Scene Representation Transformer (OSRT)</em> &mdash; an
+unsupervised 3D-aware object-centric scene representation (slots
+<code>o<sub>j</sub></code>) projected per-slot into multiple embeddings by an MLP.
+<strong>Entity referrals:</strong> for object-centric encoders the prompt labels
+each object's tokens as <code>Object j is &lt;obj_j&gt;</code>, so PaLM-E can
+reference objects by special <code>obj_j</code> tokens in its generated plan and
+the low-level policies operate on those tokens.</p>
+
+<p><strong>Training recipes (Sec 5).</strong> PaLM-E is built on the pretrained
+8B / 62B / 540B PaLM as the decoder-only LLM, plus a 4B or 22B ViT. Naming:
+8B LLM + 4B ViT = PaLM-E-12B; 62B + 22B = PaLM-E-84B; 540B + 22B = PaLM-E-562B
+(the largest VLM reported at the time). The three components are an encoder
+<code>&phi;</code>, a projector <code>&psi;</code>, and the LLM
+<code>p<sub>LM</sub></code>; the paper ablates <em>freezing the LLM</em> (train
+only encoder+projector, a form of input-conditioned soft-prompting) vs.
+finetuning it end-to-end. <strong>Co-training across tasks</strong> is the key
+experimental knob: the "full mixture" is mostly diverse internet-scale
+vision-language and language data, with only <strong>8.9%</strong> embodied data,
+to test whether transfer from general VL domains boosts embodied performance.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Three robotics domains &mdash;
+    a TAMP grasp-and-stack environment, the Language-Table tabletop pushing
+    dataset (Lynch et al.), and a SayCan-style mobile manipulation kitchen
+    environment. General VL benchmarks: OK-VQA, VQA v2, COCO captioning. Plus 21
+    general language (NLU/NLG) benchmarks for catastrophic-forgetting analysis.
+    The "full mixture" adds WebLI, VQA, COCO, and other internet-scale VL/language
+    data (App. A).</li>
+  <li><strong>Hardware / simulator:</strong> Real robots in two closed-loop
+    domains (Language-Table tabletop robot; a mobile manipulator in a real
+    kitchen, following the SayCan setup) plus simulation. Low-level policies are
+    RT-1 (mobile manipulation) and the Lynch et al. policies (Language-Table).
+    TAMP is in simulation.</li>
+  <li><strong>Baselines:</strong> PaLI (a SOTA VLM not trained on robot data,
+    zero-shot); SayCan with oracle affordances; for failure detection, CLIP-FT
+    and CLIP-FT-hindsight (Xiao et al.); for affordance, QT-OPT value-function
+    thresholding; Frozen (Tsimpoukelli et al.) for the frozen-LLM comparison;
+    Flamingo for general VQA.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (parameter counts given &mdash;
+    up to 562B &mdash; but no GPU/TPU-hours or training cost stated in the main
+    text).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: PaLM-E-562B sets a new SOTA on <strong>OK-VQA (66.1 val)</strong>,
+beating models finetuned specifically for OK-VQA, <em>without</em> task-specific
+finetuning &mdash; while being a single model that also controls real robots.
+Co-training on the full mixture roughly <strong>doubles</strong> embodied
+performance vs. training on in-domain robot data alone (positive transfer,
+Fig 3).</p>
+
+<p>TAMP planning (Table 1, trained on only 1% / 320 examples per task): a frozen
+pretrained 62B+ LLM with state inputs reaches the high-90s success on planning,
+and OSRT is the most data-efficient input representation. Selected planning
+success (p<sub>1</sub>, p<sub>2</sub> mean) for PaLM-E-12B (Fig 4) showing the
+transfer + LLM-pretraining effect:</p>
+
+<table>
+  <tr><th>PaLM-E-12B variant (TAMP, 1% data)</th><th>Planning success</th></tr>
+  <tr><td>LLM frozen, single robot</td><td>31.8%</td></tr>
+  <tr><td>without pretraining (LLM+ViT from scratch)</td><td>42.9%</td></tr>
+  <tr><td>LLM finetune, single robot</td><td>48.6%</td></tr>
+  <tr><td>LLM frozen, full mixture</td><td>74.3%</td></tr>
+  <tr><td><strong>LLM finetune, full mixture</strong></td><td><strong>94.9%</strong></td></tr>
+</table>
+
+<p>Where it wins: full-mixture co-training more than <em>doubles</em> ViT-4B TAMP
+planning vs. single-robot; OSRT (3D-aware, no large-scale pretraining) gives the
+best input encoding; PaLM-E generalizes one-shot and zero-shot on real
+Language-Table tasks (novel object pairs, an unseen toy turtle) and survives
+adversarial human disturbance in the kitchen long-horizon task (Fig 5). On mobile
+manipulation, PaLM-E-12B (full mixture) hits 0.91 F1 on both failure detection and
+affordance prediction, beating CLIP-FT (0.65), CLIP-FT-hindsight (0.89 on failure
+det.), and QT-OPT (0.63 affordance) (Table 4).</p>
+
+<p>Where it loses / costs: the zero-shot <strong>PaLI and SayCan baselines score
+0.0</strong> on the harder planning tasks &mdash; a clean demonstration that
+off-the-shelf VLMs and affordance-only LLMs fail, but it also means the
+comparison lacks a competitive non-trivial baseline on those tasks. Scaling helps
+language retention: the smallest PaLM-E-12B loses <strong>87.3%</strong> of its
+NLG performance (relative) to catastrophic forgetting under multimodal training,
+while PaLM-E-562B loses only <strong>3.9%</strong> (Fig 6) &mdash; i.e. small
+models pay a steep generalist tax. The frozen-LLM route (train only encoders)
+sometimes struggled on robotics tasks vs. full end-to-end training (Table 2).</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Two paths to retain language ability &mdash; freeze the LLM, or train
+    end-to-end and rely on scale &mdash; and the frozen route "occasionally
+    struggled for robotics tasks." No single clean recipe dominates.</li>
+  <li>Catastrophic forgetting is only <em>mitigated</em> by scale, not solved;
+    smaller models forget heavily.</li>
+  <li>PaLM-E depends on a fixed, small library of pre-trained low-level skill
+    policies; it sequences them but does not learn or generate the low-level
+    control itself.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>All injected modalities here are <em>visual or symbolic state</em> (ViT
+    images, OSRT slots, pose/color state vectors). No genuinely non-visual
+    continuous sensor (force, tactile, audio) is ever fed in &mdash; the
+    architecture <em>claims</em> generality over "arbitrary modalities" but the
+    evidence is vision + state only. The recipe is the contribution; the
+    non-visual demonstration is left to successors.</li>
+  <li>Object-centric variants (object-ViT, entity referrals) depend on
+    <em>ground-truth instance masks</em> at input time in several experiments &mdash;
+    a strong supervision assumption that isn't always available on a real robot.</li>
+  <li>The most striking embodied numbers (TAMP 94.9%) come from 1%-data / 320-example
+    regimes with only 2 planning tasks (p<sub>1</sub>, p<sub>2</sub>) averaged;
+    the strong transfer story rests on a fairly narrow task slice.</li>
+  <li>Compute cost is undisclosed despite 562B parameters &mdash; reproducibility
+    and the practical cost of "just scale the LLM to fix forgetting" are
+    unaddressed.</li>
+  <li>Low-level skills are assumed to succeed when invoked; failure
+    attribution between PaLM-E's plan and the underlying policy is not separated
+    out in the planning metrics.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is the <strong>method anchor</strong> for the entire "inject continuous
+sensor tokens into an LLM" recipe that the 2026-06-24 multimodal-sensing batch is
+organized around. The structural move &mdash; <em>encode a non-text modality into
+a sequence of vectors the same width as word-token embeddings, interleave them
+with text, train end-to-end</em> &mdash; is exactly the template a robot learner
+would reuse to add <strong>touch, force, or audio</strong> to a language model.
+PaLM-E only ever demonstrates it with vision and state vectors, but
+<code>&phi;<sub>tactile</sub></code> or <code>&phi;<sub>force</sub></code> drop
+into the same slot as <code>&phi;<sub>ViT</sub></code> with no architectural
+change. This matters directly for the thesis underlying my work: many manipulation
+predicates &mdash; <code>is_grasped</code>, <code>is_inserted</code>,
+<code>is_full</code>, <code>surface_is_rough</code>, <code>is_screwed_tight</code>
+&mdash; are <em>not</em> visually evaluable; they live in touch/force/sound. PaLM-E
+gives the clean structural answer for how a language model could ever read those
+signals, and the touch-language and tactile-VLA papers in this batch (FuSe,
+Tactile-VLA, OmniVTLA, UniTouch) are essentially PaLM-E's recipe instantiated for
+non-visual sensors.</p>
+
+<p>Relative to <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+PaLM-E is the canonical "scale-everything / structure-implicit" counterpoint to
+BLADE's "explicit symbolic abstraction" pole of the structure-vs-scale debate.
+Both produce a high-level plan that sequences low-level policies and replan after
+each step &mdash; PaLM-E's control loop and BLADE's bi-level replanning are
+strikingly parallel &mdash; but PaLM-E's plan is free-form generated text grounded
+only by entity-referral tokens, whereas BLADE's plan is a typed PDDL operator
+sequence with learned precondition/effect predicates. PaLM-E has no notion of an
+explicit predicate that could be grounded in a force sensor; BLADE has the
+predicate slot but (currently) only visual classifiers. The synthesis I care about
+&mdash; <em>BLADE-style learned predicates whose classifiers read PaLM-E-style
+injected tactile/force tokens</em> &mdash; is exactly the gap between these two
+anchors.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We propose embodied language models to directly incorporate real-world
+  continuous sensor modalities into language models and thereby establish the link
+  between words and percepts.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  The main architectural idea of PaLM-E is to inject continuous, embodied
+  observations such as images, state estimates, or other sensor modalities into the
+  language embedding space of a pre-trained language model.
+  <span class="quote-cite">&mdash; &sect;3 / p.3</span>
+</blockquote>
+<blockquote>
+  Each vector x<sub>i</sub> in the prefix is formed from either the word token
+  embedder &gamma; or an encoder &phi;<sub>i</sub> &hellip; the observation
+  embeddings are not inserted at fixed positions, but instead placed dynamically
+  within the surrounding text.
+  <span class="quote-cite">&mdash; &sect;3, Multi-modal sentences / p.4</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong><a href="../../raw/papers/do_as_i_can_not_as_i_say.pdf">SayCan (Ahn et al. 2022)</a></strong>
+    &mdash; the text-only LLM + affordance baseline PaLM-E is built against; the
+    mobile-manipulation domain and low-level-skill-sequencing setup come from here.</li>
+  <li><strong>RT-1 (Brohan et al. 2022)</strong> &mdash; the low-level policy
+    PaLM-E sequences in the kitchen domain; the action-execution layer under the plans.</li>
+  <li><strong>Gato (Reed et al. 2022)</strong> &mdash; the closest generalist
+    multi-embodiment agent; PaLM-E's explicit contrast for the transfer claim.</li>
+  <li><strong>Flamingo (Alayrac et al. 2022)</strong> &mdash; the cross-attention
+    VLM PaLM-E contrasts its token-injection design against; VQA baseline.</li>
+  <li><strong>OSRT (Sajjadi et al. 2022)</strong> &mdash; the 3D object-centric
+    scene representation that gives PaLM-E its best data-efficiency; key input encoder.</li>
+  <li><strong>PaLM (Chowdhery et al. 2022)</strong> &mdash; the underlying LLM;
+    foundational dependency.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="imagebind_one_embedding_space.html">ImageBind</a> and
+    <a href="languagebind_language_anchored.html">LanguageBind</a> &mdash; the
+    multimodal-binding siblings in Cluster H; where PaLM-E injects modalities into
+    one LLM's embedding space, these bind many modalities to a shared embedding
+    space &mdash; two routes to the same "put touch/audio next to language" goal.</li>
+  <li><a href="meta_transformer_unified_modalities.html">Meta-Transformer</a> and
+    <a href="any2policy_any_modality_visuomotor.html">Any2Policy</a> &mdash; the
+    other Cluster H anchors generalizing "unify arbitrary modalities in one
+    backbone"; Any2Policy carries the recipe all the way to a visuomotor policy.</li>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">FuSe</a>,
+    <a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>, and
+    <a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a> &mdash; the
+    tactile/force VLA policies (Cluster C) that instantiate PaLM-E's
+    inject-sensor-tokens recipe for genuinely non-visual modalities; the successors
+    that fill PaLM-E's vision-only evidence gap.</li>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a> &mdash;
+    binds touch into a vision-language embedding space; the touch-side analogue of
+    PaLM-E's "make the modality look like language tokens" move.</li>
+</ul>
+
+</body>
+</html>

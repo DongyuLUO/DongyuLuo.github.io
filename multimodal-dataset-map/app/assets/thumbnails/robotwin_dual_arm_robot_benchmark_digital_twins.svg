@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540">
+  <rect width="960" height="540" fill="#f6f2ea"/>
+  <path d="M0 0h960v540H0z" fill="url(#grid)"/>
+  <defs>
+    <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+      <path d="M30 0H0v30" fill="none" stroke="#ded8cc" stroke-width="1"/>
+    </pattern>
+  </defs>
+  <rect x="58" y="54" width="844" height="432" rx="18" fill="#fffdfa" stroke="#ded8cc" stroke-width="2"/>
+  <rect x="58" y="54" width="844" height="160" rx="18" fill="#d9eef0"/>
+  <circle cx="802" cy="134" r="82" fill="#477987" opacity="0.18"/>
+  <circle cx="710" cy="96" r="36" fill="#477987" opacity="0.24"/>
+  <rect x="86" y="84" width="92" height="92" rx="18" fill="#477987"/>
+  <path d="M111 132h42M132 111v42" stroke="#fff" stroke-width="10" stroke-linecap="round"/>
+  <text x="202" y="119" font-family="Inter, Arial, sans-serif" font-size="28" font-weight="700" fill="#245866">Online source thumbnail</text>
+  <text x="202" y="158" font-family="Inter, Arial, sans-serif" font-size="22" fill="#6c6a64">Institution not listed · 2025</text>
+  <text x="86" y="278" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800" fill="#171717">RoboTwin: Dual-Arm Robot Benchmark</text>
+  <text x="86" y="320" font-family="Inter, Arial, sans-serif" font-size="34" font-weight="800" fill="#171717">with Generative Digital Twins</text>
+  <rect x="86" y="426" width="132" height="34" rx="7" fill="#f7f3eb" stroke="#dad4ca"/><text x="102" y="448" font-family="Consolas, monospace" font-size="15" fill="#374151">language</text>
+</svg>

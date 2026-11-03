@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>See, Hear, and Feel: Smart Sensory Fusion for Robotic Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Li, Zhang, Zhu, Wang, Lee, Xu, Adelson, Fei-Fei, Gao, Wu">
+<meta name="year" content="2022">
+<meta name="venue" content="CoRL 2022">
+<meta name="arxiv_id" content="2212.03858">
+<meta name="url" content="https://arxiv.org/abs/2212.03858">
+<meta name="pdf" content="../../raw/papers/see_hear_feel_sensory_fusion.pdf">
+<meta name="tags" content="multisensory, audio-sensing, contact-audio, tactile-sensing, vision-based-tactile, gelsight, sensory-fusion, imitation-learning, contact-rich, audio-visual">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>See, Hear, and Feel: Smart Sensory Fusion for Robotic Manipulation</h1>
+<p class="meta">
+  Hao Li*, Yizhi Zhang*, Junzhe Zhu, Shaoxiong Wang, Michelle A. Lee, Huazhe Xu,
+  Edward Adelson, Li Fei-Fei, Ruohan Gao&dagger;, Jiajun Wu&dagger;
+  &middot; Stanford / MIT
+  &middot; CoRL 2022
+  &middot; <a href="https://arxiv.org/abs/2212.03858">arXiv:2212.03858</a>
+  &middot; <a href="../../raw/papers/see_hear_feel_sensory_fusion.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A behavior-cloning system that fuses camera (see),
+contact microphone (hear), and GelSight tactile (feel) through a multisensory
+self-attention model, showing that each modality dominates at a different phase
+of contact-rich tasks &mdash; vision for global pose, audio for invisible contact
+events, touch for local geometry/force &mdash; and that fusing all three sharply
+beats any subset.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Humans use all their senses; robot manipulation policies mostly use one or two
+modalities (usually vision, occasionally touch). Vision reliably captures the
+global setup but suffers from occlusion exactly when the end-effector is in
+contact; touch gives precise local contact geometry but only once contact happens;
+audio sends immediate feedback about contact events that may be visually
+<em>invisible</em> (e.g., a bead dropping into a cup, a peg striking a hard vs. soft
+bump). Prior work had combined vision+audio or vision+touch, but no prior work had
+<em>simultaneously</em> incorporated visual, acoustic, and tactile signals and
+studied their respective roles on challenging manipulation tasks. The paper claims
+to be the first such in-depth study.</p>
+
+<h2>Method</h2>
+<p>The system is an imitation-learning (behavior-cloning) pipeline with a
+multisensory self-attention fusion model, dubbed <strong>MULSA</strong>
+(Multisensory Self-Attention), shown in Fig 2b.</p>
+
+<p><strong>Sensing setup.</strong> A Franka Emika Panda arm carries: a third-person
+RGB camera (<em>see</em>, global view of robot + end-effector); a piezo contact
+microphone attached to the object of interest (<em>hear</em>, picks up vibration
+from any surface contact, minimal environmental noise); and GelSight vision-based
+tactile sensors on the gripper fingertips (<em>feel</em>, high-resolution contact
+geometry + force via an elastomer + embedded camera).</p>
+
+<p><strong>Model input.</strong> At each timestep the model takes
+<code>{X<sub>V</sub>, X<sub>A</sub>, X<sub>T</sub>}</code> &mdash; visual, acoustic,
+tactile. Audio is encoded as a <strong>mel spectrogram</strong> (treated as a 2D
+image). Each modality appends a short history of <code>N=6</code> observations, so
+visual/tactile frames span a 3-second window aligned to the 0.5s audio segment used
+per step.</p>
+
+<p><strong>Feature extraction.</strong> Three separate ResNet-18 backbones (input
+channels modified per modality) produce a set of feature embeddings
+<code>{e<sub>1</sub>,...,e<sub>N</sub>}</code> of dimension <code>D</code> for each
+of <code>v, a, t</code>.</p>
+
+<p><strong>Modality-temporal fusion.</strong> The pooled set of features across all
+modalities and timesteps
+<code>{v<sub>1</sub>...v<sub>N</sub>, a<sub>1</sub>...a<sub>N</sub>, t<sub>1</sub>...t<sub>N</sub>}</code>
+is fused with standard multi-head self-attention (Fig 3). Three attention types
+emerge: (1) <em>cross-modality</em> attention (a feature attends to a different
+modality at the same time step), (2) <em>cross-time</em> attention (same modality,
+different time step, to capture temporal change), and (3) combined
+cross-modality-and-cross-time. The concatenated self-attention output
+<code>m = [o<sub>1</sub>|o<sub>2</sub>|...|o<sub>3N</sub>]</code> feeds an MLP that
+predicts the action <code>&ucirc;</code>.</p>
+
+<p><strong>Training.</strong> Pure behavior cloning &mdash; cross-entropy loss
+between the human demonstrator's action <code>u</code> (a discrete, task-dependent
+action) and the predicted <code>&ucirc;</code>. Actions are picked from a discrete
+set: for dense packing, an <code>(x,y,z)</code> end-effector displacement each
+&isin; {positive, negative, zero}; for pouring, a 2D <code>(x, &phi;)</code> action
+(horizontal align + rotation angle), each &isin; {positive, negative, zero}.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected human-demonstration
+    data on two real tasks. <em>Dense packing</em>: 3D-printed cylinder peg + base
+    with four bump types (hard slanted, soft slanted, left flat, back flat), 10
+    demo episodes per base; plus a harder real-world variant fitting a glass into a
+    cluttered box (thin metal board, stuffed toy, towel, plastic plate as
+    obstacles). <em>Pouring</em>: pour 1&nbsp;mm beads from an in-hand cup to a
+    fixed cup to a 40&nbsp;g target, starting from 60&nbsp;g or 100&nbsp;g, 10 demos.</li>
+  <li><strong>Hardware / simulator:</strong> Real robot only (no simulator). Franka
+    Emika Panda 7-DoF arm, IK solver, 10&nbsp;Hz Cartesian command, 200&nbsp;Hz
+    low-level loop. Intel RealSense D435 (320&times;240 @ 60Hz); HOYUJI TD-11 piezo
+    contact microphone @ 44.1&nbsp;kHz via TASCAM US-4&times;4HR (resampled to
+    16&nbsp;kHz); GelSight tactile (400&times;300 @ 30Hz). Audio &rarr; mel
+    spectrogram 64&times;50 over 0.5s (STFT Hann window 25ms, hop 10ms, 64 mels).
+    Electronic weight scale under the fixed cup for pouring measurement.</li>
+  <li><strong>Baselines:</strong> Direct Concat (concatenate all modality features,
+    standard practice); Du et al. [6] "Play it by ear" (audio-visual LSTM imitation);
+    and ablations of the authors' own model &mdash; MULSA(V) vision-only,
+    MULSA(V+A), MULSA(V+T), MULSA(A+T, with a heuristic visual aligning policy).</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Dense packing, 3D-printed objects (Table 1, success rate per base).</strong>
+The full V+A+T model hits 100% on all four bases (1.00 avg). Each subset is clearly
+worse, and the pattern is diagnostic: vision+touch suffices for flat bumps but can't
+tell hard from soft slanted bumps (similar visual/tactile, distinct sound), while
+vision+audio struggles where touch reveals tilt direction.</p>
+
+<table>
+  <tr><th>Method</th><th>Hard slanted</th><th>Soft slanted</th><th>Back flat</th><th>Left flat</th><th>Avg</th></tr>
+  <tr><td>Direct Concat</td><td>0.90</td><td>0.50</td><td>0.00</td><td>1.00</td><td>0.60</td></tr>
+  <tr><td>Du et al. [6]</td><td>0.50</td><td>0.30</td><td>0.50</td><td>0.60</td><td>0.48</td></tr>
+  <tr><td>MULSA (V)</td><td>0.00</td><td>0.00</td><td>0.00</td><td>1.00</td><td>0.25</td></tr>
+  <tr><td>MULSA (V+A)</td><td>0.80</td><td>1.00</td><td>0.10</td><td>0.50</td><td>0.60</td></tr>
+  <tr><td>MULSA (V+T)</td><td>0.00</td><td>1.00</td><td>1.00</td><td>1.00</td><td>0.75</td></tr>
+  <tr><td>MULSA (A+T)</td><td>0.20</td><td>1.00</td><td>1.00</td><td>1.00</td><td>0.80</td></tr>
+  <tr><td><strong>MULSA (ours, V+A+T)</strong></td><td><strong>1.00</strong></td><td><strong>1.00</strong></td><td><strong>1.00</strong></td><td><strong>1.00</strong></td><td><strong>1.00</strong></td></tr>
+</table>
+
+<p><strong>Dense packing, real-world objects (Table 2):</strong> MULSA 0.80 vs.
+Direct Concat 0.60 vs. Du et al. 0.30.</p>
+
+<p><strong>Pouring (Table 3, mean weight error in g, lower is better):</strong>
+the full model is best at 1.41 &plusmn; 1.02 avg.</p>
+
+<table>
+  <tr><th>Method</th><th>60g init</th><th>100g init</th><th>Average</th></tr>
+  <tr><td>Direct Concat</td><td>2.24 &plusmn; 1.34</td><td>2.69 &plusmn; 1.85</td><td>2.46 &plusmn; 1.54</td></tr>
+  <tr><td>Du et al. [6]</td><td>7.35 &plusmn; 3.59</td><td>2.70 &plusmn; 2.19</td><td>5.02 &plusmn; 3.72</td></tr>
+  <tr><td>MULSA (V)</td><td>20.87 &plusmn; 0.0</td><td>60.87 &plusmn; 0.0</td><td>40.87 &plusmn; 0.0</td></tr>
+  <tr><td>MULSA (V+A)</td><td>8.89 &plusmn; 0.96</td><td>21.51 &plusmn; 6.33</td><td>15.20 &plusmn; 7.90</td></tr>
+  <tr><td>MULSA (V+T)</td><td>2.81 &plusmn; 1.30</td><td>8.35 &plusmn; 1.14</td><td>5.58 &plusmn; 3.14</td></tr>
+  <tr><td><strong>MULSA (V+A+T)</strong></td><td><strong>1.06 &plusmn; 0.83</strong></td><td><strong>1.76 &plusmn; 1.16</strong></td><td><strong>1.41 &plusmn; 1.02</strong></td></tr>
+</table>
+
+<p>Note the loss cases: in pouring, V+A+T actually does NOT win every column &mdash;
+its 60g result (1.06) beats V+T (2.81), but the headline win over Direct Concat
+(2.46) is the real story since Concat is the fair fusion baseline. In dense packing,
+vision-only collapses (0.25), confirming the policy can't run on vision alone.
+<strong>Attention visualization (Fig 5)</strong> is the qualitative payoff: during
+dense packing, attention rides on vision before contact, swings to audio+touch the
+moment the peg strikes a bump (vision is occluded by the box walls), then returns to
+vision to push down. During pouring, attention shifts to audio to hear the first
+bead drop and to time the stop &mdash; matching the authors' intuition that the
+stop-pouring moment "heavily relies on the acoustic feedback."</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The framework is pure behavior cloning, requiring collected human demos; the
+    way a robot perceives multisensory signals may differ from how humans leverage
+    them in demonstration. RL is suggested as future work to let the robot discover
+    the best fusion automatically.</li>
+  <li>The robot/sensor setup is task-specific (microphone glued to the object,
+    GelSight on fingers); a more general, easily-adapted setup &mdash; e.g., a
+    tailored gripper with mic + GelSight built in &mdash; is flagged as future work.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Tiny-sample statistics.</strong> Dense-packing success rates are over
+    only 10 test trials per base, and the real-world Table 2 is a single 0.80 with
+    no variance. Several cells in Table 1 are exactly 0.00 or 1.00, i.e., 0/10 or
+    10/10 &mdash; clean but statistically thin; a 0.80 vs 0.75 gap is one or two
+    trials.</li>
+  <li><strong>The contact mic is attached to the manipulated object, not the
+    robot.</strong> That is a strong assumption: in the wild you can't usually
+    instrument the object you're inserting. ManiWAV (same batch) directly tackles
+    this by mounting the mic on the gripper instead &mdash; a more deployable design.</li>
+  <li><strong>Discrete action space.</strong> Actions are quantized to
+    {+, &minus;, 0} per axis. This sidesteps continuous force/velocity control; the
+    "feel" modality informs a categorical decision rather than a modulated force
+    &mdash; so the paper demonstrates multisensory <em>perception</em> more than
+    multisensory <em>control</em>.</li>
+  <li><strong>Audio is rendered as an image and fed to a ResNet</strong> like the
+    other two modalities &mdash; convenient, but it discards the option of native
+    waveform/temporal modeling, and the 0.5s window may blur fast transients that
+    are the whole point of "invisible contact events."</li>
+  <li>No simulator and no released large dataset &mdash; reproduction requires
+    rebuilding the exact hardware rig.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is one of the cleanest empirical demonstrations of my batch thesis: <strong>many
+manipulation predicates are not visually evaluable</strong>. Here the model literally
+<em>cannot</em> distinguish a hard slanted bump from a soft one without audio
+(<code>surface_is_hard</code>), cannot judge insertion tilt without touch
+(<code>peg_is_tilted</code>), and cannot decide when to stop pouring without sound
+(<code>cup_is_full</code>). The attention-shift visualization (Fig 5) is a concrete
+picture of which sense grounds which predicate at which phase &mdash; precisely the
+information a <a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>-style
+predicate classifier would need but couldn't get from a third-person camera alone.</p>
+<p>Relative to BLADE: BLADE learns visual predicate classifiers
+<code>f<sub>&theta;</sub>(p): O &rarr; {T,F}</code> over RGB observations, and its
+authors flag that contact-rich tasks need "richer contact detection." This paper is
+direct evidence that the observation space <code>O</code> should be multisensory:
+the predicates living in <code>pre<sub>a</sub></code>/<code>eff<sub>a</sub></code> for
+contact-rich behaviors (is_inserted, is_full, surface_is_rough) are audibly/tactilely
+grounded. A natural extension of BLADE would route each learned predicate to the
+modality that actually carries its truth value &mdash; and MULSA's per-timestep
+self-attention is one mechanism for learning that routing. The discrete-action,
+imitation-only design here is a much shallower control stack than BLADE's
+diffusion-policy + bi-level planner, so this is a <em>perception-side</em> complement,
+not a planning competitor.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  vision displays the global status of the robot but can often suffer from
+  occlusion, audio provides immediate feedback of key moments that are even
+  invisible, and touch offers precise local geometry for decision making.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  no prior work has simultaneously incorporated visual, acoustic, and tactile
+  signals&mdash;three principal sensory modalities, and study their respective roles
+  on challenging multisensory robotic manipulation tasks.
+  <span class="quote-cite">&mdash; &sect;1, Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  the model cannot tell the difference between the hard and the soft slanted bumps
+  if not using audio, because the two bumps produce very similar visual and tactile
+  feedbacks, while the sound generated when contacting the hard surface can easily
+  distinguish them.
+  <span class="quote-cite">&mdash; &sect;4.2, Dense Packing / p.7</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[6] Du et al. &mdash; Play it by Ear</strong> (RSS 2022) &mdash; the
+    audio-visual imitation baseline; same group's predecessor in spirit.
+    <a href="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">PDF (if present)</a>.</li>
+  <li><strong>[57] Gao et al. &mdash; ObjectFolder</strong> (CoRL 2021) and
+    <strong>[58] ObjectFolder 2.0</strong> (CVPR 2022) &mdash; the most-related
+    multisensory (visual/auditory/tactile) work; the dataset-side counterpart.
+    <a href="../../raw/papers/objectfolder_dataset_implicit_representations.pdf">ObjectFolder PDF (if present)</a>,
+    <a href="../../raw/papers/objectfolder_2_multisensory_sim2real.pdf">ObjectFolder 2.0 PDF (if present)</a>.</li>
+  <li><strong>[13]/[52] Lee et al. &mdash; Making Sense of Vision and Touch</strong>
+    (ICRA 2019 / T-RO 2020) &mdash; self-supervised multimodal representations for
+    contact-rich tasks; the vision+touch fusion precursor.
+    <a href="../../raw/papers/making_sense_of_vision_and_touch.pdf">PDF (if present)</a>.</li>
+  <li><strong>[45] Liang et al. &mdash; Making sense of audio vibration for liquid
+    height estimation in pouring</strong> (IROS 2019) &mdash; the audio-for-pouring
+    precursor.
+    <a href="../../raw/papers/making_sense_audio_vibration_pouring.pdf">PDF (if present)</a>.</li>
+  <li><strong>[59] Yuan et al. &mdash; GelSight</strong> (Sensors 2017) &mdash; the
+    tactile sensor used.
+    <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">PDF (if present)</a>.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a> &mdash; closest
+    sibling; mounts the contact mic on the gripper (not the object), making
+    audio-visual manipulation deployable in the wild &mdash; addresses this paper's
+    object-instrumentation limitation.</li>
+  <li><a href="play_it_by_ear_audio_visual_imitation.html">Play it by Ear</a> &mdash;
+    the [6] baseline; audio-visual imitation to handle occlusion.</li>
+  <li><a href="making_sense_of_vision_and_touch.html">Making Sense of Vision and Touch</a>
+    &mdash; the vision+touch self-supervised fusion this paper extends to three
+    modalities.</li>
+  <li><a href="objectfolder_dataset_implicit_representations.html">ObjectFolder</a> /
+    <a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a> &mdash;
+    the [57]/[58] visual-auditory-tactile dataset line; the simulated-data
+    counterpart to this real-robot study (shared author Ruohan Gao).</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a> and
+    <a href="hearing_touch_audio_visual_pretraining.html">Hearing Touch</a> &mdash;
+    other Cluster-D acoustic/contact-vibration sensing papers; complementary takes
+    on what sound reveals about contact and material.</li>
+  <li><a href="that_sounds_right_auditory_self_supervision.html">That Sounds Right</a>
+    &mdash; auditory self-supervision for manipulation; same Cluster D.</li>
+</ul>
+
+</body>
+</html>

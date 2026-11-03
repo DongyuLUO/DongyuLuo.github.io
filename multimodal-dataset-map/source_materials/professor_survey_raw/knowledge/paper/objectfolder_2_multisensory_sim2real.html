@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ObjectFolder 2.0: A Multisensory Object Dataset for Sim2Real Transfer</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Gao, Si, Chang, Clarke, Bohg, Fei-Fei, Yuan, Wu">
+<meta name="year" content="2022">
+<meta name="venue" content="CVPR 2022">
+<meta name="arxiv_id" content="2204.02389">
+<meta name="url" content="https://arxiv.org/abs/2204.02389">
+<meta name="pdf" content="../../raw/papers/objectfolder_2_multisensory_sim2real.pdf">
+<meta name="tags" content="multimodal-dataset, multisensory, sim-to-real, audio-visual, tactile-sensing, acoustic-sensing, visuo-tactile, representation-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>ObjectFolder 2.0: A Multisensory Object Dataset for Sim2Real Transfer</h1>
+<p class="meta">
+  Ruohan Gao*, Zilin Si*, Yen-Yu Chang*, Samuel Clarke, Jeannette Bohg, Li Fei-Fei, Wenzhen Yuan, Jiajun Wu
+  &middot; Stanford / CMU
+  &middot; CVPR 2022
+  &middot; <a href="https://arxiv.org/abs/2204.02389">arXiv:2204.02389</a>
+  &middot; <a href="../../raw/papers/objectfolder_2_multisensory_sim2real.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> A 1,000-object dataset where every household
+object is a single implicit neural network (an "Object File") that renders its
+<em>visual</em>, <em>acoustic</em>, and <em>tactile</em> signals on demand in
+real time &mdash; and, crucially, models trained on these virtual objects
+transfer to their real-world counterparts on scale estimation, contact
+localization, and shape reconstruction, making it a Sim2Real testbed for the
+non-visual senses manipulation actually runs on.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Real objects are not just geometry plus a texture: an alarm clock looks
+glossy, the plate <em>clinks</em> when struck, the knife <em>feels</em> sharp.
+Prior object datasets (ImageNet, ShapeNet, ABO, YCB, BigBIRD) model only the
+visual modality or only low-quality geometry, so multisensory object-centric
+learning has had no realistic, scalable substrate. ObjectFolder 1.0 introduced
+the implicit-neural "object as a function" idea but covered only 100 objects,
+rendered slowly, and produced limited-quality audio/touch. ObjectFolder 2.0
+attacks all three deficits at once: 10&times; the objects, ~100&times; faster
+rendering, higher fidelity across vision/audio/touch &mdash; and adds the thing
+1.0 never demonstrated: that learning on the virtual objects <em>generalizes to
+the real ones</em>.</p>
+
+<h2>Method</h2>
+<p>Each object is an <em>Object File</em>: one implicit neural representation
+with three coordinate-MLP sub-networks &mdash; VisionNet, AudioNet, TouchNet
+(Fig 3). The pipeline starts from 1,000 high-quality scanned meshes (855 from
+ABO after material filtering to ceramic/glass/wood/plastic/iron/polycarbonate/steel,
+all 100 from OF 1.0, 45 polycarbonate from Google Scanned Objects), with
+real-product metadata (category, material, color, dimensions). It then simulates
+each modality and distills it into the Object File so that storage is
+independent of the extrinsic query parameters (viewpoint, impact force, gel
+deformation).</p>
+
+<p><strong>VisionNet (real-time appearance).</strong> Builds on the Object
+Scattering Function (OSF) volumetric appearance model, but replaces the single
+large MLP with a <code>KiloOSF</code> design (after KiloNeRF): the object is
+subdivided into a uniform grid <code>s = (s_x, s_y, s_z)</code>, each cell gets
+a tiny MLP <code>v(i)</code>, and a spatial-binning map <code>m(x)</code> routes
+a 3D point to its cell's network before querying color/density
+<code>(c, &sigma;) = F_{v(m(x))}(x, r)</code>. Trained by distillation from a
+full OSF teacher, with empty-space skipping and early ray termination. Result:
+60&times; faster inference than 1.0 (Table 1) at <em>better</em> visual quality.</p>
+
+<p><strong>AudioNet (impact sound).</strong> Uses linear modal analysis. Each
+mesh is converted to a quadratic tetrahedral mesh and run through Finite Element
+Methods (FEM, second-order elements in Abaqus) to get the modal decomposition
+<code>&ddot;q + (&alpha;I + &beta;&Lambda;)&dot;q + &Lambda;q = U^T f</code>,
+yielding <code>N</code> damped sinusoids with frequencies <code>&omega;_i</code>,
+dampings <code>d_i</code>, gains <code>g_i</code>. The key trick: frequencies and
+dampings are <em>object intrinsics</em> (predicted once), but the per-mode gains
+<code>g_i</code> depend on contact force and location &mdash; so AudioNet is an
+MLP that, given a tetrahedral-vertex coordinate, predicts the gain vector for
+unit force in each of three axis directions. At inference an arbitrary force
+<code>f = k_x f_x + k_y f_y + k_z f_z</code> linearly combines the three
+predicted gain branches; the waveform is synthesized as
+<code>S(t) = &sum; &gcirc;_i e^{-d_i t} sin(2&pi;&omega;_i t)</code>. Predicting
+only the location-dependent part (vs. 1.0's direct spectrogram regression) is
+what raises quality and lets it run in real time.</p>
+
+<p><strong>TouchNet (GelSight-style tactile).</strong> Two stages. First simulate
+a per-contact <em>deformation map</em> from the object's local shape in the
+contact area plus the gelpad shape elsewhere, rendered with Pyrender/OpenGL at
+~700 fps. TouchNet is then an MLP
+<code>F_T : (x, y, z, &theta;_T, &phi;_T, p, w, h) &rarr; d</code> mapping an 8D
+input (3D location, contact-orientation unit vector, gel penetration depth
+<code>p</code>, pixel location <code>(w,h)</code>) to the deformation-map value.
+The deformation map is converted to a GelSight RGB tactile image via
+<a href="../../raw/papers/taxim_gelsight_simulation.pdf">Taxim</a>, calibrated
+against a real GelSight sensor. Unlike OF 1.0 (single tactile image per vertex
+along the normal), 2.0 renders varied rotation (&plusmn;15&deg;) and pressing
+depth (0.5&ndash;2 mm), enabling Sim2Real tactile transfer.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> ObjectFolder 2.0 itself &mdash;
+    1,000 implicit-neural objects (855 ABO + 100 OF 1.0 + 45 Google Scanned
+    Objects). Three downstream Sim2Real evaluation tasks: object scale
+    estimation, audio-tactile contact localization, visuo-tactile shape
+    reconstruction. 13 real objects collected for the cross-domain tests.</li>
+  <li><strong>Hardware / simulator:</strong> FEM via Abaqus (audio); Pyrender +
+    OpenGL + Taxim, calibrated to a real GelSight sensor (touch); KiloOSF
+    volume rendering (vision). Real-world rig (Fig 5): impact-sound collection
+    setup and GelSight tactile-data collection on a robot arm; contact
+    localization uses an FCRN depth net and MFCC audio features with a particle
+    filter.</li>
+  <li><strong>Baselines:</strong> ObjectFolder 1.0 (rendering-quality and
+    downstream-task comparison); "Random" predictors; per-modality variants
+    (vision-only / audio-only / touch-only / fused) within each task; TACTO +
+    DIGIT (1.0) vs. GelSight (2.0) for tactile ground truth; Point Completion
+    Network (PCN) backbone and ResNet-18 feature extractor for shape
+    reconstruction.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (rendering speed reported
+    in seconds/sample, Table 1; deformation-map generation at 700 fps).</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Rendering speed (Table 1, seconds per sample) and quality (Table 2):</strong></p>
+<table>
+  <tr><th>Method</th><th>Total render (s)&darr;</th><th>Vision PSNR&uarr;</th><th>Vision SSIM&uarr;</th><th>Audio STFT (&times;10<sup>-5</sup>)&darr;</th><th>Audio ENV (&times;10<sup>-4</sup>)&darr;</th><th>Touch PSNR&uarr;</th><th>Touch SSIM&uarr;</th></tr>
+  <tr><td>ObjectFolder 1.0</td><td>4.129</td><td>35.7</td><td>0.97</td><td>4.94</td><td>7.65</td><td>27.9</td><td>0.64</td></tr>
+  <tr><td><strong>ObjectFolder 2.0</strong></td><td><strong>0.111</strong></td><td><strong>36.3</strong></td><td><strong>0.98</strong></td><td><strong>0.19</strong></td><td><strong>1.29</strong></td><td><strong>31.6</strong></td><td><strong>0.78</strong></td></tr>
+</table>
+<p>~37&times; faster overall (VisionNet alone 60&times;), with audio STFT
+distance cut by ~26&times; and touch PSNR up ~3.7 dB.</p>
+
+<p><strong>Sim2Real downstream tasks (the headline contribution):</strong></p>
+<ul>
+  <li><strong>Object scale estimation (Table 3, mean error cm).</strong> 2.0
+    models generalize far better to real objects than 1.0: on real objects,
+    Vision 5.08 (vs 1.0's 7.41), Audio 4.68 (vs 6.85), Touch 3.51 (vs 4.92);
+    random baseline is 14.5. <em>Touch has the smallest Sim2Real gap</em>
+    (virtual 0.45 &rarr; real 3.51 is the closest virtual&ndash;real ratio
+    among the three for 2.0).</li>
+  <li><strong>Audio-tactile contact localization (Table 4, mean dist cm).</strong>
+    Touch-based localization is far more accurate than audio across six complex
+    objects; e.g. on the mug, Touch 0.03(sim)/0.78(real) vs Audio 0.26/1.16;
+    <strong>Audio+Touch fusion is consistently best</strong> (mug 0.04/0.36).
+    Several real audio entries are missing (<em>dash in Table 4</em>) for the
+    brush, flute, and toy plane.</li>
+  <li><strong>Visuo-tactile shape reconstruction (Table 5, Chamfer-L1 cm).</strong>
+    <strong>Vision+Touch fusion wins on every one of six objects</strong>;
+    e.g. coffee mug 0.18(sim)/0.46(real) beats vision-only 0.30/0.72 and
+    touch-only 0.29/0.80, both far below the "Average-mesh" baseline (2.97/1.91).</li>
+</ul>
+<p>Across all three tasks the story is the same: models trained purely on 2.0's
+virtual sensory data transfer to real objects, and <em>combining modalities
+beats any single one</em> &mdash; the empirical case for multisensory
+representations.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>All objects are <strong>rigid bodies with a single homogeneous
+    material</strong>; real objects are often multi-part, non-rigid, and
+    multi-material.</li>
+  <li>The simulation does not model the real 3D space's lighting/noise,
+    reverberation, etc. &mdash; full Sim2Real transfer needs these factored in.</li>
+  <li>Material filtering discards object classes whose material is not
+    acoustically simulable, so coverage is biased toward a fixed material set.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The downstream tasks use only <strong>6&ndash;13 real objects</strong>;
+    these are perceptual-property benchmarks, not control or manipulation tasks
+    &mdash; no robot policy is learned or executed, so "transfers to robotics"
+    is a substrate claim, not a closed-loop demonstration.</li>
+  <li>The <strong>audio modality is the weakest link</strong>: largest Sim2Real
+    gap (Table 3), worst localization (Table 4), and missing real-object entries
+    (dashes) for thin/irregular objects &mdash; modal analysis presumably breaks
+    down there, but the paper doesn't analyze the failures.</li>
+  <li>Everything is <strong>impact / quasi-static contact</strong>: an impulse
+    strike for audio, a single GelSight press for touch. <em>Continuous</em>
+    contact dynamics &mdash; sliding, scraping, dragging, pouring (the regimes
+    where contact-audio and shear-tactile signals are richest) &mdash; are out
+    of scope.</li>
+  <li>Numbers are reported as mean error per object with no variance / seeds,
+    so the per-object win margins (especially the small real-object differences)
+    are hard to read as statistically robust.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely on the batch thesis that <strong>many manipulation
+predicates are not visually evaluable</strong> &mdash; <code>is_struck</code>,
+<code>surface_is_rough</code>, <code>material_is_ceramic</code>,
+<code>is_full</code> live in <em>sound</em> and <em>touch</em>. ObjectFolder 2.0
+is the <em>substrate</em> for learning exactly those: a scalable repository where
+the non-visual senses are first-class, queryable functions, and where the
+empirical result is that fusing them beats vision alone. For
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>,
+whose predicate classifiers are currently <em>visual</em>
+(<code>f_&theta;(p): O &rarr; {T,F}</code> over RGB crops), this paper is the
+data answer to BLADE's own flagged limitation that "many predicates aren't
+visually evaluable": a tactile/acoustic predicate classifier needs touch/sound
+training data, and ObjectFolder 2.0 (and its successors) is where that data is
+manufacturable at scale with Sim2Real validity. The honest caveat: it is a
+<em>perception dataset</em>, not a planning or long-horizon-manipulation paper
+&mdash; it gives BLADE-style work a sensory front-end, not a new abstraction
+mechanism. The implicit-neural "object as a function" framing is also a clean
+counterpoint to explicit symbolic state: here the "world model" of an object is
+a renderer of raw multisensory signals, which a downstream predicate classifier
+would still have to interpret.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We virtualize each object by encoding its intrinsics (texture, material type,
+  and 3D shape) with an Object File implicit neural representation. Then we can
+  render its visual appearance, impact sound, and tactile readings based on any
+  extrinsic parameters.
+  <span class="quote-cite">&mdash; Fig 1 caption / p.1</span>
+</blockquote>
+<blockquote>
+  Models learned from virtual objects in our dataset successfully transfer to
+  their real-world counterparts in three challenging tasks: object scale
+  estimation, contact localization, and shape reconstruction.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  Among the three modalities, tactile data has the smallest Sim2Real gap
+  compared to vision and audio.
+  <span class="quote-cite">&mdash; &sect;5.1, Object Scale Estimation / p.6</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong><a href="../../raw/papers/taxim_gelsight_simulation.pdf">Taxim</a></strong>
+    [61] &mdash; the example-based GelSight simulation TouchNet uses to turn
+    deformation maps into tactile RGB. Direct dependency.</li>
+  <li><strong>TACTO</strong> [70] &mdash; tactile simulator used as the touch
+    ground-truth pipeline for the OF 1.0 comparison;
+    <a href="../../raw/papers/tacto_tactile_simulator.pdf">to ingest</a>.</li>
+  <li><strong>GelSight</strong> [16] &mdash; the vision-based tactile sensor whose
+    readings TouchNet emulates;
+    <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">to ingest</a>.</li>
+  <li><strong>DIGIT</strong> [35] &mdash; the compact tactile sensor OF 1.0 used;
+    <a href="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">to ingest</a>.</li>
+  <li><strong>ObjectFolder 1.0</strong> [18] &mdash; the predecessor this paper
+    extends 10&times;;
+    <a href="../../raw/papers/objectfolder_dataset_implicit_representations.pdf">to ingest</a>.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="objectfolder_dataset_implicit_representations.html">ObjectFolder</a>
+    &mdash; the 100-object predecessor; this paper is its scale-up + Sim2Real
+    demonstration. (Cluster I.)</li>
+  <li><a href="objectfolder_benchmark_neural_real.html">ObjectFolder Benchmark</a>
+    &mdash; the follow-up that turns the dataset into a standardized
+    multisensory benchmark with real-object scans. (Cluster I.)</li>
+  <li><a href="taxim_gelsight_simulation.html">Taxim</a> and
+    <a href="tacto_tactile_simulator.html">TACTO</a> &mdash; the GelSight
+    simulation tooling TouchNet builds on / compares against. (Cluster I.)</li>
+  <li><a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a>
+    &mdash; a real human-collected vision&ndash;touch dataset; the
+    real-data counterpart to ObjectFolder's simulated touch. (Cluster I.)</li>
+  <li><a href="soundspaces_2_visual_acoustic.html">SoundSpaces 2.0</a>
+    &mdash; sibling implicit/visual-acoustic simulator from the same
+    audio-visual-Sim2Real lineage. (Cluster I.)</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a> and
+    <a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a>
+    &mdash; downstream manipulation work that consumes exactly the
+    contact-audio / multisensory signals ObjectFolder 2.0 manufactures.
+    (Clusters D.)</li>
+</ul>
+
+</body>
+</html>

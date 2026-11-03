@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Inner Monologue: Embodied Reasoning through Planning with Language Models</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Wenlong Huang, Fei Xia, Ted Xiao, Harris Chan, Jacky Liang, Pete Florence, Andy Zeng, Jonathan Tompson, Igor Mordatch, Yevgen Chebotar, Pierre Sermanet, Noah Brown, Tomas Jackson, Linda Luu, Sergey Levine, Karol Hausman, Brian Ichter">
+<meta name="year" content="2022">
+<meta name="venue" content="CoRL 2022">
+<meta name="arxiv_id" content="2207.05608">
+<meta name="url" content="https://arxiv.org/abs/2207.05608">
+<meta name="pdf" content="../../raw/papers/inner_monologue_embodied_reasoning_through_planning_with_language_models.pdf">
+<meta name="project_page" content="https://innermonologue.github.io">
+<meta name="tags" content="llm-planning, closed-loop, feedback, embodied-agent, language-grounding">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-05-28">
+<meta name="source_prompt" content="user batch ingest 2026-05-28 targeted search">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1>Inner Monologue: Embodied Reasoning through Planning with Language Models</h1>
+<p class="meta">
+  Wenlong Huang, Fei Xia, Ted Xiao, Harris Chan, Jacky Liang, Pete Florence,
+  Andy Zeng, Jonathan Tompson, Igor Mordatch, Yevgen Chebotar, Pierre Sermanet,
+  Noah Brown, Tomas Jackson, Linda Luu, Sergey Levine, Karol Hausman, Brian Ichter
+  &middot; Robotics at Google / Stanford
+  &middot; CoRL 2022
+  &middot; <a href="https://arxiv.org/abs/2207.05608">arXiv:2207.05608</a>
+  &middot; <a href="../../raw/papers/inner_monologue_embodied_reasoning_through_planning_with_language_models.pdf">PDF</a>
+  &middot; <a href="https://innermonologue.github.io">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> Inner Monologue closes the LLM-planning loop by
+continually injecting natural-language feedback &mdash; success detection,
+passive/active scene description, and human responses &mdash; into the planner's
+prompt as the robot executes, enabling the frozen LLM to replan, retry, and
+self-correct without any task-specific finetuning.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Prior LLM-as-planner work
+(<a href="saycan_do_as_i_can_not_as_i_say.html">SayCan</a>, Huang et al.
+"Language Models as Zero-Shot Planners" [20]) is essentially one-directional:
+the LLM emits a sequence of skill calls, and the agent executes them open-loop
+or with affordance gating that doesn't communicate back into the prompt. That
+breaks under stochastic skill failure, dynamic environments, occlusion, and
+ambiguous instructions. The paper's question: how far can grounded textual
+feedback alone &mdash; no extra training, no new architecture &mdash; carry
+LLM planners in real embodied settings? They frame this as an "inner monologue"
+analogous to humans verbalizing intermediate observations and choices while
+solving multi-step tasks.</p>
+
+<h2>Method</h2>
+<p>Setup. A frozen pretrained LLM is the planner. The agent has a library
+&Pi; of pretrained short-horizon skills &pi;<sub>k</sub> with short language
+descriptions &ell;<sub>k</sub> (trained via RL or BC). At each step the LLM
+sees the human instruction <em>i</em>, the running history of executed actions,
+and textual feedback <em>o</em> appended to the prompt, and emits the next skill
+call. No finetuning; few-shot prompting only.</p>
+
+<p><strong>Three feedback channels</strong> (Fig 2):</p>
+<ul>
+  <li><strong>Success Detection</strong> &mdash; binary task-specific signal
+    from an engineered detector (sim) or learned classifier (real) reporting
+    whether the last skill succeeded. Surfaced in the prompt as "Success: True/False".</li>
+  <li><strong>Passive Scene Description</strong> &mdash; structured,
+    automatically-injected scene information at every planning step.
+    Subdivided into <em>Object</em> feedback (open-vocab object recognition
+    output) and <em>Scene</em> feedback (task-progress summary; in the
+    tabletop domain the LLM itself infers achieved sub-goals as a
+    chain-of-thought).</li>
+  <li><strong>Active Scene Description</strong> &mdash; unstructured feedback
+    only produced when the LLM <em>asks</em>, answered by a VQA model or by a
+    human. Lets the agent gather targeted info or user preferences (in this
+    paper the active answer is always human-provided, called <em>Human</em>
+    feedback).</li>
+</ul>
+
+<p><strong>Three concrete instantiations</strong> (one per domain; Fig 3):</p>
+<ul>
+  <li><em>Simulated tabletop rearrangement</em> (Ravens-based): InstructGPT
+    planner + scripted Object/Success/Scene modules + CLIPort-like pick-and-place
+    primitive. Chain-of-thought used for Object+Scene variant.</li>
+  <li><em>Real tabletop rearrangement</em>: InstructGPT planner + MDETR
+    open-vocab detector for Object and Success + scripted suction pick-place.</li>
+  <li><em>Real kitchen mobile manipulation</em> (Everyday Robots): PaLM
+    planner + SayCan-style value-function affordance grounding + learned
+    success classifier (Success) + human-provided object recognition (Object)
+    + optional Human channel for active queries.</li>
+</ul>
+
+<p>The unifying recipe is purely prompt-level: feedback strings are interleaved
+in a fixed convention (e.g., [Robot action, Scene, Robot thought]) and the
+LLM's next emission is parsed as the next skill call. Replanning is implicit
+&mdash; the LLM simply re-decodes given the updated context.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Ravens-based simulated tabletop
+    (4 seen + 4 unseen tasks, 50 episodes each, with injected Gaussian
+    disturbances at test time); a real UR5e tabletop pick-place setup
+    (3-block stacking, sort fruits-vs-condiments, 10 runs each with injected
+    4&thinsp;mm Gaussian action noise clipped at 2&sigma;); real-kitchen mobile
+    manipulation on Everyday Robots, reusing the SayCan task suite (manipulation,
+    drawers, mobile manipulation; 120 evaluations with and without adversarial
+    disturbances).</li>
+  <li><strong>Hardware / simulator:</strong> Ravens-style simulator;
+    UR5e arm with wrist-mounted RealSense RGB-D; Everyday Robots mobile
+    manipulator in a real office kitchen.</li>
+  <li><strong>Baselines:</strong> CLIPort (with and without termination oracle)
+    on the simulated tabletop; LLM-only variants ("+LLM Object") that drop the
+    Success and Scene channels; <a href="saycan_do_as_i_can_not_as_i_say.html">SayCan</a>
+    on the kitchen mobile manipulator.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>. Planners are
+    InstructGPT and PaLM, used frozen via prompting.</li>
+</ul>
+
+<h2>Results</h2>
+
+<p><strong>Simulated tabletop (Table 1, 50 episodes each).</strong> On unseen
+tasks under test-time disturbances, CLIPort scores 0% across the board;
+LLM+Object alone hits 0&ndash;62%; adding Success pushes to 56&ndash;76%; the
+full Object+Scene variant tops at 26&ndash;86%. Headline: Object+Scene on
+"Put the blocks on mismatched bowls" goes 0% (CLIPort) &rarr; 86% (Inner
+Monologue). On seen tasks Object+Scene wins on 3 of 4 categories, hitting 94%
+on "Pick and place" vs CLIPort+oracle's 74%.</p>
+
+<p><strong>Real tabletop (Table 2, 10 runs each).</strong> Finish 3-block
+stacking: 20% (LLM Object) &rarr; 100% (Inner Monologue Object+Success).
+Sort fruits from bottles: 20% &rarr; 80%. Both feedback signals are needed:
+Success alone misses initially-occluded objects (initial scene desc gap);
+Object alone can't recover from policy noise without retry signals.</p>
+
+<p><strong>Real kitchen (Table 3, 120 evaluations).</strong> Aggregate success
+across all task families:</p>
+
+<table>
+  <tr><th>Setting</th><th>SayCan</th><th>IM (Success)</th><th>IM (Object+Success)</th></tr>
+  <tr><td>No disturbances</td><td>61.1%</td><td>65.3%</td><td>83.3%</td></tr>
+  <tr><td>With disturbances</td><td>4.2%</td><td>23.1%</td><td>50.7%</td></tr>
+  <tr><td>Total</td><td>30.8%</td><td>48.7%</td><td><strong>60.4%</strong></td></tr>
+</table>
+
+<p>(Disturbance row reconstructed from per-family numbers in Table 3:
+manipulation 12.5/25/33.3, mobile-manip 0/25/75, drawers 0/44.4/44.4.)
+SayCan collapses to ~0% on adversarially-disturbed manipulation/mobile
+manipulation; Inner Monologue recovers because the LLM sees the failure
+string and either retries or selects a new skill. Fig 4 shows that LLM
+planning failures and control failures both drop as more feedback channels
+are added.</p>
+
+<p><strong>Emergent capabilities</strong> (Fig 5, qualitative): continued
+adaptation to mid-rollout instruction changes ("nevermind, I want you to
+finish your previous task"); self-proposing new goals under infeasibility
+(after "the purple block is too heavy", the agent proposes "find a lighter
+block"); multilingual interaction (Chinese instruction parsed and replanned
+into English actions); interactive scene QA over the action history. All of
+these appear without being demonstrated in the prompt. Inner Monologue is
+also reported as robust to feedback-order swaps and typos in the human
+instruction.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors (Sec 5):</em></p>
+<ul>
+  <li>In the kitchen and tabletop instantiations the scene/object feedback
+    is partly oracle-provided (human or scripted). Learned-perception
+    feasibility is studied only in Appendix Table 5.</li>
+  <li>Failure modes: false-negative success detection causes wasted retries;
+    false-positives introduce adversarial partial observability that the
+    LLM can't recover from. Sometimes the LLM ignores feedback and emits
+    skills for objects not actually present.</li>
+  <li>The whole stack is bottlenecked by the underlying low-level policies
+    &mdash; better LLM reasoning can't expand the achievable task set
+    beyond what skills can execute.</li>
+  <li>No mechanism for expressing uncertainty over the feedback channels
+    (e.g., low-confidence detections enter the prompt as flat strings).</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>"Replan" here is implicit re-decoding from an updated prompt &mdash;
+    there's no separate plan repair stage. That's elegant but means the
+    method inherits all of the LLM's prompt-sensitivity, and there's no
+    explicit commitment / no-regression guarantee.</li>
+  <li>Real-world Object feedback in the kitchen domain is human-provided,
+    which arguably blurs the line between "Passive Scene Description"
+    and the "Human" active channel.</li>
+  <li>Skill library is fixed; the LLM cannot propose a new primitive when
+    the existing library is insufficient (cf. <a href="voyager_open_ended_embodied_agent_with_llms.html">Voyager</a>,
+    which does exactly this).</li>
+  <li>Aggregate numbers on the simulated tabletop are dominated by the
+    Scene channel, which on that domain is the LLM <em>summarizing its own
+    progress</em> &mdash; effectively chain-of-thought re-labeled. That's a
+    weaker form of "environment feedback" than the success/object signals.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is the canonical reference for closed-loop LLM planning via
+natural-language feedback, and the direct intellectual ancestor of the
+replan-after-feedback pattern
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+adopts at the symbolic level. The mapping is clean:</p>
+<ul>
+  <li>Inner Monologue's <em>Success</em> channel &harr; BLADE's check that the
+    expected effects (<em>eff<sub>a</sub></em>) became true after policy
+    rollout, triggering replan if not.</li>
+  <li>Inner Monologue's <em>Object/Scene</em> channel &harr; BLADE's predicate
+    classifiers being re-evaluated each step before the planner is re-invoked.</li>
+  <li>Inner Monologue's <em>Active/Human</em> channel &harr; BLADE doesn't
+    have an analogue; a natural extension would be active queries when the
+    classifier confidence is low or the planner can't find a satisfying
+    sequence.</li>
+</ul>
+<p>The key differentiator: Inner Monologue does all of this <em>in prompt</em>
+on a flat skill library, while BLADE does it over a learned PDDL operator
+library with explicit precondition/effect symbols. The "structure-as-prior vs
+scale-everything" debate (see BLADE's Why-I-care) maps directly here. For
+future work, the
+<a href="self_refine_iterative_refinement_with_self_feedback.html">Self-Refine</a>
+sibling line is the LLM-only analogue (LLM critiques its own output rather
+than environment text); for the open-ended skill-library extension, see
+<a href="voyager_open_ended_embodied_agent_with_llms.html">Voyager</a>; and
+for the code-emission alternative to flat skill calls, see
+<a href="code_as_policies_language_model_programs_for_embodied_control.html">Code as Policies</a>.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  We propose that by leveraging environment feedback, LLMs are able to form
+  an inner monologue that allows them to more richly process and plan in
+  robotic control scenarios.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  In contrast, Inner Monologue studies settings where grounded environment
+  feedback is provided directly to the LLM in a closed-loop fashion. This
+  promotes improved LLM reasoning in complex long-horizon settings, even
+  before any external affordance-based grounding methods are applied.
+  <span class="quote-cite">&mdash; &sect;3.2</span>
+</blockquote>
+
+<blockquote>
+  Without any LLM-informed feedback SayCan has success rate close to 0%
+  since it does not have explicitly high-level retry behavior. Inner
+  Monologue significantly outperforms SayCan because of its ability to
+  invoke appropriate recovery modes depending on the environment feedback.
+  <span class="quote-cite">&mdash; &sect;4.3 Analysis</span>
+</blockquote>
+
+<blockquote>
+  Although LLMs can generate fluent continuation from the prompted examples,
+  we surprisingly find that, when informed with environment feedback, Inner
+  Monologue demonstrates many impressive reasoning and replanning behaviors
+  beyond the examples given in the prompt.
+  <span class="quote-cite">&mdash; &sect;4.4</span>
+</blockquote>
+
+<h2>Related</h2>
+<ul>
+  <li><a href="saycan_do_as_i_can_not_as_i_say.html">SayCan</a> &mdash;
+    direct precursor and the kitchen-domain baseline; provides the
+    affordance-grounding value functions but no closed-loop textual feedback.</li>
+  <li><a href="code_as_policies_language_model_programs_for_embodied_control.html">Code as Policies</a>
+    &mdash; sibling line that swaps flat skill calls for executable code
+    emitted by the LLM; complementary action representation.</li>
+  <li><a href="voyager_open_ended_embodied_agent_with_llms.html">Voyager</a>
+    &mdash; takes the closed-loop LLM-agent idea further by letting the LLM
+    grow its own skill library; complements Inner Monologue's fixed &Pi;.</li>
+  <li><a href="self_refine_iterative_refinement_with_self_feedback.html">Self-Refine</a>
+    &mdash; LLM-only sibling: self-generated critique replaces environment
+    feedback; useful contrast for what "feedback" needs to be.</li>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; lifts the same replan-after-feedback pattern from prompt-level
+    skill chaining to a symbolic PDDL operator library with learned
+    predicate classifiers.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Audio-VLA: Adding Contact Audio Perception to Vision-Language-Action Model for Robotic Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Wei, Zhang, Cao, Xie, Ge, Li, Wang">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint (cs.RO)">
+<meta name="arxiv_id" content="2511.09958">
+<meta name="url" content="https://arxiv.org/abs/2511.09958">
+<meta name="pdf" content="../../raw/papers/audio_vla_contact_audio_perception.pdf">
+<meta name="tags" content="vision-language-action, vla, contact-audio, audio-sensing, acoustic-sensing, contact-rich, multisensory, sensory-fusion, robot-learning, imitation-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Audio-VLA: Adding Contact Audio Perception to Vision-Language-Action Model for Robotic Manipulation</h1>
+<p class="meta">
+  Xiangyi Wei, Haotian Zhang, Xinyi Cao, Siyu Xie, Weifeng Ge, Yang Li, Changbo Wang
+  &middot; East China Normal University / Fudan University
+  &middot; 2025
+  &middot; <a href="https://arxiv.org/abs/2511.09958">arXiv:2511.09958</a>
+  &middot; <a href="../../raw/papers/audio_vla_contact_audio_perception.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Audio-VLA bolts a contact-microphone audio
+stream onto an OpenVLA-style policy &mdash; AudioCLIP audio encoder + DINOv2/SigLIP
+vision + proprio, fused into a Llama2-7B backbone with LoRA &mdash; so the policy
+can "hear" contact events (friction, impact, scooping resistance) that vision
+literally cannot see, and it ships an audio-augmented LIBERO/RLBench plus a
+Task Completion Rate metric to measure <em>dynamic-process</em> perception
+rather than just end-state success.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Mainstream VLA models (RT-2, OpenVLA, &pi;<sub>0</sub>, CoT-VLA) perceive the
+world through vision alone. The authors argue this is a fundamental blind spot
+for contact-rich manipulation: whether an eraser is actually pressing the
+board, whether a spoon has scooped enough oatmeal, whether two parts have
+seated &mdash; these are <em>contact</em> states, often occluded, that vision
+cannot reliably read. Tactile sensors (GelSight, BioTac) are the usual fix but
+are expensive, require end-effector integration, sense only local contact, and
+sample too slowly for fast tool&ndash;object dynamics. The paper's bet is that
+<em>contact audio</em> from cheap piezo microphones is a complementary,
+non-invasive, high-frequency signal that penetrates occlusion and is invariant
+to lighting/color domain shift. The gap they target: prior audio-manipulation
+work (<a href="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">ManiWAV</a>,
+<a href="../../raw/papers/hearing_touch_audio_visual_pretraining.pdf">Hearing Touch</a>)
+lacks high-level language/semantic understanding, and existing VLA frameworks
+have no audio pathway or audio-enhanced training/eval environment.</p>
+
+<h2>Method</h2>
+<p>Audio-VLA is a four-component architecture (Fig 2): a multi-modal encoder,
+a multi-modal projector, a Llama2-7B language module, and an MLP action head.</p>
+
+<p><strong>Multi-modal encoder.</strong> <em>Vision:</em> two ViTs &mdash;
+DINOv2 and SigLIP, LoRA fine-tuned &mdash; encode a third-person and a wrist
+image (<code>N<sub>p</sub>=256</code> patches each); features are concatenated
+into <code>F<sup>vis</sup></code>. <em>Audio:</em> AudioCLIP is the encoder, but
+first <em>additionally pre-trained on the ManiWAV robotic dataset</em> on top of
+its original weights, then LoRA fine-tuned inside Audio-VLA. Crucially, audio is
+processed <em>independently at each timestep</em> (not over a long window) for
+instantaneous contact detection and tight temporal alignment with vision/action.
+In the Frequency B-Spline Projection (FBSP) layer they shrink window length
+(<code>L<sub>win</sub>=1024</code>) and hop length (<code>L<sub>hop</sub>=256</code>)
+to boost temporal resolution while keeping enough frequency resolution for
+high-frequency contact events. The complex spectrogram <code>Z</code> goes
+through power-spectrum + log scaling + a ResNeXt to give
+<code>F<sup>aud</sup></code> (Eq 4&ndash;5). <em>Proprio:</em> an MLP encodes
+joint state into <code>F<sup>prop</sup></code>.</p>
+
+<p><strong>Multi-modal projector.</strong> Three projections (vision = linear,
+audio = 3-layer MLP, proprio = 2-layer MLP) map each modality into the LLM's
+embedding dimension and are <em>concatenated along the sequence dimension</em>
+(Eq 7), explicitly preserving intra-modal temporal continuity and cross-modal
+alignment so the LLM can reason over the temporal evolution of contact.</p>
+
+<p><strong>Language module + action head.</strong> The tokenized instruction is
+concatenated with the multimodal token sequence and with <code>K&middot;D</code>
+learnable <em>empty action embeddings</em>, then fed to Llama2-7B with
+<em>parallel decoding</em> (Eq 9&ndash;10). Action hidden states are pulled out
+and a 4-layer MLP action head regresses an action block of <code>K</code> future
+steps, each of dimension <code>D</code>, in <code>[-1,1]</code> (Eq 11).
+Training is plain mean L1 imitation loss against expert action chunks (Eq 12)
+&mdash; no flow-matching, no discretization.</p>
+
+<p><strong>Audio-enhanced simulators.</strong> A second contribution: they
+augment LIBERO and RLBench with collision-triggered audio. Real contact sounds
+are recorded at 48 kHz on physical objects matched to sim objects by material
+and dimension, indexed into a library by material-pair / interaction-type /
+force-magnitude. At sim runtime, collisions (gripper&ndash;object and
+grasped-object&ndash;environment) are detected; the impact velocity and force
+query the library and the retrieved clip is modulated (amplitude by force, pitch
+by object size, duration for continuous contact). Promised open-source.</p>
+
+<p><strong>TCR metric.</strong> Task Completion Rate <code>= Achieved Progress /
+Task Target &isin; [0,1]</code> (Eq 13), a <em>continuous</em> per-task progress
+score (e.g., area of marks erased; weight of oatmeal scooped) meant to capture
+dynamic-process understanding that binary success rate misses.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> LIBERO (Spatial/Object/Goal/Long,
+    official dataset) and 5 RLBench tasks (close jar, insert onto square peg,
+    light bulb in, open drawer, put item in drawer; 100 demos/task from the
+    PerAct/Shridhar split), both audio-augmented. Also a domain-shift condition
+    (random lighting + desktop color/texture, following The Colosseum). Two
+    real-world tasks: Erasing All Whiteboard Marks (EAWM) and Scooping 5 g of
+    Oatmeal (S5GO), 40 teleop demos each.</li>
+  <li><strong>Hardware / simulator:</strong> AgileX Mobile ALOHA with dual
+    7-DOF Piper arms (right arm used); Orbbec wrist + third-person cameras; two
+    piezo contact microphones on the gripper recording at 44.1 kHz (48 kHz for
+    the sim audio library). Inference on an NVIDIA H20, ROS, 25 Hz continuous
+    control.</li>
+  <li><strong>Baselines:</strong> &pi;<sub>0</sub>-FAST, CoT-VLA (sim only),
+    and OpenVLA-OFT in simulation; OpenVLA-OFT and &pi;<sub>0</sub>-FAST in the
+    real world. All vision-only. Ablations: vision-only Audio-VLA, and Audio-VLA
+    w/o audio-encoder LoRA.</li>
+  <li><strong>Compute:</strong> Training on 2&times; NVIDIA H20 GPUs; LoRA rank
+    32, 50k&ndash;100k steps, batch size 8, lr 1e-4 cosine. Backbone is Llama2-7B.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: in the standard sim environment Audio-VLA hits <strong>97.6%</strong>
+avg on LIBERO and <strong>55.1%</strong> on RLBench, beating all vision-only
+baselines; the gap is largest on contact-intensive RLBench Task2 (insert square
+peg) and Task3 (light bulb in), where it beats OpenVLA-OFT by 2.7 and 10.2
+points. Under domain shift it degrades least (74.7% LIBERO / 41.5% RLBench).</p>
+
+<table>
+  <tr><th>Method</th><th>LIBERO Avg</th><th>RLBench Avg</th><th>LIBERO (shift)</th><th>RLBench (shift)</th></tr>
+  <tr><td>&pi;<sub>0</sub>-FAST</td><td>85.6</td><td>43.9</td><td>64.2</td><td>32.1</td></tr>
+  <tr><td>CoT-VLA</td><td>83.9</td><td><em>n/a</em></td><td>57.8</td><td><em>n/a</em></td></tr>
+  <tr><td>OpenVLA-OFT</td><td>97.1</td><td>48.1</td><td>71.0</td><td>35.5</td></tr>
+  <tr><td><strong>Audio-VLA</strong></td><td><strong>97.6</strong></td><td><strong>55.1</strong></td><td><strong>74.7</strong></td><td><strong>41.5</strong></td></tr>
+</table>
+
+<p>Real-world (Table II, success rate / TCR, %): Audio-VLA roughly triples
+success over the vision-only baselines on both tasks in the seen condition, and
+holds up far better under unseen conditions where baselines collapse to near
+zero.</p>
+
+<table>
+  <tr><th>Method</th><th>EAWM SR / TCR (seen)</th><th>S5GO SR / TCR (seen)</th><th>EAWM (unseen)</th><th>S5GO (unseen)</th></tr>
+  <tr><td>&pi;<sub>0</sub>-FAST</td><td>20 / 34</td><td>10 / 23</td><td>0 / 16</td><td>0 / 11</td></tr>
+  <tr><td>OpenVLA-OFT</td><td>20 / 45</td><td>10 / 34</td><td>10 / 26</td><td>0 / 24</td></tr>
+  <tr><td><strong>Audio-VLA</strong></td><td><strong>60 / 73</strong></td><td><strong>30 / 72</strong></td><td><strong>30 / 57</strong></td><td><strong>20 / 56</strong></td></tr>
+</table>
+
+<p><strong>Ablations.</strong> On RLBench (Table III): full 55.1 avg vs
+vision-only 48.0 (audio worth ~7 points) and w/o-LoRA 51.5 (audio-encoder LoRA
+worth ~3.6). Real-world (Table IV): audio roughly triples or doubles success on
+EAWM; LoRA on the audio encoder doubles EAWM success &mdash; the authors stress
+the frozen pretrained AudioCLIP cannot process manipulation-specific sounds
+without fine-tuning. <em>Where it does not dominate:</em> on RLBench Task2
+(square-peg insertion) absolute numbers stay low for everyone (15.0% for
+Audio-VLA), so "contact-intensive" wins are relative, not solved.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Frozen AudioCLIP is inadequate for manipulation sounds &mdash; audio-encoder
+    LoRA fine-tuning is necessary (stated as a finding, but it bounds
+    out-of-the-box transfer).</li>
+  <li>Extracting contact-event information from high-frequency audio and the lack
+    of audio-enhanced training/eval environments are framed as the core
+    technical obstacles &mdash; their sim solution is a retrieval-and-modulate
+    heuristic, not learned/physical audio synthesis.</li>
+  <li>No other explicit limitations or failure analysis section; no future-work
+    discussion beyond the conclusion.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Tiny-N real-world statistics.</strong> Real-world success rates are
+    multiples of 10% (e.g., 60%, 30%, 20%, 10%, 0%), implying roughly 10 trials
+    per cell with <em>no seeds or confidence intervals</em>. "Threefold
+    improvement" is 60% vs 20% &mdash; i.e., 6/10 vs 2/10. The headline claims
+    rest on a very small sample; contrast with the seeded CALVIN tables in
+    <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>.</li>
+  <li><strong>The sim audio is synthetic-by-retrieval, then tested in sim.</strong>
+    LIBERO/RLBench gains are measured in the same audio-augmented simulators the
+    authors built; the audio "ground truth" is a collision-triggered clip-lookup
+    they designed. There is a real risk the policy learns to exploit the
+    deterministic audio-generation rule rather than genuine contact physics.
+    The real-robot results are the load-bearing evidence, and those are the
+    small-N ones.</li>
+  <li><strong>Domain-shift claim conflates modalities.</strong> Audio being
+    lighting/color-invariant is almost tautological; the interesting question
+    &mdash; does the <em>audio encoder</em> generalize across <em>materials</em>
+    it was not trained on? &mdash; is only partially probed (darker oatmeal,
+    different marker) and not isolated.</li>
+  <li><strong>No tactile baseline.</strong> The motivation is "audio is cheaper
+    than tactile," yet no tactile-VLA (e.g., Tactile-VLA, OmniVTLA) is run head
+    to head, so the cost/benefit tradeoff is asserted, not measured.</li>
+  <li><strong>Audio token count and latency unreported.</strong> Per-timestep
+    audio into a 7B LLM at 25 Hz is non-trivial; <code>N<sub>a</sub></code> and
+    end-to-end latency are <em>not reported</em>.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This paper is a direct, concrete instance of the thesis behind this batch:
+<strong>many manipulation predicates are not visually evaluable.</strong>
+"The eraser is in contact with the board," "enough oatmeal has been scooped,"
+"the peg is seated" &mdash; these are exactly the <code>is_pressed</code> /
+<code>is_full</code> / <code>is_inserted</code> predicates that live in
+sound/force, not pixels. Audio-VLA's EAWM example ("vision guides the eraser to
+the whiteboard but cannot determine surface contact") is almost a textbook
+argument for why a <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>-style
+predicate like <code>in-contact(eraser, board)</code> would need a non-visual
+classifier. Relative to BLADE, this is the <em>opposite</em> design philosophy:
+BLADE imposes structure (LLM-proposed PDDL operators, learned predicate
+classifiers, symbolic bi-level planning) over imitation-learned skills;
+Audio-VLA is end-to-end scale-everything &mdash; it dumps audio tokens into a 7B
+LLM and regresses actions with an L1 loss, no symbols, no planner, no explicit
+predicate. The lesson I'd extract for my own line: <em>the sensing argument is
+modality-agnostic w.r.t. the policy class.</em> If contact audio carries the
+contact-state signal, then a structured policy could learn an
+<code>in-contact</code> <em>predicate classifier</em> off the same audio stream
+&mdash; an audio analogue of BLADE's visual predicate classifiers &mdash; and
+get interpretability + planning that this monolithic VLA forgoes. The TCR metric
+is also worth noting: it is a crude continuous progress signal, but it gestures
+at the same need BLADE has for <em>intermediate</em> state evaluation along a
+long-horizon execution, not just terminal success. This is squarely on-theme.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Unlike vision, audio signals penetrate occlusions and capture temporal
+  dynamics that are visually imperceptible&hellip; acoustic information reveals
+  contact quality between objects and environmental changes during dynamic
+  interactions&mdash;natural blind spots of visual perception that are
+  indispensable for intelligent manipulation.
+  <span class="quote-cite">&mdash; &sect;I, Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  In EAWM, vision guides the eraser to the whiteboard but cannot determine
+  surface contact; in S5GO, it cannot model spoon depth-weight relationships.
+  Audio-VLA overcomes these limitations through acoustic signatures of
+  interaction physics.
+  <span class="quote-cite">&mdash; &sect;IV-B, Real-World Robot Experiment Results / p.6</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>ManiWAV (Liu et al. 2024)</strong> &mdash; the "ear-in-hand"
+    contact-audio policy; Audio-VLA reuses its dataset to pretrain AudioCLIP.
+    <a href="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">PDF</a></li>
+  <li><strong>Hearing Touch (Mejia et al. ICRA 2024)</strong> &mdash; audio-visual
+    pretraining for contact-rich manipulation; closest audio-perception ancestor.
+    <a href="../../raw/papers/hearing_touch_audio_visual_pretraining.pdf">PDF</a></li>
+  <li><strong>OmniVTLA (Cheng et al. 2025)</strong> &mdash; the vision-tactile-LA
+    counterpart this paper positions against (audio-vs-tactile).
+    <a href="../../raw/papers/omnivtla_vision_tactile_language_action.pdf">PDF</a></li>
+  <li><strong>AudioCLIP (Guzhov et al. ICASSP 2022)</strong> &mdash; the audio
+    encoder backbone. <a href="../../raw/papers/audioclip_extending_clip.pdf">PDF</a></li>
+  <li><strong>OpenVLA / &pi;<sub>0</sub> / CoT-VLA</strong> &mdash; the
+    vision-only VLA baselines and architectural lineage.</li>
+  <li><strong>GelSight (Yuan et al. 2017)</strong> &mdash; the tactile-sensor
+    foil cited as expensive/local. <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">PDF</a></li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">Beyond Sight (FuSe)</a>
+    &mdash; same cluster: fuses heterogeneous (incl. audio) sensors into a
+    language-conditioned policy; the most direct multisensory-VLA peer.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>,
+    <a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a>,
+    <a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>,
+    <a href="vla_touch_dual_level_tactile_feedback.html">VLA-Touch</a>
+    &mdash; the tactile/force VLA siblings; Audio-VLA argues audio is a cheaper
+    substitute for the tactile signal these add.</li>
+  <li><a href="vlas_speech_instructions_vla.html">VLAS</a> &mdash; the other
+    audio-into-VLA paper in the cluster, but for <em>speech instructions</em>
+    rather than contact audio; clean contrast on what "audio" means in a VLA.</li>
+  <li><a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a> and
+    <a href="hearing_touch_audio_visual_pretraining.html">Hearing Touch</a>
+    &mdash; the contact-audio-for-manipulation ancestors Audio-VLA builds on
+    (and whose data it reuses).</li>
+  <li><a href="audioclip_extending_clip.html">AudioCLIP</a> &mdash; the audio
+    encoder it adopts.</li>
+</ul>
+
+</body>
+</html>

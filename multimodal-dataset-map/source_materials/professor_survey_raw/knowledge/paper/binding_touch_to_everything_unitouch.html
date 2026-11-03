@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Binding Touch to Everything: Learning Unified Multimodal Tactile Representations</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Yang, Feng, Chen, Park, Wang, Dou, Zeng, Chen, Gangopadhyay, Owens, Wong">
+<meta name="year" content="2024">
+<meta name="venue" content="CVPR 2024">
+<meta name="arxiv_id" content="2401.18084">
+<meta name="url" content="https://arxiv.org/abs/2401.18084">
+<meta name="pdf" content="../../raw/papers/binding_touch_to_everything_unitouch.pdf">
+<meta name="tags" content="tactile-representation, multimodal-binding, touch-language, visuo-tactile, zero-shot, representation-learning, vision-based-tactile, tactile-language-model, foundation-models, self-supervised-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Binding Touch to Everything: Learning Unified Multimodal Tactile Representations</h1>
+<p class="meta">
+  Fengyu Yang*, Chao Feng*, Ziyang Chen*, Hyoungseob Park, Daniel Wang, Yiming Dou,
+  Ziyao Zeng, Xien Chen, Rit Gangopadhyay, Andrew Owens, Alex Wong
+  &middot; Yale University / University of Michigan
+  &middot; CVPR 2024
+  &middot; <a href="https://arxiv.org/abs/2401.18084">arXiv:2401.18084</a>
+  &middot; <a href="../../raw/papers/binding_touch_to_everything_unitouch.pdf">PDF</a>
+  &middot; <a href="https://cfeng16.github.io/UniTouch/">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> UniTouch binds vision-based tactile sensing into
+a pretrained image embedding (ImageBind's) by contrastively aligning touch to
+its paired RGB image &mdash; and because that image space is already aligned with
+language and audio, touch inherits zero-shot links to text and sound "for free,"
+enabling material classification, grasp-stability prediction, touch&harr;text/audio
+retrieval, touch-conditioned image synthesis, and a Touch-LLM, all without
+task-specific tactile labels.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Touch is expensive to collect (it requires actively probing objects) and
+vision-based tactile sensors are <em>not standardized</em>: GelSight, DIGIT,
+GelSlim, and simulators (Taxim, TACTO) produce visually divergent outputs
+because of different elastomer designs, illumination, and calibration (Fig 2).
+The result is that tactile representations are usually trained per-sensor,
+per-task, and never reach the scale or generality of vision-language models.
+The paper's bet: rather than collect paired touch&ndash;text or touch&ndash;audio data,
+exploit the fact that touch is <em>naturally paired with the visual image of the
+contact patch</em>, and that pretrained image embeddings (ImageBind [35]) are
+already bound to many other modalities. Align touch to that image space once,
+and every modality ImageBind already speaks becomes reachable from touch
+zero-shot.</p>
+
+<h2>Method</h2>
+<p>Three ideas: bind touch to a frozen image embedding, handle multiple sensors
+via learnable per-sensor tokens, and balance the multi-sensor batch.</p>
+
+<p><strong>1. Binding touch to images (Fig 3).</strong> Given a batch of
+<code>B</code> visuo-tactile pairs <code>{(v_i, t_i)}</code>, a trainable touch
+encoder <code>F_T</code> produces a tactile embedding aligned to the
+<em>frozen</em> ImageBind image embedding <code>F_V(v_i)</code> via a symmetric
+InfoNCE loss in both directions: <code>L = L_{T&rarr;V} + L_{V&rarr;T}</code>,
+with temperature <code>&tau;</code> and feature dim <code>C</code> (Eqs 1&ndash;2).
+Because the image encoder is frozen and already aligned to text/audio/depth/etc.,
+pulling touch toward its paired image transitively binds touch to all of
+ImageBind's modalities &mdash; <em>no paired touch&ndash;text or touch&ndash;audio data is
+ever used in training</em>.</p>
+
+<p><strong>2. Learning from multiple sensors at once (sensor-specific tokens).</strong>
+To bridge the cross-sensor domain gap, UniTouch introduces a set of learnable
+<em>sensor-specific tokens</em> <code>{s_k}</code>, <code>k = 1..K</code>, each
+<code>s_k &isin; R^{L&times;D}</code>, capturing per-sensor calibration / background
+color / intensity profiles. For touch image <code>t_i</code> from sensor
+<code>k</code>, the <code>L</code> tokens are prepended as a prefix to the touch
+patch tokens before encoding, yielding <code>F_T(t_i, s_{k_i})</code> (Eq 3).
+The rest of the encoder capacity is freed to learn shared texture/geometry.
+At <strong>inference on unseen sensors</strong>, they retrieve the nearest known
+sensor token: compute a prototype per sensor (mean over its raw tactile pixels),
+then pick the stored token minimizing L1 distance to the input.</p>
+
+<p><strong>3. In-batch data sampling.</strong> Naive uniform sampling across
+datasets yields a surplus of <em>easy</em> negatives (cross-sensor pairs are
+trivially separable by domain artifacts). They instead sample so that a fraction
+<code>&sigma;</code> of each batch comes from a single dataset and the remaining
+<code>(1-&sigma;)</code> from others; the per-dataset selection probability is
+proportional to dataset cardinality, <code>p_n = |D_n| / &Sigma;_m |D_m|</code>
+(Eq 4). This keeps training focused on intra-sensor hard negatives while still
+exposing inter-sensor discrimination. Ablation uses <code>&sigma; = 0.75</code>.</p>
+
+<p><strong>4. Downstream applications (all zero-shot, &sect;3.3).</strong>
+(i) <em>Zero-shot touch understanding</em>: encode text prompts with the frozen
+CLIP/ImageBind text encoder, rank cosine similarity to the touch embedding
+(material classification, grasp-stability prediction). (ii) <em>Cross-modal
+retrieval</em> touch&harr;vision/audio/text. (iii) <em>Touch-LLM</em>: feed the
+UniTouch embedding into an off-the-shelf VLM (in place of its image embedding)
+to do tactile question answering. (iv) <em>Image synthesis with touch</em>:
+condition a pretrained text-to-image diffusion model [89] on touch features for
+touch&rarr;image generation and tactile-driven stylization. (v) <em>X-to-touch
+generation</em>: an image-to-touch diffusion model lets vision/text/audio
+generate touch images.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Train on four visuo-tactile
+    datasets (Table 1): Touch and Go (GelSight, 120k), The Feeling of Success
+    (GelSight, 9.3k), YCB-Slide (DIGIT, 183k), ObjectFolder 2.0 (Taxim, 180k).
+    Evaluate in-domain plus three out-of-domain sets with unseen sensors:
+    ObjectFolder Real (GelSlim, 20k), ObjectFolder 1.0 (TACTO, 20k), SSVTP
+    (DIGIT, 4.6k). Tasks: material classification, grasp-stability prediction,
+    ObjectFolder 2.0 cross-modal retrieval, touch-to-image generation on Touch
+    and Go, Touch-LLM captioning on Touch and Go.</li>
+  <li><strong>Hardware / simulator:</strong> Vision-based tactile sensors only
+    &mdash; GelSight, DIGIT, GelSlim (real) and Taxim, TACTO (simulators). No
+    physical robot run by this paper; grasp-stability is a prediction task over
+    existing tactile datasets (The Feeling of Success). <code>K = 3</code>
+    sensor types, <code>L = 5</code> learnable tokens each.</li>
+  <li><strong>Baselines:</strong> Supervised ImageNet features; self-supervised
+    visuo-tactile methods VT CMC [111] and SSVTP [57] (re-trained on the
+    multi-dataset setup with the same ViT); for retrieval: CCA, PLSCA, DSCMR,
+    DAR (supervised cross-modal methods); for touch-to-image: Pix2Pix, VisGel,
+    Vision-from-touch [112]; for Touch-LLM captioning: BLIP-2, InstructBLIP,
+    LLaVA-1.5.</li>
+  <li><strong>Compute:</strong> 4&times; NVIDIA A40 GPUs, 150 epochs, batch size
+    48; AdamW, base LR <code>1e-5</code>, cosine schedule, <code>&tau; = 0.07</code>,
+    ViT backbone (24 blocks, 16 heads), feature dim <code>C = 1024</code>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>UniTouch's linear-probe features beat all baselines on both downstream tasks,
+and its <em>zero-shot</em> numbers are competitive with supervised methods.
+Material classification (Table 2, accuracy %, "All" = trained on all datasets):</p>
+
+<table>
+  <tr><th>Method</th><th>Touch&amp;Go</th><th>OF 2.0</th><th>YCB-Slide</th><th>OF 1.0 (OOD)</th><th>OF Real (OOD)</th><th>SSVTP (OOD)</th></tr>
+  <tr><td>Chance</td><td>5.0</td><td>14.2</td><td>10.0</td><td>14.2</td><td>14.2</td><td>16.6</td></tr>
+  <tr><td>Supervised (ImageNet)</td><td>47.1</td><td>70.3</td><td>72.3</td><td>37.5</td><td>54.8</td><td>73.4</td></tr>
+  <tr><td>VT CMC [111] (All)</td><td>49.2</td><td>70.3</td><td>69.5</td><td>33.8</td><td>48.1</td><td>68.5</td></tr>
+  <tr><td>SSVTP [57] (All)</td><td>43.8</td><td>68.9</td><td>67.4</td><td>35.1</td><td>49.7</td><td>66.8</td></tr>
+  <tr><td><strong>UniTouch (linear probe)</strong></td><td><strong>61.3</strong></td><td><strong>85.4</strong></td><td><strong>78.1</strong></td><td><strong>41.3</strong></td><td><strong>61.2</strong></td><td><strong>77.4</strong></td></tr>
+  <tr><td>UniTouch (zero-shot)</td><td>52.7</td><td>43.5</td><td>66.4</td><td>32.7</td><td>33.2</td><td>60.9</td></tr>
+</table>
+
+<p>Key results:</p>
+<ul>
+  <li>Linear-probe UniTouch leads every column, in- and out-of-domain &mdash;
+    e.g. +15.1 over the best baseline on ObjectFolder 2.0 (85.4 vs 70.3), and
+    consistent OOD gains validate the sensor tokens + sampling.</li>
+  <li><strong>Zero-shot</strong> material classification (no labels at all) is
+    competitive with <em>supervised</em> baselines on several sets (52.7 on
+    Touch and Go beats Supervised's 47.1; 60.9 on SSVTP), but visibly
+    <em>weaker</em> on ObjectFolder 2.0 (43.5) and ObjectFolder Real (33.2),
+    where simulated/unseen-sensor touch is harder to ground in text.</li>
+  <li>Grasp-stability prediction (Table 3): linear probe 82.3 / 78.1 / 64.7
+    (Feeling / OF2.0 / OF1.0), again topping baselines; zero-shot 65.5 / 64.3 /
+    64.7 &mdash; aligning touch to text transfers to a robotics task.</li>
+  <li>Cross-modal retrieval (Table 4, mAP on ObjectFolder 2.0):
+    touch&rarr;vision <strong>41.9</strong>, touch&rarr;audio <strong>37.9</strong>,
+    touch&rarr;text <strong>38.0</strong> &mdash; zero-shot, yet beating
+    fully-supervised CCA/PLSCA/DSCMR/DAR (best supervised touch&rarr;vision 32.3)
+    by a large margin.</li>
+  <li>Touch-to-image (Table 5): best CVTP (0.56) and material consistency (0.31),
+    though a slightly worse FID (103.11) than Vision-from-touch's 81.2.</li>
+  <li>Touch-LLM captioning (Table 6, GPT-4 rating 1&ndash;5): 3.30 vs LLaVA-1.5
+    2.33, InstructBLIP 1.93, BLIP-2 1.01.</li>
+  <li>Prompt analysis (Table 7): haptic-phrased prompts ("This <em>feels</em>
+    like [CLS]", "<strong>Touch</strong> of [CLS]") beat visual-phrased prompts,
+    direct evidence that language carries genuine tactile semantics.</li>
+  <li>Ablation (Table 8, zero-shot material on Touch and Go): vanilla baseline
+    drops 43.1&rarr;21.4 when moving from one dataset to all (the sensor-gap
+    penalty); +sensor token recovers to 38.1, +sampling to 40.3, both together
+    reach 52.7.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Scope limited to <strong>vision-based tactile sensors</strong>; barometric /
+    force / temperature sensors (different output formats) are excluded. They flag
+    scaling the training strategy to those as future work.</li>
+  <li>The representation is a "black box" &mdash; not easily interpretable, no
+    explainability in the embedding space.</li>
+  <li>The field of multimodal foundational tactile models is "admittedly still
+    young"; this is positioned as a concrete first step, not a finished system.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The whole approach inherits ImageBind's binding <em>through vision</em>:
+    touch only ever sees text/audio via the image bottleneck. Any concept that
+    isn't visually distinguishable at the contact patch (e.g. hardness vs.
+    softness that looks identical in a GelSight image) may be unreachable in
+    principle &mdash; the zero-shot material drop on simulated ObjectFolder is
+    consistent with this.</li>
+  <li>"Grasp stability prediction" is framed as a robotics task but is really a
+    <em>classification over a static tactile dataset</em> (The Feeling of
+    Success); no closed-loop robot trial, no real grasp executed. The robotics
+    claim is weaker than it reads.</li>
+  <li>The nearest-sensor-token retrieval for unseen sensors is a hard
+    assignment to one of only <code>K = 3</code> learned tokens &mdash; untested
+    how it degrades when a genuinely novel sensor lands between prototypes, or
+    as <code>K</code> scales to many sensors.</li>
+  <li>Touch-LLM is evaluated by <em>GPT-4 rating</em> on 400 captions &mdash; a
+    single automatic judge, no human eval, no inter-rater check; the 3.30 vs
+    2.33 gap should be read cautiously.</li>
+  <li>Continuous tactile quantities (force magnitude, slip velocity) never
+    appear &mdash; everything is categorical/semantic, so force-modulated
+    distinctions stay outside the representation.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is a clean anchor for the thesis behind the 2026-06-24 batch: many
+manipulation predicates (<code>surface_is_rough</code>, <code>is_grasped</code>,
+<code>material_is_metal</code>) are <em>not visually evaluable</em> &mdash; they
+live in touch. UniTouch is the cleanest demonstration that a touch embedding can
+be made to answer language queries about those properties zero-shot, which is
+exactly the missing-modality predicate-grounding problem
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+side-steps. In BLADE, predicate classifiers <code>f_&theta;(p): O &rarr; {T,F}</code>
+are trained from RGB observations; UniTouch suggests a route to instantiate
+<em>tactile</em> predicate classifiers without per-predicate labels, by phrasing
+the predicate as a text prompt over a touch-language space. The catch is the
+vision-bottleneck above: UniTouch can only ground predicates that are visible in
+the contact image, whereas the predicates BLADE most needs touch for
+(<code>is_screwed_tight</code>, force-state) are precisely the non-visual ones.
+So UniTouch is a strong <em>method anchor</em> for "touch&harr;language grounding"
+and a partial answer &mdash; it grounds touch <em>semantics</em> but not touch
+<em>forces</em>. That gap is exactly where a BLADE-style symbolic abstraction over
+genuinely non-visual tactile/force signals would contribute. Relevant batch
+neighbors that push on the same axis are listed below.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  We introduce UniTouch, a unified tactile model for vision-based touch sensors
+  connected to multiple modalities, including vision, language, and sound. We
+  achieve this by aligning our UniTouch embeddings to pretrained image embeddings
+  already associated with a variety of other modalities.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+
+<blockquote>
+  As the visual embedding comes from a joint space that has already aligned with
+  different modalities, touch that is bound with images will bridge a connection
+  to other modalities, yielding a multi-modal unified tactile representation.
+  <span class="quote-cite">&mdash; &sect;3.1, Binding touch with images / p.3</span>
+</blockquote>
+
+<blockquote>
+  We empirically found that our prompts can significantly improve the performance,
+  indicating that language can indeed understand touch.
+  <span class="quote-cite">&mdash; &sect;4.6, Language prompting for touch / p.8</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[35] Girdhar et al. 2023 &mdash; ImageBind</strong> (CVPR) &mdash;
+    the frozen joint embedding UniTouch binds to; the foundational dependency.
+    <a href="../../raw/papers/imagebind_one_embedding_space.pdf">PDF</a>.</li>
+  <li><strong>[111] Yang et al. &mdash; Touch and Go (VT CMC)</strong> &mdash;
+    primary training dataset + a direct visuo-tactile-contrastive baseline.
+    <a href="../../raw/papers/touch_and_go_human_collected_vision_touch.pdf">PDF</a>.</li>
+  <li><strong>[57] Kerr et al. &mdash; SSVTP</strong> (RSS) &mdash; DIGIT
+    visuo-tactile pretraining baseline + OOD eval set.</li>
+  <li><strong>[30/32/33] Gao et al. &mdash; ObjectFolder 1.0 / 2.0 / Benchmark</strong>
+    &mdash; training + cross-modal-retrieval benchmark.
+    <a href="../../raw/papers/objectfolder_dataset_implicit_representations.pdf">OF1.0</a> ·
+    <a href="../../raw/papers/objectfolder_2_multisensory_sim2real.pdf">OF2.0</a> ·
+    <a href="../../raw/papers/objectfolder_benchmark_neural_real.pdf">Benchmark</a>.</li>
+  <li><strong>[59] Lambeta et al. &mdash; DIGIT</strong> and
+    <strong>[54/117] Johnson &amp; Adelson / Yuan et al. &mdash; GelSight</strong>
+    &mdash; the sensor-hardware references behind the domain gap.
+    <a href="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">DIGIT</a> ·
+    <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">GelSight</a>.</li>
+  <li><strong>[90] Si &amp; Yuan &mdash; Taxim</strong> and
+    <strong>[101] Wang et al. &mdash; TACTO</strong> &mdash; the simulators
+    generating two of the training/OOD sets.
+    <a href="../../raw/papers/taxim_gelsight_simulation.pdf">Taxim</a> ·
+    <a href="../../raw/papers/tacto_tactile_simulator.pdf">TACTO</a>.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL (Touch-Vision-Language Dataset)</a>
+    &mdash; same touch&harr;language-via-vision binding idea, but adds explicit
+    touch-language pairs and a tactile-language model; the closest sibling in
+    Cluster A.</li>
+  <li><a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+    and <a href="octopi_1_5_visual_tactile_language_model.html">Octopi-1.5</a>
+    &mdash; tactile-language models for object-property reasoning; the LLM-side
+    successor to UniTouch's Touch-LLM.</li>
+  <li><a href="touch100k_touch_language_vision_dataset.html">Touch100k</a>
+    and <a href="tlv_touch_language_vision_dataset.html">TLV</a>
+    &mdash; large touch-language-vision datasets that supply the paired
+    supervision UniTouch deliberately avoids; complementary data foundation.</li>
+  <li><a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>,
+    <a href="t3_transferable_tactile_transformers.html">T3</a>, and
+    <a href="sparsh_self_supervised_touch_representations.html">Sparsh</a>
+    &mdash; the multi-sensor unified-tactile-representation line; same
+    cross-sensor-generalization goal as UniTouch's sensor-specific tokens.</li>
+  <li><a href="languagebind_language_anchored.html">LanguageBind</a> and
+    <a href="meta_transformer_unified_modalities.html">Meta-Transformer</a>
+    &mdash; the multimodal-binding anchors (alongside ImageBind) UniTouch's
+    method generalizes.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+    &mdash; frames the non-visual force/contact axis that UniTouch's vision
+    bottleneck leaves untouched.</li>
+</ul>
+
+</body>
+</html>

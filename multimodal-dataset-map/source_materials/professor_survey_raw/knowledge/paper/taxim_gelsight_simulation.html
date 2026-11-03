@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Taxim: An Example-based Simulation Model for GelSight Tactile Sensors</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Si, Yuan">
+<meta name="year" content="2021">
+<meta name="venue" content="IEEE RA-L 2022 (arXiv 2021)">
+<meta name="arxiv_id" content="2109.04027">
+<meta name="url" content="https://arxiv.org/abs/2109.04027">
+<meta name="pdf" content="../../raw/papers/taxim_gelsight_simulation.pdf">
+<meta name="tags" content="tactile-simulation, gelsight, sim-to-real, vision-based-tactile, tactile-sensing, digit, foundational, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+<!-- Format variant: sensor-simulation infrastructure paper. Method kept as "Method"
+     (the modeling is the contribution); Setup brief per brief guidance for sim/hardware classics. -->
+
+<h1>Taxim: An Example-based Simulation Model for GelSight Tactile Sensors</h1>
+<p class="meta">Zilin Si, Wenzhen Yuan (CMU Robotics Institute) &middot; 2021 &middot;
+   IEEE RA-L 2022 (arXiv v2, Dec 2021) &middot;
+   <a href="https://arxiv.org/abs/2109.04027">arXiv</a> &middot;
+   <a href="../../raw/papers/taxim_gelsight_simulation.pdf">PDF</a></p>
+
+<p><strong>One-liner.</strong> A data-driven, CPU-real-time GelSight simulator that fits a
+per-pixel polynomial reflectance table from &lt;100 real contact examples and adds the first
+integrated marker-motion field model, so you can synthesize realistic tactile images
+(both the optical geometry signal and the force/shear marker flow) without expensive
+physics rendering.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Mainstream robot simulators (PyBullet, MuJoCo, Isaac Gym, Drake, SOFA) model rigid/soft
+bodies and vision but have no native tactile sensing, yet vision-based tactile sensors like
+GelSight give high-resolution contact geometry and force. Simulating them is hard because it
+requires modeling both the <em>mechanical</em> response of the soft gelpad and the
+<em>optical</em> response (LED illumination + embedded camera). Prior optical sims were
+physics-based (Phong shading, ray tracing, <a href="../../raw/papers/tacto_tactile_simulator.pdf">TACTO</a>'s
+pyrender): computationally heavy, hard to migrate to a new sensor, and unable to reproduce the
+intrinsic <em>noise</em> of real sensors. No prior work simulated the marker-motion field
+(the shear-force signal) jointly with the optical image.</p>
+
+<h2>Method</h2>
+<p>Taxim has two calibrated components fed by a contact height map (collision detection &rarr;
+local height map &rarr; pyramid-Gaussian-kernel soft-body approximation of the gelpad).</p>
+
+<p><strong>1. Optical simulation via example-based photometric stereo.</strong> The diffuse
+gelpad makes reflectance spatial-invariant, so intensity is a function of local surface normal.
+A naive linear lookup table <code>I = &Sigma;<sub>l</sub> a<sup>l</sup> n</code> assumes parallel
+uniform light, but GelSight's LEDs are close and non-uniform. Taxim instead fits a
+<em>polynomial</em> table that is also a function of image position:
+<code>f<sub>n</sub><sup>l</sup>(x,y) = w<sub>n</sub><sup>l</sup> b</code>, where
+<code>b = [x&sup2;, y&sup2;, xy, x, y, 1]<sup>T</sup></code> (a 2nd-order polynomial sufficed).
+The table is indexed by a discretized 125&times;125 surface-normal grid (magnitude &times;
+direction), per RGB light source, and solved by least squares from ball-indenter contacts.
+Per-point normals are mapped through this table to synthesize the image (Fig 2, 3).</p>
+
+<p><strong>2. Shadow simulation by superposition of "unit" shadows.</strong> Shadows from the
+red/green/blue LED groups are simulated by collecting a "unit" shadow mask (a single standing
+pin at varying depths, ~10 examples). Arbitrary geometry is approximated as side-by-side
+accumulated pin shadows; since beams travel independently (no inter-reflection), shadows are
+linearly accumulated and attached where neighbors are lower (Fig 5).</p>
+
+<p><strong>3. Marker motion field via linear displacement + superposition.</strong> Markers move
+because the elastomer surface stretches under normal+shear load. Taxim meshes the surface densely;
+nodes are <em>active</em> (in contact, externally loaded) or <em>passive</em> (only internal
+elastic forces). Mutual influence between nodes <code>n<sub>i</sub>, n<sub>j</sub></code> is a
+3&times;3 tensor <code>T<sup>n<sub>i</sub></sup><sub>n<sub>j</sub></sub></code>; any node's
+displacement is the superposition <code>u<sub>j</sub> = &Sigma;<sub>i</sub>
+T<sup>k<sub>i</sub></sup><sub>n<sub>j</sub></sub> u<sup>k</sup><sub>i</sub></code> (Eq 4).
+Because active nodes also influence each other, initial displacements are first amended to
+<em>virtual</em> displacements by inverting a matrix of inter-node tensors (Eq 5&ndash;7), then
+superposed. The tensor <code>T</code> is calibrated <em>offline</em> in ANSYS FEM (unit-node loads
+on the dense gelpad mesh, sampling the 2nd-layer mesh 0.5 mm below the surface); online sim is just
+matrix ops. Whole model calibrates from &lt;100 real contacts in ~1 hour.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected. Optical calibration: 50 points,
+      4 mm spherical indenter; shadow: 10 points, 1 mm pin indenter. Evaluation objects designed
+      in SolidWorks and 3D-printed (10&times;10 or 15&times;15 mm bases); also Google Scanned
+      Objects for qualitative tests. 4 different GelSight sensors + one DIGIT sensor.</li>
+  <li><strong>Hardware / simulator:</strong> GelSight on an XYR optical stage + vertical linear
+      stage (0.01 mm precision); dome-shaped gelpad. FEM calibration in ANSYS. Optical sim built
+      on example-based photometric stereo; intended to bridge into robot physics engines.</li>
+  <li><strong>Baselines:</strong> TACTO (pyrender) [Wang et&nbsp;al.], Phong's model [Gomes et&nbsp;al.],
+      physics-based rendering [Agarwal et&nbsp;al.]; marker field vs. ANSYS FEM and real-sensor data.</li>
+  <li><strong>Compute:</strong> AMD Ryzen Threadripper 2950X 16-core CPU (no GPU used). Optical sim
+      9.6&ndash;18.1 fps; marker field 9.22 s/sim; ANSYS FEM reference 2&ndash;4 hrs/case.</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Optical:</strong> lowest pixel-wise error on all four metrics vs. all three baselines
+(Table I), and fastest on CPU (Table II).</p>
+
+<table>
+<tr><th>Method</th><th>L1 &darr;</th><th>MSE &darr;</th><th>SSIM &uarr;</th><th>PSNR &uarr;</th><th>fps (CPU)</th></tr>
+<tr><td>TACTO</td><td>10.861</td><td>215.861</td><td>0.808</td><td>25.495</td><td>1.9</td></tr>
+<tr><td>Phong's</td><td>8.163</td><td>123.249</td><td>0.832</td><td>27.763</td><td>3.8</td></tr>
+<tr><td>Physics</td><td>7.409</td><td>90.623</td><td>0.759</td><td>28.687</td><td>0.1</td></tr>
+<tr><td><strong>Taxim (ours)</strong></td><td><strong>5.565</strong></td><td><strong>58.358</strong></td><td><strong>0.882</strong></td><td><strong>30.974</strong></td><td><strong>18.1</strong> (9.6 w/ shadows)</td></tr>
+</table>
+
+<p>Generalizes across 4 GelSight sensors and a DIGIT sensor; handles fine textures, varying
+indentation depth/location (MSE grows with depth and distance from center). <strong>Marker
+field:</strong> vs. FEM, interpolated L1 errors ~3&ndash;5&times;10<sup>&minus;3</sup> mm per axis.
+Marker-magnitude L1: 1.00&times;10<sup>&minus;2</sup> mm (real&FEM), 1.02&times;10<sup>&minus;2</sup>
+(real&ours), 3.96&times;10<sup>&minus;3</sup> (FEM&ours). Weighted angular L1: 12.94&deg; (real&FEM),
+14.57&deg; (real&ours), 4.89&deg; (FEM&ours) &mdash; i.e. Taxim tracks FEM tightly but inherits
+FEM's sim-to-real gap.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><strong>(a) Author-stated.</strong> Only quasi-static contact is simulated; dynamic phenomena
+like slip are not modeled, and the model cannot capture partial slip under shear (a common real
+case). Real&ndash;sim gap attributed to: hand-manufactured gelpad not matching the ANSYS FEM model,
+marker-tracking noise in real data, and the no-partial-slip assumption. Polynomial table must be
+recalibrated per sensor (and whenever a component is replaced). GPU acceleration left for future
+work.</p>
+<p><strong>(b) What I noticed reading it.</strong> Evaluation is small and self-designed: the marker
+study reports a handful of load cases (0.3&ndash;0.8 mm displacement) with no variance/CI; metrics
+are dataset means over a modest object set, so statistical confidence is weak. Optical ground truth
+required <em>manual</em> alignment in GIMP because the real rig isn't precise enough &mdash; the
+reported pixel errors partly reflect alignment quality, not just simulation fidelity. The optical
+table is fit on spherical-indenter normals but evaluated on textured objects, so the
+out-of-distribution normal coverage is untested. Crucially, there is <em>no downstream task</em>
+evaluation: the paper never trains a policy or perception model on Taxim images and shows sim-to-real
+transfer (the headline use case for a tactile simulator) &mdash; that is deferred to "future work."
+The DIGIT result is qualitative only. Speed comparison is CPU-only and arguably unfair since TACTO
+and the physics model are GPU-accelerable.</p>
+
+<h2>Why I care</h2>
+<p>Off the central long-horizon-planning thesis, but squarely on the batch thesis that many
+manipulation predicates (<code>is_grasped</code>, <code>is_inserted</code>,
+<code>surface_is_rough</code>, <code>is_screwed_tight</code>) live in <em>touch/force</em>, not
+vision. Learning a tactile predicate classifier &mdash; the touch analogue of
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s visual
+predicate classifiers &mdash; needs either real tactile data at scale or a faithful simulator.
+Taxim is that simulator for GelSight: cheap to calibrate, CPU-real-time, and it uniquely produces
+the marker/shear signal that encodes contact <em>force</em>, which is exactly what a
+<code>is_slipping</code> or <code>grasp_is_stable</code> predicate would key off. It is
+infrastructure, not a learning method: it lets a BLADE-style pipeline generate tactile training
+data for predicates that are not visually evaluable. Caveat for that use: Taxim is quasi-static and
+can't render slip, so dynamic contact predicates would need a different generator. Pairs naturally
+with the simulators and datasets in this batch's Cluster I.</p>
+
+<h2>Quotable</h2>
+<blockquote>To the best of our knowledge, Taxim is the first model that simulates all functions of
+vision-based tactile sensors, including the optical response for geometry measurement and marker
+motion field for force/torque measurement.
+<span class="quote-cite">&mdash; &sect;II / p.2</span></blockquote>
+<blockquote>The simulation model is calibrated with less than 100 data points from a real sensor.
+The example-based approach enables the model to easily migrate to other GelSight sensors or its
+variations.
+<span class="quote-cite">&mdash; Abstract / p.1</span></blockquote>
+
+<h2>Related</h2>
+<p><strong>Cited here, worth ingesting next:</strong></p>
+<ul>
+  <li><a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">GelSight: High-resolution robot tactile sensors</a> &mdash; the sensor Taxim simulates (Yuan, Dong, Adelson).</li>
+  <li><a href="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">DIGIT: low-cost compact tactile sensor</a> &mdash; Taxim is also demoed on DIGIT.</li>
+</ul>
+<p><strong>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</strong></p>
+<ul>
+  <li><a href="tacto_tactile_simulator.html">TACTO</a> &mdash; the pyrender physics-based GelSight/DIGIT simulator Taxim benchmarks against and beats on fidelity and CPU speed.</li>
+  <li><a href="tacex_gelsight_isaac_sim.html">TacEx</a> &mdash; GelSight simulation inside Isaac Sim; the GPU/physics-engine-integrated successor direction Taxim flagged as future work.</li>
+  <li><a href="gelsight_high_resolution_tactile_sensors.html">GelSight sensor</a> &mdash; foundational hardware whose optical+marker signals Taxim models.</li>
+  <li><a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a> &mdash; real vision-touch dataset; complements simulated tactile data for representation learning.</li>
+</ul>
+</body>
+</html>

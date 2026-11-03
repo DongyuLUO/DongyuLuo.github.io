@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Multimodal Visual-Tactile Representation Learning through Self-Supervised Contrastive Pre-Training</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Dave, Lygerakis, Rueckert">
+<meta name="year" content="2024">
+<meta name="venue" content="arXiv preprint (cs.RO)">
+<meta name="arxiv_id" content="2401.12024">
+<meta name="url" content="https://arxiv.org/abs/2401.12024">
+<meta name="pdf" content="../../raw/papers/mvitac_visuotactile_contrastive_pretraining.pdf">
+<meta name="tags" content="visuo-tactile, contrastive-learning, self-supervised-learning, representation-learning, tactile-representation, vision-based-tactile, gelsight, multisensory">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Multimodal Visual-Tactile Representation Learning through Self-Supervised Contrastive Pre-Training</h1>
+<p class="meta">
+  Vedant Dave*, Fotios Lygerakis*, Elmar Rueckert
+  &middot; Cyber-Physical-Systems Lab, Montanuniversit&auml;t Leoben
+  &middot; 2024 &middot; arXiv preprint (cs.RO)
+  &middot; <a href="https://arxiv.org/abs/2401.12024">arXiv:2401.12024</a>
+  &middot; <a href="../../raw/papers/mvitac_visuotactile_contrastive_pretraining.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> MViTac pre-trains paired vision and touch
+ResNet-18 encoders with a four-term InfoNCE objective &mdash; two
+<em>intra</em>-modal (vision&ndash;vision, touch&ndash;touch) plus two
+<em>inter</em>-modal (vision&harr;touch) losses &mdash; and shows that
+adding the within-modality terms on top of the usual cross-modal
+contrastive recipe yields representations that beat both prior SSL
+visuo-tactile methods and a supervised baseline on material-property
+classification, with linear probing on frozen features.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Vision captures global scene structure but misses the fine-grained
+contact attributes (hardness, roughness, texture, slip) that touch
+delivers; fusing the two is hard because they carry very different
+information densities and most prior fusion work leaned on
+human-labeled data, which is especially expensive for tactile signals
+(every sample requires physical interaction). Contrastive
+self-supervised learning is the obvious lever for unlabeled tactile data,
+but earlier visuo-tactile SSL methods (e.g., SSVTP, the CMC variant in
+Touch-and-Go) optimize only <em>cross</em>-modal agreement. MViTac's
+thesis is that the discriminative power needed for downstream tasks also
+benefits from <em>within</em>-modal contrast, so it learns both at once.</p>
+
+<h2>Method</h2>
+<p>The architecture (Fig 1) uses dual encoders &mdash; an image encoder
+<code>f(&middot;;&theta;)</code> and a tactile encoder
+<code>f(&middot;;&psi;)</code>, each a ResNet-18 backbone pre-trained on
+ImageNet &mdash; together with momentum counterparts
+(<code>&theta;<sub>k</sub></code>, <code>&psi;<sub>k</sub></code>) updated
+by EMA (Eq. 1&ndash;3). Both modalities are treated as RGB images in
+<code>R<sup>H&times;W&times;3</sup></code> (the GelSight-style tactile
+imprint is itself an image). Each encoder feeds <em>two</em> 2-layer MLP
+projection heads, one for the intra-modal task and one for the
+inter-modal task, mapping the 512-d backbone output to a 128-d embedding.
+Loss throughout is <code>InfoNCE</code> (Eq. 8) with temperature
+<code>&tau;</code>; unlike MoCo/MCT, negatives are simply the other
+in-batch keys (no memory queue).</p>
+
+<p><strong>Intra-modal (Eq. 4&ndash;8).</strong> Augment one image twice
+into query/key, encode through encoder + momentum encoder, contrast.
+Done separately for vision (<code>L<sub>vv</sub></code>) and touch
+(<code>L<sub>tt</sub></code>) to sharpen within-modality features.</p>
+
+<p><strong>Inter-modal (Eq. 9&ndash;13).</strong> For a paired
+<code>(o<sub>v</sub>, o<sub>t</sub>)</code> sample: image-to-tactile
+(<code>L<sub>vt</sub></code>) pulls the image-encoder query toward the
+momentum-tactile key, and tactile-to-image (<code>L<sub>tv</sub></code>)
+does the reverse. The paper notes it adapts Multimodal Contrastive
+Training (MCT, [42]) but drops MCT's margin/dot-product formulation in
+favor of plain InfoNCE since both modalities live in image space.</p>
+
+<p><strong>Combined loss (Eq. 14):</strong>
+<code>L<sub>mm</sub> = L<sub>vv</sub> + L<sub>tt</sub> +
+&lambda;<sub>inter</sub>(L<sub>vt</sub> + L<sub>tv</sub>)</code>,
+where <code>&lambda;<sub>inter</sub></code> trades off the within- vs
+across-modality objectives. After pre-training, projection heads are
+discarded, the encoder is frozen, and a linear classifier is trained on
+top (linear probing) for each downstream task.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Touch-and-Go (TAG) for
+    material-property identification &mdash; three tasks: 20-way material
+    category, hard/soft binary, rough/smooth binary, using the authors'
+    prescribed splits. Calandra ("More Than a Feeling") dataset for grasp
+    success prediction &mdash; paired GelSight (left/right) + RGB triplets
+    (before/during/after); no standard split, so authors create their own
+    using 40 of 106 objects (~18,000 samples), tactile pair stacked across
+    channels.</li>
+  <li><strong>Hardware / simulator:</strong> No robot rollouts &mdash;
+    purely offline learning from pre-collected real-world datasets. Tactile
+    inputs are vision-based optical sensor images (GelSight-style). Grasping
+    experiment baseline uses the <a href="../../raw/papers/tacto_tactile_simulator.pdf">TACTO</a>
+    implementation. Training on a single RTX 4090 GPU.</li>
+  <li><strong>Baselines:</strong> ResNet-18 supervised (tactile, and
+    tactile+visual concatenated); TAG [11] (Contrastive Multiview Coding);
+    SSVTP [10] (Kerr et al., InfoNCE-based visuo-tactile pretraining);
+    Calandra et al. [4] supervised (grasping only); chance.</li>
+  <li><strong>Compute:</strong> single 4090 GPU, batch size 256, 240 epochs
+    pre-training + 60 epochs downstream; ADAM, pretrain LR 0.03, downstream
+    LR 1e-4, best <code>&tau;</code>=0.07.</li>
+</ul>
+
+<h2>Results</h2>
+<p>On material-property identification (Table I, Top-1 accuracy %), the
+tactile+visual MViTac is best across all three tasks, and even the
+tactile-only MViTac beats the SSL baselines on category and rough/smooth:</p>
+
+<table>
+  <tr><th>Method</th><th>Modality</th><th>Category</th><th>Hard/Soft</th><th>Rough/Smooth</th></tr>
+  <tr><td>ResNet18 (supervised)</td><td>Tactile</td><td>57.4</td><td><strong>89.1</strong></td><td>79.3</td></tr>
+  <tr><td>ResNet18 (supervised)</td><td>Tac+Vis</td><td>48.0</td><td>85.9</td><td>80.0</td></tr>
+  <tr><td>TAG (CMC)</td><td>Tac+Vis</td><td>68.6</td><td>87.1</td><td>82.4</td></tr>
+  <tr><td>SSVTP (InfoNCE)</td><td>Tac+Vis</td><td>70.7</td><td>88.6</td><td>83.6</td></tr>
+  <tr><td><strong>MViTac (ours)</strong></td><td>Tactile</td><td>57.6</td><td>86.2</td><td>82.1</td></tr>
+  <tr><td><strong>MViTac (ours)</strong></td><td>Tac+Vis</td><td><strong>74.9</strong></td><td><strong>91.8</strong></td><td><strong>84.1</strong></td></tr>
+</table>
+
+<p>Where it wins: tactile+visual MViTac tops every material task, including
+beating the supervised model on hard/soft (91.8 vs 89.1) &mdash; notable
+since supervised usually wins low-data regimes. Adding visual to tactile
+uniformly helps all methods.</p>
+
+<p>Where it loses: on grasp success prediction (Table II), MViTac reaches
+60.3%, beating TAG/CMC (56.3%) by ~4% on unseen objects but losing badly
+to the Calandra supervised baseline (73.1%). The authors attribute the gap
+to the small (~18k), imbalanced training set &mdash; contrastive methods
+need bigger, more diverse data. In the tactile-only material setting the
+supervised ResNet-18 still edges MViTac on hard/soft (89.1 vs 86.2).</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>SSL does not yet beat supervised methods when data is limited
+    (grasp prediction); closing this gap is flagged future work.</li>
+  <li>Tactile alone is insufficient for complex/uncontrolled surfaces;
+    needs visual augmentation.</li>
+  <li>Evaluated only on offline datasets &mdash; no real-robot or real-time
+    deployment; broader/more sophisticated manipulation tasks untested.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The Calandra grasp split is <em>self-created</em> (no standard
+    split), so the 60.3 vs 56.3 comparison rests on a split the authors
+    chose &mdash; not directly comparable to published Calandra numbers,
+    and the supervised baseline they cite (73.1) used a different setup.</li>
+  <li>No ablation isolating the contribution of the intra-modal terms
+    &mdash; the paper's whole pitch is "intra + inter beats inter-only,"
+    yet there is no <code>&lambda;<sub>inter</sub></code> sweep or
+    drop-the-intra-loss ablation reported. The claim is argued from
+    out-performing inter-focused baselines (TAG, SSVTP), which also differ
+    in backbone/training details, confounding the attribution.</li>
+  <li>Single seed / no variance reported on any table &mdash; small
+    accuracy gaps (e.g., 57.4 vs 57.6 on category, tactile-only) are within
+    plausible noise.</li>
+  <li>"Tactile" here means an optical GelSight-style image; the method is
+    really image&ndash;image contrastive learning and would not transfer
+    directly to non-image tactile streams (force/torque, taxel arrays,
+    audio) without re-engineering the encoder.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>Off the central <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+thesis (no language, no planning, no long-horizon manipulation), but
+squarely on the batch's grounding sub-thesis: many manipulation
+predicates &mdash; <code>is_grasped</code>, <code>surface_is_rough</code>,
+<code>is_hard</code> &mdash; are <em>not visually evaluable</em> and live
+in touch. MViTac is a clean, minimal demonstration that a frozen
+self-supervised touch encoder can linearly read out exactly those
+properties (hard/soft, rough/smooth, grasp success). That is precisely the
+kind of cheap, frozen tactile feature extractor a BLADE-style predicate
+classifier could sit on top of when a predicate is tactile rather than
+visual. Its specific contribution &mdash; that <em>intra</em>-modal
+contrast helps on top of cross-modal &mdash; is a representation-learning
+design note rather than a manipulation result; treat this as a
+<strong>method/baseline anchor</strong> in the visuo-tactile SSL
+lineage, not as a control-policy paper. The grasp-prediction loss to
+supervised learning is also a useful data-point on where contrastive
+pretraining still under-delivers in the low-data tactile regime.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  MViTac leverages intra and inter-modality losses for learning
+  representations, resulting in enhanced material property classification
+  and more adept grasping prediction.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  Our model not only distinguishes similarities and differences between
+  visual and tactile data but also places substantial emphasis on learning
+  within the same sensory modality.
+  <span class="quote-cite">&mdash; &sect;IV.B / p.5</span>
+</blockquote>
+<blockquote>
+  CL techniques necessitate bigger and more diverse datasets to perform
+  comparably with supervised methods.
+  <span class="quote-cite">&mdash; &sect;IV.B / p.6</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[11] Yang et al. &mdash; Touch and Go</strong> (NeurIPS 2022 D&amp;B) &mdash;
+    the TAG dataset + CMC baseline; primary training/eval data.
+    <a href="../../raw/papers/touch_and_go_human_collected_vision_touch.pdf">expected slug</a>.</li>
+  <li><strong>[10] Kerr et al. &mdash; SSVTP</strong> (Self-Supervised
+    Visuo-Tactile Pretraining, 2023) &mdash; the closest SSL baseline
+    (InfoNCE visuo-tactile); not in the batch list.</li>
+  <li><strong>[51] Wang et al. &mdash; TACTO</strong> simulator &mdash;
+    used for the grasping baseline.
+    <a href="../../raw/papers/tacto_tactile_simulator.pdf">expected slug</a>.</li>
+  <li><strong>[4]/[37] Calandra et al. &mdash; More Than a Feeling / The
+    Feeling of Success</strong> &mdash; the grasp dataset + supervised
+    baseline; canonical visuo-tactile grasping reference.</li>
+  <li><strong>[34] GelSight, [35] DIGIT</strong> &mdash; the vision-based
+    tactile sensors underlying the image-style tactile inputs.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="dexterity_from_touch_self_supervised_pretraining.html">Dexterity from Touch (T-DEX)</a>
+    &mdash; sibling self-supervised tactile-representation paper (Guzey et
+    al. [12], cited here); same "pretrain a touch encoder, reuse downstream"
+    recipe but for dexterous manipulation rather than linear-probe
+    classification.</li>
+  <li><a href="see_to_touch_tactile_dexterity_visual_incentives.html">See to Touch</a>
+    &mdash; same lab line; visual incentives for tactile dexterity,
+    complementary visuo-tactile representation angle.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a>
+    and <a href="t3_transferable_tactile_transformers.html">T3 (Transferable Tactile Transformers)</a>
+    &mdash; the scaled-up successors to MViTac's idea: large self-supervised
+    touch foundation models; MViTac is an early, small-scale point on that
+    trajectory.</li>
+  <li><a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>
+    and <a href="unit_data_efficient_tactile_representation.html">UniT</a>
+    &mdash; unified / data-efficient visuo-tactile representation learning;
+    direct descendants in the same cluster B.</li>
+  <li><a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a>
+    &mdash; the dataset + CMC baseline MViTac trains on and compares against
+    (if ingested in this batch).</li>
+  <li><a href="tacto_tactile_simulator.html">TACTO</a>
+    &mdash; the GelSight simulator MViTac uses for its grasping baseline
+    (if ingested in this batch).</li>
+</ul>
+
+</body>
+</html>

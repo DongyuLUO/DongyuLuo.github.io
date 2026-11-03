@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Transferable Tactile Transformers for Representation Learning Across Diverse Sensors and Tasks</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Zhao, Ma, Wang, Adelson">
+<meta name="year" content="2024">
+<meta name="venue" content="CoRL 2024">
+<meta name="arxiv_id" content="2406.13640">
+<meta name="url" content="https://arxiv.org/abs/2406.13640">
+<meta name="pdf" content="../../raw/papers/t3_transferable_tactile_transformers.pdf">
+<meta name="tags" content="tactile-representation, self-supervised-learning, transfer-learning, vision-based-tactile, gelsight, foundation-models, multimodal-dataset, contact-rich, representation-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Transferable Tactile Transformers for Representation Learning Across Diverse Sensors and Tasks</h1>
+<p class="meta">
+  Jialiang Zhao, Yuxiang Ma, Lirui Wang, Edward H. Adelson
+  &middot; MIT CSAIL
+  &middot; CoRL 2024
+  &middot; <a href="https://arxiv.org/abs/2406.13640">arXiv:2406.13640</a>
+  &middot; <a href="../../raw/papers/t3_transferable_tactile_transformers.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> T3 treats the zoo of incompatible camera-based
+tactile sensors as a multi-modal alignment problem &mdash; sensor-specific
+encoders feed a shared transformer trunk that funnels into task-specific
+decoders &mdash; and shows that pre-training this trunk on FoTa (the largest
+unified tactile dataset, 3M+ images, 13 sensors, 11 tasks) yields a reusable
+tactile encoder that transfers across both new sensors and new tasks with
+little or no fine-tuning, and lifts a real sub-millimeter insertion policy.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Camera-based tactile sensors (GelSight-family) are the dominant high-res
+touch modality, but they are extremely <em>heterogeneous</em>: different shapes,
+form factors, illumination colors, marker patterns, camera counts. Every new
+sensor-task pairing today means re-collecting data and training an encoder from
+scratch &mdash; expensive, and especially wasteful in long-horizon contact-rich
+tasks where the policy reward is sparse and many components must be trained
+jointly. The authors argue there <em>should</em> be shareable latent structure
+across sensors and tasks, but the central obstacle is that, unlike vision-touch
+or audio-visual learning where you have temporally-aligned pairs, heterogeneous
+tactile data is <em>unaligned</em>: it is ill-defined to declare two tactile
+images from different hardware "the same contact." So standard contrastive /
+distance-based cross-modal recipes don't apply. The goal: a scalable
+representation learnable from unaligned tactile data, shareable across sensors
+and tasks.</p>
+
+<h2>Method</h2>
+<p>Two ingredients: a dataset (FoTa) and an architecture (T3).</p>
+
+<p><strong>FoTa (Foundation Tactile) dataset.</strong> Aggregates many of the
+largest open-sourced tactile datasets (VisGel, TVL, Touch-and-Go, Calandra'17,
+Yuan'18, YCB-Sight, ObjectFolder-real, Tippur'23) plus new in-house data, into
+a single unified, I/O-efficient WebDataset format: <strong>3,083,452 tactile
+images, 13 sensors, 11 tasks</strong> (Table 2). New in-house data was collected
+on two rigs to add recently-emerged sensors (GelSight Finray, Svelte, Wedge,
+DenseTact 2.0, GelSight 360): a 7-DoF Franka platform (2 sensors on a parallel
+jaw gripper exploring a clamped object, recording SE(3) pose) and a 3-DoF CNC
+gantry (3D-printed textured probes on a force/torque sensor probing a fixed
+sensor's surface, recording translational pose + probing force). VisGel's "flat"
+no-contact images were sub-sampled out using a Laplacian-variance threshold
+(Eqn. 2, &sigma;<sub>i</sub> = 4.24).</p>
+
+<p><strong>T3 architecture (Fig 1).</strong> For <code>N_s</code> sensors and
+<code>N_t</code> tasks: one ViT encoder <code>Enc_i</code> per sensor, one
+shared ViT <code>Trunk</code>, and one decoder <code>Dec_j</code> per task.
+Each batch always comes from a single sensor-task pairing
+<code>(X_i, Y_j)</code>, so the matching <code>Enc_i</code> and
+<code>Dec_j</code> are attached to the trunk; the trunk is the only component
+shared across <em>everything</em>, which is what carries the cross-sensor /
+cross-task knowledge. Decoder architecture is chosen per task type: ViT for
+generative (MAE reconstruction), MLP for classification, ResNet+MLP for pose
+regression. Loss for a single-image task is
+<code>L_j(Y_j, Dec_j(Trunk(Enc_i(X_i))))</code>; pose tasks consume two tactile
+images, encode/trunk each separately, then concatenate before the decoder
+(Eqn. 1). Similar sensors share an encoder (e.g. GelSight17 variants 1&ndash;4
+share one encoder).</p>
+
+<p><strong>Three-stage training.</strong></p>
+<p><strong>Pre-train I &mdash; self-supervised MAE.</strong> Masked auto-encoding
+(L2 patch-normalized pixel loss) over <em>all</em> FoTa data, including unlabeled
+images. A single reconstruction decoder <code>Dec_0</code> (8 ViT blocks) is
+shared by all sensors. Targets local/pixel-level understanding. Best masking
+ratio found to be 80%.</p>
+<p><strong>Pre-train II &mdash; supervised, labels distilled from public datasets.</strong>
+Trains the trunk under supervision on 10 tasks for which the public datasets
+carry labels: classification tasks (object, material, fabric smoothness /
+fuzziness / texture-type) via MLP decoders + cross-entropy; regression tasks
+(SE(3) relative pose between two overlapping tactile images via ResNet+MLP, and
+Laplacian-variance / information-content estimation) via MSE. Targets global /
+semantic understanding.</p>
+<p><strong>Fine-tuning (optional).</strong> Further train on the specific target
+sensor-task with a small dataset; skippable if the pairing already existed in
+pre-training. Network sizes range tiny-12M / small-45M / medium-174M /
+large-308M (Table 1).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> FoTa (3,083,452 images, 13
+    sensors, 11 tasks; constituents in Table 2). Pre-training uses all FoTa
+    <em>except</em> the gantry-collected object-classification and 3D
+    pose-estimation data, which are held out for evaluation / fine-tuning. The
+    §5.1 fine-tuning/eval task is a 6-category object classification on 2 sensors
+    (GelSight Wedge, GelSight Mini), ~3,300 points each. §5.2 zero-shot transfer
+    uses two <em>novel</em> sensors (GelSight Svelte, DenseTact 2.0) on two seen
+    tasks (object classification, pose estimation).</li>
+  <li><strong>Hardware / simulator:</strong> Real robots. Data-collection rigs:
+    7-DoF Franka Emika Panda with 2 tactile sensors on a parallel jaw gripper;
+    3-DoF desktop CNC gantry with a 6-axis force/torque sensor (MMS101). Downstream
+    insertion task: 2 GelSight Wedge sensors on a parallel jaw gripper on a 7-DoF
+    Franka, PCB fixed to workbench, RGB camera on the side; 0.4mm hole-pin
+    clearance; 3 parts (3-pin toggle switch, 12-pin double-stack USB, 17-pin VGA).</li>
+  <li><strong>Baselines:</strong> For pre-training value: train-from-scratch vs.
+    fine-tune-from-pre-train-I vs. fine-tune-from-pre-train-I&amp;II, across 4
+    network sizes and 2 fine-tuning-data amounts (Fig 3a). For zero-shot transfer:
+    random guess and dataset average (Fig 3c,d). For insertion: a no-tactile
+    (vision-only) policy, a tactile policy with an encoder trained from scratch,
+    and a tactile policy with the T3 encoder (Fig 4c). All insertion policies share
+    a robot-state MLP and a pre-trained ResNet18 vision encoder.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (network parameter counts
+    given: 12M / 45M / 174M / 308M; encoder ViT MLP-ratio 4.0; reconstruction
+    decoder 512-dim, 16 heads, 8 layers).</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Pre-training helps and scales (Fig 3a).</strong> Across all 24
+configurations, pre-training improved evaluation accuracy with a median
+improvement of <strong>24%</strong>. Larger networks did better &mdash;
+<em>large</em>'s classification accuracy was 19% higher than <em>tiny</em>'s
+&mdash; though the <em>medium</em>-vs-<em>large</em> gap was insignificant. With
+only half the fine-tuning data, pre-trained networks beat from-scratch networks,
+and for <em>medium</em>/<em>large</em> the half-data and full-data fine-tuned
+performances were close, suggesting pre-trained models generalize with less novel
+data. Masking ratio mattered little (85% at mr=30% up to 89% at mr=80%; Fig 3b).</p>
+
+<p><strong>Zero-shot transfer to novel sensors (Fig 3c,d).</strong> Mixed by
+task. On <em>object classification</em>, zero-shot transfer gave only minor gains
+over random guessing &mdash; but a small fine-tune (2,000 points) bounced
+classification accuracy up to <strong>17% with fine-tuning</strong>. On
+<em>pose estimation</em>, zero-shot already showed significant improvement over
+the dataset average, and fine-tuning reduced RMSE by <strong>5.5mm</strong> for
+DenseTact 2.0; on GelSight Svelte the pose errors before and after fine-tuning
+were nearly identical and close to optimal.</p>
+
+<p><strong>Long-horizon insertion (Fig 4c).</strong> Headline claim from the
+abstract: T3-encoder policies achieved a task success rate <strong>25% higher
+than policies trained with from-scratch tactile encoders, and 53% higher than
+without tactile sensing</strong>. The vision-only policy failed every insertion
+on the two harder parts (USB, VGA). The T3 encoder also reduced the average
+number of tactile exploration steps to insert a part.</p>
+
+<table>
+  <tr><th>Insertion policy (15 episodes)</th><th>Tactile encoder</th><th>Relative outcome</th></tr>
+  <tr><td>No tactile (vision-only)</td><td>&mdash;</td><td>Failed all USB &amp; VGA insertions</td></tr>
+  <tr><td>Tactile, from scratch</td><td>Trained from scratch</td><td>Baseline tactile</td></tr>
+  <tr><td><strong>Tactile, T3</strong></td><td>Pre-trained T3</td><td><strong>+25% success vs. scratch; +53% vs. no-tactile; fewer steps</strong></td></tr>
+</table>
+<p class="meta">Per-part success rates and step counts are reported only as bar
+charts (Fig 4c); exact numbers <em>not reported</em> in text.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors (§6):</em></p>
+<ul>
+  <li>FoTa is unbalanced &mdash; the 2 most popular sensors constitute over 50%
+    of the dataset, so the trained model (and policy) may be biased toward them.</li>
+  <li>T3 currently does <em>per-image</em> encoding and is trained with explicit
+    labels in pre-train II / fine-tuning; representation learning on tactile
+    image <em>sequences</em> with sparse or implicit labels is left as future work.</li>
+  <li>T3 / FoTa are limited to <em>camera-based</em> tactile sensors; extending to
+    non-camera-based sensors is future work.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The headline real-world numbers (25% / 53%) come from <strong>15 episodes
+    per part on 3 parts</strong> and are presented as bar charts without seeds or
+    confidence intervals &mdash; a small-N claim relative to the heavily-evaluated
+    pre-training ablations. The exact per-part success counts aren't in the text.</li>
+  <li>The "shared trunk on unaligned data" mechanism is appealing but never
+    isolated: there's no ablation showing the trunk actually transfers structure
+    vs. each encoder doing the work. Trunk-attention-map visualizations (Fig 5)
+    are suggestive, not causal.</li>
+  <li>Zero-shot transfer for <em>classification</em> is essentially random-guess
+    level &mdash; the "zero-shot transferability" headline really only holds for
+    pose estimation; classification needs fine-tuning. The abstract phrasing
+    ("achieved zero-shot transferability in certain sensor-task pairings") is
+    accurate but easy to over-read.</li>
+  <li>medium (174M) &asymp; large (308M) suggests the FoTa data may already be
+    saturating model capacity &mdash; the "scales with bigger networks" claim has
+    a near-term ceiling on this dataset.</li>
+  <li>Pre-train II depends on label availability in the constituent public
+    datasets, so the supervised semantic stage inherits whatever task/label biases
+    those datasets carry.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely <strong>on-theme</strong> for the touch-grounding thesis
+behind this batch: many manipulation predicates I care about for
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>-style
+planning &mdash; <code>is_inserted</code>, <code>is_grasped</code>,
+<code>surface_is_rough</code>, <code>is_screwed_tight</code> &mdash; are
+<em>not visually evaluable</em>; they live in contact. The sub-millimeter
+insertion result is exactly the kind of <code>is_inserted</code> predicate /
+controller that vision alone can't ground (the paper explicitly notes vision
+fails under heavy occlusion). T3 is the <em>representation-layer</em> answer:
+a reusable tactile encoder you could drop in front of a BLADE predicate
+classifier or diffusion-policy body so that the touch features don't have to be
+re-learned per sensor.</p>
+<p>The deeper relevance is methodological. BLADE's bottleneck is that diffusion
+policies and predicate classifiers are trained per-skill from scratch; T3 is the
+tactile analogue of "pre-train a heterogeneous encoder once, reuse everywhere,"
+the same move PARL/BLADE make at the <em>symbolic</em> layer but here at the
+<em>sensory</em> layer. The "shared trunk across unaligned heterogeneous inputs"
+trick is a clean alternative to contrastive alignment and worth tracking if I
+ever want force/touch predicates that survive a sensor swap. Adelson + Lirui Wang
+(of HPT, the proprioceptive-visual heterogeneous-pretraining line) make this a
+credible foundation-model thread, not a one-off.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  T3 captures the shared latent information across different sensor-task pairings
+  by constructing a shared trunk transformer with sensor-specific encoders and
+  task-specific decoders.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  one significant difference is that heterogeneous tactile representation learning
+  lacks <em>aligned</em> data collected with different sensors for different tasks.
+  It is often ill-defined to infer the resemblance of two tactile images collected
+  from different hardware&hellip;
+  <span class="quote-cite">&mdash; §2, Representation learning with heterogeneous data</span>
+</blockquote>
+
+<blockquote>
+  T3 achieved a task success rate 25% higher than that of policies trained with
+  tactile encoders trained from scratch, or 53% higher than without tactile sensing.
+  <span class="quote-cite">&mdash; Abstract / §5.3</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[36] Wang, Chen, Zhao, He 2024 &mdash; HPT (Scaling proprioceptive-visual
+    learning with heterogeneous pre-trained transformers)</strong>
+    (<a href="../../raw/papers/scaling_proprioceptive_visual_learning_heterogeneous_pretrained_transformers.pdf">PDF</a>)
+    &mdash; same shared-trunk heterogeneous-pretraining idea by an overlapping
+    author (Lirui Wang), for proprioceptive-visual policies; the direct
+    architectural sibling.</li>
+  <li><strong>[27] Fu et al. 2024 &mdash; A Touch, Vision, and Language Dataset (TVL)</strong>
+    (<a href="../../raw/papers/touch_vision_language_dataset_multimodal_alignment.pdf">PDF</a>)
+    &mdash; a FoTa constituent and the touch&ndash;vision&ndash;language alignment
+    counterpart; in this batch.</li>
+  <li><strong>[6] Girdhar et al. 2023 &mdash; ImageBind</strong>
+    (<a href="../../raw/papers/imagebind_one_embedding_space.pdf">PDF</a>)
+    &mdash; the cited cross-modal binding anchor T3 contrasts against (aligned vs.
+    unaligned); in this batch.</li>
+  <li><strong>[39] Chen, Van der Merwe, Sipos, Fazeli 2022 &mdash; Visuo-tactile
+    transformers for manipulation</strong> &mdash; prior shared-self-attention
+    cross-modal tactile work; the closest architectural precedent.</li>
+  <li><strong>[9] Wang, Zhao, Du, Adelson, Tedrake 2024 &mdash; PoCo (Policy
+    composition for heterogeneous robot learning)</strong> &mdash; heterogeneous
+    policy composition from the same lab; relevant to reusing T3 features in policies.</li>
+  <li><strong>[30] Gao et al. 2022 &mdash; ObjectFolder 2.0</strong>
+    (<a href="../../raw/papers/objectfolder_2_multisensory_sim2real.pdf">PDF</a>)
+    &mdash; a FoTa constituent; multisensory object dataset; in this batch.</li>
+  <li><strong>[29] Yang et al. 2022 &mdash; Touch and Go</strong>
+    (<a href="../../raw/papers/touch_and_go_human_collected_vision_touch.pdf">PDF</a>)
+    &mdash; a FoTa constituent; in this batch.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a>
+    &mdash; the other major self-supervised touch-representation foundation model
+    (cluster B); the direct competing recipe for a reusable tactile encoder.</li>
+  <li><a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>
+    &mdash; unified static+dynamic visuo-tactile representation across sensors;
+    the closest peer to T3's cross-sensor goal, adding the temporal axis T3 lacks.</li>
+  <li><a href="unit_data_efficient_tactile_representation.html">UniT</a>
+    &mdash; data-efficient tactile representation; complementary low-data angle to
+    T3's large-pretraining angle.</li>
+  <li><a href="mvitac_visuotactile_contrastive_pretraining.html">MViTac</a>
+    &mdash; visual-tactile <em>contrastive</em> pretraining; the aligned-pairs
+    approach T3 deliberately avoids (good contrast point).</li>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL</a>
+    and <a href="binding_touch_to_everything_unitouch.html">UniTouch</a>
+    &mdash; touch&ndash;language/everything binding lines; the alignment-based
+    counterpart to T3's unaligned-trunk strategy, and TVL is a FoTa constituent.</li>
+  <li><a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a>,
+    <a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a>
+    &mdash; FoTa constituent datasets ingested in this batch.</li>
+  <li><a href="gelsight_high_resolution_tactile_sensors.html">GelSight</a> and
+    <a href="digit_low_cost_compact_tactile_sensor.html">DIGIT</a>
+    &mdash; the sensor hardware whose heterogeneity T3 is built to absorb (FoTa
+    includes both families).</li>
+</ul>
+
+</body>
+</html>

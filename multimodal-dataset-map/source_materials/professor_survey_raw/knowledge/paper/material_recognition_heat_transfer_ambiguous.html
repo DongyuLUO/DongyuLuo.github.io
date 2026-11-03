@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Material Recognition via Heat Transfer Given Ambiguous Initial Conditions</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Bhattacharjee, Clever, Wade, Kemp">
+<meta name="year" content="2020">
+<meta name="venue" content="arXiv preprint (IEEE journal format)">
+<meta name="arxiv_id" content="2012.02176">
+<meta name="url" content="https://arxiv.org/abs/2012.02176">
+<meta name="pdf" content="../../raw/papers/material_recognition_heat_transfer_ambiguous.pdf">
+<meta name="tags" content="thermal-sensing, material-recognition, haptics, robot-learning, multisensory, foundational, sensory-fusion">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Material Recognition via Heat Transfer Given Ambiguous Initial Conditions</h1>
+<p class="meta">
+  Tapomayukh Bhattacharjee*, Henry M. Clever*&dagger;, Joshua Wade, Charles C. Kemp
+  &middot; Georgia Institute of Technology (Healthcare Robotics Lab)
+  &middot; 2020
+  &middot; <a href="https://arxiv.org/abs/2012.02176">arXiv:2012.02176</a>
+  &middot; <a href="../../raw/papers/material_recognition_heat_transfer_ambiguous.pdf">PDF</a>
+</p>
+
+<!-- Format note: this is a sensor-physics / psychophysics paper (no manipulation policy, no language). Method section retained but framed around the heat-transfer formalism and the double-sensor proof; "Why I care" marks it as adjacent / thermal-sensing-anchor for Weiyu's non-visually-evaluable-predicate thesis. -->
+
+<p><strong>One-liner.</strong> By heating or cooling a touched material you can make
+two physically different materials feel <em>identical</em> to a single
+temperature sensor (the "ambiguous initial conditions" of the title); this paper
+proves &mdash; and shows empirically &mdash; that a robot with <em>two</em> thermal
+sensors at different temperatures escapes that ambiguity and hits 100% material
+recognition where humans collapse to 5%.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Humans and robots recognize materials by touching them and watching how
+temperature changes during heat transfer &mdash; metal feels colder than wood
+because it conducts heat out of the skin faster (higher thermal effusivity
+<code>e = &radic;(&lambda;&rho;c<sub>p</sub>)</code>). This works at room temperature.
+But the felt temperature depends on <em>both</em> the material's effusivity and
+its initial temperature. So a cold piece of wood can produce the exact same
+measured temperature trace as ambient metal: the cues collide. The authors call
+the initial conditions where the simplified heat-transfer model predicts identical
+measurements <em>ambiguous conditions</em>. The motivation is robotic: for a robot
+to perceive the world reliably by touch, it must not be fooled by an object that
+happens to start at an adversarial temperature &mdash; and ideally it should beat
+the human perceptual limit, not just match it.</p>
+
+<h2>Method</h2>
+<p><strong>The simplified heat-transfer model.</strong> Sensor and object are modeled
+as two semi-infinite solids brought into contact at <code>t=0</code>. The
+temperature measured by a sensing element at depth <code>x<sub>m</sub></code> is
+(Eq. 1):
+<code>T<sub>m</sub>(t) = T<sub>s</sub> + (T<sub>c</sub> &minus; T<sub>s</sub>) &middot; erfc(x<sub>m</sub> / 2&radic;(&alpha;<sub>s</sub>t))</code>,
+where the contact-surface temperature (Eq. 2) is
+<code>T<sub>c</sub> = (T<sub>s</sub>e<sub>s</sub> + T<sub>o</sub>e<sub>o</sub>) / (e<sub>s</sub> + e<sub>o</sub>)</code>.
+Recognizing the material is equivalent to estimating the object effusivity
+<code>e<sub>o</sub></code>. When initial temperatures are fixed and only
+<code>e<sub>o</sub></code> varies, distinct materials give distinct traces &mdash;
+recognition is possible.</p>
+
+<p><strong>Defining ambiguity.</strong> When the object's initial temperature
+<code>T<sub>o</sub></code> is <em>also</em> free to vary, two materials with
+different effusivities can yield identical <code>T<sub>m</sub>(t)</code>. Setting
+<code>T<sub>m1</sub>(t)=T<sub>m2</sub>(t)</code> reduces to equal contact-surface
+temperatures <code>T<sub>c1</sub>=T<sub>c2</sub></code> (Eq. 3). Solving (via
+WolframAlpha) gives the ambiguous object-2 temperature in closed form (Eq. 4) &mdash;
+the temperature you must cool material 2 to so it mimics material 1.</p>
+
+<p><strong>The double-condition sensor (the key result).</strong> Use two thermal
+sensors with <em>distinct</em> initial temperatures <code>T<sub>s1</sub></code>,
+<code>T<sub>s2</sub></code> (effusivities <code>e<sub>s1</sub></code>,
+<code>e<sub>s2</sub></code>). The ambiguous object temperature computed for sensor 1
+differs from that for sensor 2 (Eq. 5) provided <code>e<sub>o2</sub>&ne;e<sub>o1</sub></code>;
+Appendix A gives the full algebraic proof. Intuition: a single object temperature
+can spoof at most one sensor &mdash; the other sensor always sees an unambiguous
+signal. So <em>only one</em> of the two sensors can be fooled at a time, and the
+pair is jointly unambiguous.</p>
+
+<p><strong>Robot realizations.</strong> Three robot studies probe this. (1) A
+<em>human-like</em> active (heated) sensor trained only on ambient materials.
+(2) The same active sensor trained on ambient + cold-wood data (data-driven model
+exploits subtle real-signal deviations the idealized model ignores).
+(3) The <em>double-condition</em> sensor: one active (heated) thermistor + one
+passive (unheated) thermistor at different initial temperatures (Fig. 4a, Fig. 8),
+classified with a linear-kernel SVM.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> No public benchmark &mdash; data
+    collected in-house. Materials: aluminum block (<code>e=23664 J/m&sup2;s<sup>0.5</sup>K</code>)
+    and soft white pine wood (<code>e=331</code>), in three conditions: ambient
+    metal, ambient wood, and refrigerator-cooled wood (the thermally ambiguous
+    case). Robot studies: <code>N=30</code> sets of three trials (540 time series).
+    Human study: 32 participants &times; 3 trials &times; 3 samples = 288 touch cases.</li>
+  <li><strong>Hardware / simulator:</strong> 1-DoF robot, Firgelli L12 linear
+    actuator, Teensy 3.2 microcontroller. Active sensor = Thorlabs HT10K combined
+    thermistor + heater (heated to mean human finger temp 29.5&deg;C); passive
+    sensor = EPCOS B57541G1103F thermistor (&Oslash; 1.4&nbsp;mm). 12-bit ADC,
+    10&nbsp;Hz Butterworth filter, 3&nbsp;N contact force. Cold wood prepared with
+    SO-LOW deep freezer / refrigerated incubator (&minus;35&deg;C to 22.5&deg;C).
+    Human study: blindfold, noise-cancelling headphones, single right-index-finger
+    touch for 5&nbsp;s, forced-choice "wood or metal?".</li>
+  <li><strong>Baselines:</strong> Human participants (32 subjects) as the
+    biological baseline; the single-active-sensor robot as the within-paper
+    comparison point against the double-condition sensor. No external method
+    baselines.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (classifiers are linear-kernel
+    SVMs; negligible).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: under engineered ambiguous conditions, <strong>humans 5%</strong>
+vs. <strong>double-condition robot 100%</strong> material recognition accuracy.</p>
+
+<table>
+  <tr><th>Condition / method</th><th>Cold-wood correctly called "wood"</th></tr>
+  <tr><td>Humans (32 subjects), ambiguous cold wood</td><td>~5% (cold wood misidentified as metal in 93.8% of trials)</td></tr>
+  <tr><td>Humans, ambient wood</td><td>100%</td></tr>
+  <tr><td>Humans, ambient metal &rarr; "metal"</td><td>94%</td></tr>
+  <tr><td>Robot Study 1: human-like active sensor, trained on ambient only</td><td>consistently confuses cold wood as metal (Fig. 6 top)</td></tr>
+  <tr><td>Robot Study 2: active sensor, trained on all conditions</td><td>77&ndash;79% (0.770 cold-wood recall, Fig. 6 bottom-left)</td></tr>
+  <tr><td>Robot Study 3: double-condition (active + passive) sensor</td><td><strong>100%</strong> (Fig. 6 bottom-right)</td></tr>
+</table>
+
+<ul>
+  <li><strong>Humans are reliably fooled.</strong> When the finger temperature sat
+    near the intended ambiguous condition (<code>T<sub>f</sub> &plusmn; &gamma;</code>,
+    <code>&gamma;=3.5&deg;C</code>), participants called cold wood "metal" almost
+    every time &mdash; confirming the simplified model predicts conditions that
+    confuse people.</li>
+  <li><strong>A single sensor can partly recover with the right training.</strong>
+    Robot Study 2 lifts cold-wood accuracy to ~77&ndash;79% by training on ambiguous
+    examples; post-hoc analysis (Fig. 7) finds the temperature-<em>slope</em> in
+    the first ~0.5&nbsp;s of contact carries a residual cue the idealized model
+    discards. Humans cannot exploit it (consistent with known human insensitivity
+    to small temperature changes).</li>
+  <li><strong>The double-condition sensor is the only clean win.</strong> It
+    achieves perfect classification under 27-fold leave-one-block-out CV, matching
+    the mathematical proof &mdash; the passive sensor breaks the tie the active
+    sensor alone cannot.</li>
+  <li><strong>Where the single sensor loses:</strong> Robot Study 1 (ambient-only
+    training) fully collapses on cold wood; even Robot Study 2 leaves ~21&ndash;23%
+    cold-wood error. Only the two-sensor design removes ambiguity in principle and
+    in practice.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Only two materials (aluminum, pine) and a tightly controlled, smooth-sample,
+    single-touch regime &mdash; "under more naturalistic and diverse conditions we
+    would expect the impact of ambiguous conditions to be more severe."</li>
+  <li>Robot Study 2's recovery "may relate to overfitting to the data from our
+    controlled study"; the physical phenomenon enabling the subtle-cue
+    classification "remains unclear."</li>
+  <li>The semi-infinite-solid model ignores air/object/sensor convection, contact
+    pressure, contact area, and continued sensor heating &mdash; valid only for
+    short contact durations.</li>
+  <li>Whether <em>humans</em> could learn to overcome the ambiguity with training
+    (as the robot did) is left open.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>Statistics are thin in the modern-ML sense: the robot studies are
+    <code>N=30</code> trial sets on a single aluminum and single pine block per
+    condition (27-fold leave-one-block-out is over a handful of physical blocks,
+    not material diversity). "100%" is a clean proof-backed number but on a
+    two-class, two-object problem &mdash; it would not obviously survive a 10-material
+    refrigerator-scene test.</li>
+  <li>The double-condition result rests on the passive sensor genuinely sitting at
+    a different temperature than the object; in a real fridge or hot kitchen the
+    passive sensor could equilibrate toward the object and the guarantee softens.
+    The proof assumes controllable, distinct sensor temperatures.</li>
+  <li>No language, no manipulation, no policy &mdash; this is a perception/sensor
+    paper. The "robots can outperform humans" framing is compelling but the
+    downstream value (does better material ID improve a manipulation task?) is
+    asserted, not measured.</li>
+  <li>The slope-cue finding (Fig. 7) is the most generative result and the least
+    explained; it hints that even a single sensor's <em>transient dynamics</em>
+    carry material identity the steady-state model throws away &mdash; a dynamic-tactile
+    angle worth more than the static effusivity story.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is an <strong>adjacent / thermal-sensing anchor</strong>, not a manipulation
+or language paper &mdash; flagging that up front. But it lands squarely on the
+thesis behind the
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+line that motivates this batch: <strong>many manipulation predicates are not
+visually evaluable.</strong> <code>material_is_metal</code>,
+<code>surface_is_rough</code>, <code>contents_are_hot</code> live in thermal and
+tactile signal, exactly the kind of predicate a vision-only classifier
+(BLADE's <code>f<sub>&theta;</sub>(p): O &rarr; {T,F}</code> over RGB crops) cannot
+ground. This paper is a sharp, almost cautionary case study: it shows that even a
+non-visual modality (touch temperature) is <em>itself ambiguous</em> under
+adversarial initial conditions &mdash; a single thermal observation underdetermines
+the predicate, and you need a <em>second, differently-conditioned</em> sensor to
+disambiguate. That is a concrete instance of the broader lesson for predicate
+grounding: a predicate classifier is only as identifiable as the sensing geometry
+that feeds it, and multisensory / active sensing can be the difference between a
+predicate that is learnable and one that is fundamentally aliased. For a future
+BLADE that invents and grounds force/thermal predicates, this paper is the
+physics-level warning that perception design (which sensors, at what conditions)
+is not separable from whether the symbol is well-defined.</p>
+<p>It connects most directly to the <a href="#related">other thermal/material-sensing
+batch papers</a> and to the audio/acoustic-sensing cluster, which make the same
+"a hidden physical property needs a non-visual probe" argument in the acoustic
+domain.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We support this conclusion based on a mathematical proof using a heat transfer
+  model and empirical results in which a robot achieved 100% accuracy compared to
+  5% human accuracy.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  The model predicts that only one of the two temperature sensors can produce
+  ambiguous measurements for the two objects; one of the two sensors will always
+  produce unambiguous measurements.
+  <span class="quote-cite">&mdash; &sect;III.C / p.4</span>
+</blockquote>
+<blockquote>
+  Our findings showing that humans are unable to exploit these phenomena is
+  consistent with past research showing humans' inability to detect small changes
+  in temperature.
+  <span class="quote-cite">&mdash; &sect;VII.B.2 / p.9</span>
+</blockquote>
+
+<h2 id="related">Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>Bhattacharjee, Wade &amp; Kemp [12] &mdash; "Material recognition
+    from heat transfer given varying initial conditions and short-duration
+    contact" (RSS 2015)</strong> &mdash; the direct predecessor; same group,
+    earlier ambiguity formulation.</li>
+  <li><strong>Bhattacharjee, Clever, Wade &amp; Kemp [34] &mdash; "Multimodal
+    tactile perception of objects in a real home" (RA-L 2018)</strong> &mdash; same
+    group applying thermal sensing in-the-wild; the real-home counterpart.</li>
+  <li><strong>Wade, Bhattacharjee, Williams &amp; Kemp [33] &mdash; "A force and
+    thermal sensing skin for robots in human environments" (RAS 2017)</strong>
+    &mdash; the dual-condition sensing skin precursor.</li>
+  <li><strong>Xu, Loeb &amp; Fishel [32] &mdash; tactile object ID with BioTac via
+    Bayesian exploration (ICRA 2013)</strong> and <strong>Kerr, McGinnity &amp;
+    Coleman [18] &mdash; material classification from thermal properties + human
+    evaluation (ROBIO 2013)</strong> &mdash; data-driven thermal/tactile material
+    ID baselines.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="material_recognition_thermal_tactile_database.html">Thermal Tactile Material Recognition (database)</a>
+    &mdash; same Cluster G thermal&ndash;material-sensing theme; the dataset/database
+    counterpart to this paper's controlled two-material study.</li>
+  <li><a href="material_classification_active_temperature_gripper.html">Active Temperature Gripper Material Classification</a>
+    &mdash; Cluster G sibling; uses an <em>actively</em> temperature-controlled
+    gripper, directly echoing this paper's "control the sensor temperature to
+    overcome human limits" idea.</li>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a>
+    &mdash; multisensory fusion for manipulation; the "one modality underdetermines,
+    fuse to disambiguate" lesson here in vision+audio+touch form.</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>
+    &mdash; recovers hidden material/structure via a non-visual probe (acoustic
+    vibration); the acoustic analogue of this paper's thermal disambiguation argument.</li>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; the batch anchor; this paper supplies a physics-level case for why some
+    predicates (material identity) cannot be grounded in vision and need designed
+    multisensory probes.</li>
+</ul>
+
+</body>
+</html>

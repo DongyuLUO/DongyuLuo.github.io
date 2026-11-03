@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>MimicTouch: Leveraging Multi-modal Human Tactile Demonstrations for Contact-rich Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Yu, Han, Wang, Saxena, Xu, Zhao">
+<meta name="year" content="2024">
+<meta name="venue" content="CoRL 2024">
+<meta name="arxiv_id" content="2310.16917">
+<meta name="url" content="https://arxiv.org/abs/2310.16917">
+<meta name="pdf" content="../../raw/papers/mimictouch_human_tactile_demos.pdf">
+<meta name="tags" content="tactile-sensing, imitation-learning, learning-from-demonstration, contact-rich, learning-from-human, acoustic-sensing, multisensory, reinforcement-learning, gelsight, representation-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>MimicTouch: Leveraging Multi-modal Human Tactile Demonstrations for Contact-rich Manipulation</h1>
+<p class="meta">
+  Kelin Yu*, Yunhai Han*, Qixian Wang, Vaibhav Saxena, Danfei Xu, Ye Zhao
+  &middot; Georgia Tech / Zhejiang Technology
+  &middot; CoRL 2024
+  &middot; <a href="https://arxiv.org/abs/2310.16917">arXiv:2310.16917</a>
+  &middot; <a href="../../raw/papers/mimictouch_human_tactile_demos.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> MimicTouch lets a <em>human</em> demonstrate
+contact-rich insertion with their bare hand &mdash; wearing a fingertip
+GelSight + contact mic instead of teleoperating a robot &mdash; then learns a
+tactile-and-audio-only policy by non-parametric imitation and closes the
+human&ndash;robot embodiment gap with residual RL, so the robot inserts using
+the same touch-guided strategy a person would, with no vision at execution time.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Contact-rich tasks like peg insertion and assembly need real-time
+<em>tactile</em> feedback because vision is occluded at the contact interface
+and tolerances are tight. Prior tactile imitation methods collect data by
+<em>teleoperating</em> a sensorized robot &mdash; but the human teleoperator
+steers using <em>visual</em> feedback, so the modality that controls the
+demonstration (vision) differs from the modality the policy is supposed to
+learn from (touch). MimicTouch names this the "sensing gap": teleoperated
+tactile demos never actually encode a human's tactile-guided control strategy,
+they only record touch as a passenger. Teleoperation is also slow, requires
+expertise, and tends to restrict the action space to low-DoF (e.g. 3D
+translation) to keep dynamic motions tractable. The paper's bet: collect demos
+<em>directly from the human hand</em> so the touch signal is the thing driving
+the motion, then transfer that strategy to the robot.</p>
+
+<h2>Method</h2>
+<p>Four stages, shown in Fig 2: (a) human tactile data collection,
+(b) self-supervised representation learning, (c) non-parametric offline policy,
+(d) online residual RL fine-tuning on the real robot.</p>
+
+<p><strong>1. Human tactile data collection (Sec 3.1).</strong> A human performs
+the insertion with their hand. Fingertip <em>pose</em> is tracked with a
+RealSense camera reading an ArUco marker, then calibrated/filtered into
+end-effector poses. A <strong>GelSight Mini</strong> vision-based tactile sensor
+is mounted on the fingertip via a custom fixture for contact images
+(only one tactile sensor is used, not two). A <strong>HOYUJI TD-11 piezo-electric
+contact microphone</strong> captures audio/vibration; crucially it is placed
+<em>at the base of the insertion hole</em> (not on the hand) to keep vibration
+signals consistent between the human and robot embodiments. The action is the
+<code>6D</code> delta pose of the end-effector &mdash; a full 6-DoF space rather
+than the restricted 3D of prior teleop work.</p>
+
+<p><strong>2. Tactile representation learning (Sec 3.2).</strong> Raw tactile
+images and audio spectra are high-dimensional and noisy, and human-vs-robot
+contact forces differ, so MimicTouch learns compact embeddings with
+self-supervision. <strong>BYOL</strong> is trained on tactile images and
+<strong>BYOL-A</strong> on 2 Hz-segmented audio spectra; both embedding spaces
+are 2048-dimensional. This maps augmented views of the same signal to nearby
+embeddings, making them robust to task-irrelevant sensor noise. Dataset:
+100 demonstration trajectories (successful, failed, and sub-optimal),
+7657 tactile images and 1000 audio segments.</p>
+
+<p><strong>3. Non-parametric offline policy (Sec 3.3).</strong> Built on the
+VINN/NN framework (Pari et al. [12]) but <em>extended to tactile + audio without
+visual input</em>. At step <code>i</code> the observation is
+<code>(o_i^T, o_i^A, o_i^EE, a_i)</code> &mdash; tactile, audio, end-effector
+pose, action. Pre-trained encoders give features <code>(y_i^T, y_i^A)</code>;
+together with pose <code>o_i^EE</code> these form a normalized demonstration
+library (max inter-feature distance scaled to unity). At test time the live
+observation is encoded into a query feature and a
+<strong>nearest-neighbor</strong> lookup retrieves the action. Non-parametric
+lookup is chosen deliberately over parametric nets to avoid covariant
+shift/compounding error from out-of-domain human demos &mdash; it constrains the
+robot to demonstrated behaviors, which the authors argue is safer for real
+contact-rich tasks.</p>
+
+<p><strong>4. Online residual RL fine-tuning (Sec 3.4).</strong> The offline NN
+policy alone doesn't guarantee success on the robot due to (i) hand-vs-gripper
+morphology, (ii) noisy fingertip tracking, and (iii) underexplored contact
+effects. A <em>residual</em> policy <code>&pi;_r</code> is trained with
+<strong>SAC</strong>; the robot action is the sum of the (frozen) offline policy
+output and the residual output, with tight action limits so the residual only
+makes slight adjustments. Reward combines an <strong>expert-aligned term</strong>
+&mdash; the KL divergence between the human-expert trajectory distribution and
+the robot's executed trajectory (encourages mimicking the demos) &mdash; with a
+<strong>task-specific term</strong> that drives exploration toward in-domain
+success. Around 70 actions/trajectory with a replay buffer.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected human tactile
+    dataset (100 trajectories; 7657 tactile images, 1000 audio segments) on a
+    3D-printed cylinder-and-hole insertion task. Seven zero-shot generalization
+    tasks across five domains (Fig 5): shifting positions, tilting angles
+    (10&deg;/20&deg;), two-stage dense packing, multi-material packing
+    (rigid/soft), and furniture assembly (FurnitureBench-style leg threading).</li>
+  <li><strong>Hardware / simulator:</strong> Franka Emika Panda arm; learned
+    policy outputs 6-DoF pose commands mapped to 7-DoF joint torques via IK +
+    low-level controller. GelSight Mini fingertip tactile sensor, HOYUJI TD-11
+    piezo contact microphone at the hole base, RealSense + ArUco fingertip
+    tracking. Real-world only; no simulator.</li>
+  <li><strong>Baselines:</strong> Data collection &mdash; Spacemouse teleoperation
+    and Hand-guided (kinesthetic) teleoperation. Offline policy &mdash; MULSA [6]
+    (parametric multisensory IL). Generalization &mdash; Openloop Policy (replays
+    5 successful trajectories from the initial setting).</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (RL fine-tuning evaluated
+    every 20 min / ~13 epochs; full policy reaches its peak by 3 hours).</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Data collection throughput (Table 1).</strong> Human tactile demos
+dominate teleoperation on both speed and quality:</p>
+
+<table>
+  <tr><th>Method</th><th>Frequency</th><th>Usable success rate</th></tr>
+  <tr><td>Spacemouse teleoperation</td><td>19 traj/hr</td><td>38.5% (20/52)</td></tr>
+  <tr><td>Hand teleoperation</td><td>44 traj/hr</td><td>58.8% (20/34)</td></tr>
+  <tr><td><strong>Human tactile demonstrations</strong></td><td><strong>104 traj/hr</strong></td><td><strong>83.3% (20/24)</strong></td></tr>
+</table>
+
+<p><strong>Offline policy (Sec 4.2).</strong> The NN-based policy reaches MSE
+0.21 vs MULSA's 1.53, and 40% (10/25) real task success vs MULSA's 16% (4/25)
+&mdash; non-parametric lookup produces more reliable 6D actions for downstream
+RL. Trained on human tactile demos, the NN policy hits 40% (10/25) vs 12% (3/25)
+from Spacemouse-teleop demos and 28% (7/25) from hand-guided teleop demos.
+Action-index trends (Fig 3) show human-tactile rollouts are near-linear with low
+variance, while teleop policies are nonlinear and high-variance during the
+insertion phase &mdash; teleop lacks the human tactile feedback that captures
+contact events.</p>
+
+<p><strong>Online RL (Sec 4.3).</strong> With human tactile demos as the offline
+prior, residual RL reaches <strong>96% (24/25)</strong> success in 3 hours
+(88% / 22-25 at 2 hours), versus 32% (8/25, Spacemouse) and 60% (15/25,
+hand-guided) for teleop priors at the same time &mdash; the better prior makes
+RL both higher-ceiling and more sample-efficient.</p>
+
+<p><strong>Zero-shot generalization (Table 2),</strong> MimicTouch final policy
+vs Openloop replay:</p>
+
+<table>
+  <tr><th>Policy</th><th>Shift</th><th>10&deg;</th><th>20&deg;</th><th>Two-stage</th><th>Rigid</th><th>Soft</th><th>Assem(I)</th><th>Assem</th></tr>
+  <tr><td>Openloop</td><td>24/40</td><td>14/25</td><td>10/25</td><td>13/25</td><td>13/25</td><td>9/25</td><td>8/25</td><td>3/25</td></tr>
+  <tr><td><strong>MimicTouch</strong></td><td><strong>37/40</strong></td><td><strong>23/25</strong></td><td><strong>20/25</strong></td><td><strong>22/25</strong></td><td><strong>20/25</strong></td><td><strong>16/25</strong></td><td><strong>19/25</strong></td><td><strong>13/25</strong></td></tr>
+</table>
+
+<p>MimicTouch beats Openloop in every domain, including a previously-unseen
+furniture-assembly task &mdash; evidence the learned policy reacts to contact
+rather than replaying a fixed trajectory.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors (Sec 5):</em></p>
+<ul>
+  <li>Still needs several hours of on-robot RL to bridge the embodiment gap;
+    better representation learning could shrink this.</li>
+  <li>Task-specific &mdash; cannot directly transfer the tactile-guided control
+    strategy to a new task; a generalizable tactile dynamics model is proposed
+    as future work.</li>
+  <li>Only demonstrated on two-piece insertion/assembly; extension to dexterous,
+    bimanual, and soft-object manipulation is open.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>Almost every headline number is count-of-success out of N (10/25, 24/25,
+    20/24) with no seeds or confidence intervals &mdash; weaker statistics than
+    a rate&plusmn;std. 24/25 vs 22/25 at 2h vs 3h is one episode apart.</li>
+  <li>The contact mic sits at the <em>hole base</em>, not on the robot/hand. This
+    elegantly sidesteps the human-vs-robot vibration mismatch, but it means audio
+    only works when you can instrument the receptacle &mdash; a strong assumption
+    that wouldn't hold for in-the-wild or mobile insertion. An ablation isolating
+    audio's contribution is deferred to Appendix J.</li>
+  <li>The offline-policy comparison is partly confounded: NN-vs-MULSA conflates
+    "non-parametric" with "this representation pipeline." MULSA at 16% is a low
+    bar; no parametric-on-the-same-embeddings control.</li>
+  <li>Fingertip pose comes from a single-camera ArUco marker, which the authors
+    admit is noisy under fast motion &mdash; part of why RL is <em>needed</em>
+    rather than a clean offline transfer. Demo "throughput" advantage is partly
+    bought back as RL fine-tuning time.</li>
+  <li>100 demos, one peg geometry for training. Generalization is impressive but
+    all within insertion-like contact topology; no claim about categorically
+    different contact modes (e.g. screwing, sliding).</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is squarely on the batch thesis that <strong>many manipulation
+predicates aren't visually evaluable</strong>. <code>is_inserted</code>,
+<code>is_seated</code>, "the peg caught the chamfer," "two surfaces are flush"
+&mdash; MimicTouch shows these are read off touch and contact-vibration, not
+pixels, to the point that its execution policy uses <em>no vision at all</em>.
+For the BLADE line this is a concrete instance of the gap I keep flagging:
+BLADE's predicate classifiers are visual (open-vocab detector crops + neural
+classifier), and BLADE explicitly lists contact-rich tasks and continuous force
+parameters as out of scope. MimicTouch is what the <em>controller body</em> of a
+contact-rich behavior looks like when you take touch seriously &mdash; and its
+audio-at-the-hole trick is a reminder that some predicates have a natural
+non-visual evaluator if you instrument the right place.</p>
+<p>Two things to carry forward. (1) The <strong>human-hand-demo + residual-RL</strong>
+recipe is a data-collection answer to BLADE's reliance on robot teleop demos;
+collecting tactile demos at 104 traj/hr without a robot in the loop is a real
+throughput unlock if the embodiment gap can be closed offline. (2) The
+<strong>expert-aligned KL reward</strong> is a clean way to keep an RL-tuned
+controller faithful to a demonstrated strategy &mdash; relevant if BLADE-style
+behaviors ever get force-modulated controllers fine-tuned on hardware. This is
+an execution-layer / low-level-policy paper, not a planning-abstraction paper:
+no symbols, no composition, single behavior. Its relevance to my thesis is as a
+<em>tactile controller + tactile predicate-evaluator</em> existence proof, not
+as a planning method.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  However, to provide the demonstration, human demonstrators often rely on
+  visual feedback to control the robot. This creates a gap between the sensing
+  modality used for controlling the robot (visual) and the modality of interest
+  (tactile).
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  Humans exhibit fine-grained manipulation skills through tactile sensing, which
+  allows for successful insertions by solely using tactile feedback to generate
+  complex, continuous, and precise motions.
+  <span class="quote-cite">&mdash; &sect;1, Introduction / p.2</span>
+</blockquote>
+
+<blockquote>
+  We combine an expert-aligned reward, which is measured by the KL divergence
+  between the human expert trajectory and the robot executed trajectory, with a
+  task-specific reward.
+  <span class="quote-cite">&mdash; &sect;3.4 / p.5</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[6] Li et al. 2022 &mdash; See, Hear, and Feel (MULSA)</strong>
+    (CoRL) &mdash; the parametric multisensory-fusion baseline; in this batch as
+    <a href="../../raw/papers/see_hear_feel_sensory_fusion.pdf">see_hear_feel_sensory_fusion</a>.</li>
+  <li><strong>[7] Guzey et al. 2023 &mdash; Dexterity from Touch (T-DEX)</strong>
+    (CoRL) &mdash; self-supervised tactile pretraining + tactile play; in this
+    batch as <a href="../../raw/papers/dexterity_from_touch_self_supervised_pretraining.pdf">dexterity_from_touch_self_supervised_pretraining</a>.</li>
+  <li><strong>[10] Chi et al. 2024 &mdash; Universal Manipulation Interface (UMI)</strong>
+    (RSS) &mdash; the in-the-wild hand-held data-collection cousin; closest peer
+    in collecting demos without a robot in the loop.</li>
+  <li><strong>[12] Pari et al. 2022 &mdash; The Surprising Effectiveness of
+    Representation Learning for Visual Imitation (VINN)</strong> (RSS) &mdash; the
+    non-parametric NN framework MimicTouch extends to tactile+audio.</li>
+  <li><strong>[13] Yuan et al. 2017 &mdash; GelSight</strong> (Sensors) &mdash;
+    the tactile-sensor foundation; in this batch as
+    <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">gelsight_high_resolution_tactile_sensors</a>.</li>
+  <li><strong>[28] Thankaraj &amp; Pinto 2023 &mdash; That Sounds Right</strong>
+    (CoRL) &mdash; auditory self-supervision for manipulation; in this batch as
+    <a href="../../raw/papers/that_sounds_right_auditory_self_supervision.pdf">that_sounds_right_auditory_self_supervision</a>.</li>
+  <li><strong>[47] Du et al. 2022 &mdash; Play it by Ear</strong> (RSS) &mdash;
+    audio-visual imitation through occlusion; in this batch as
+    <a href="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">play_it_by_ear_audio_visual_imitation</a>.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="kinedex_tactile_kinesthetic_teaching.html">KineDex</a> &mdash;
+    same cluster F; another tactile + kinesthetic-teaching route to contact-rich
+    policies. Direct methodological peer on how to source tactile demos.</li>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel (MULSA)</a>
+    &mdash; the exact parametric baseline MimicTouch beats; the multisensory-fusion
+    counterpart it positions itself against.</li>
+  <li><a href="dexterity_from_touch_self_supervised_pretraining.html">Dexterity from Touch (T-DEX)</a>
+    &mdash; the self-supervised tactile-representation recipe (BYOL-on-touch)
+    MimicTouch's representation stage builds on.</li>
+  <li><a href="that_sounds_right_auditory_self_supervision.html">That Sounds Right</a>
+    and <a href="play_it_by_ear_audio_visual_imitation.html">Play it by Ear</a>
+    &mdash; the contact-audio-for-manipulation line MimicTouch's piezo-mic channel
+    sits in.</li>
+  <li><a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive Diffusion Policy</a>
+    and <a href="tactile_conditioned_diffusion_policy_force_aware.html">Tactile-Conditioned Diffusion Policy</a>
+    &mdash; cluster-F parametric (diffusion) alternatives to MimicTouch's
+    non-parametric NN controller; useful contrast on policy class for contact-rich
+    insertion.</li>
+  <li><a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; the planning-abstraction anchor whose visual predicate classifiers and
+    diffusion-policy bodies this paper complements at the contact-rich,
+    non-visual-evaluator extreme.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>DexYCB</title>
+<meta name="type" content="paper">
+<meta name="authors" content="">
+<meta name="year" content="2021">
+<meta name="venue" content="datasets.bot public catalog">
+<meta name="arxiv_id" content="2104.04631">
+<meta name="url" content="https://arxiv.org/abs/2104.04631">
+<meta name="pdf" content="https://arxiv.org/abs/2104.04631">
+<meta name="tags" content="datasets-bot,open-data,physical,depth,segmentation,rgb,custom">
+<meta name="status" content="datasets-bot-crosscheck">
+<meta name="ingested" content="2026-06-28">
+<meta name="source_prompt" content="datasets.bot public catalog cross-check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .meta { color: #777; font-size: 0.9em; }
+  a { color: #2962ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>DexYCB</h1>
+<p class="meta">NVIDIA (with University of Washington) &middot; 2021 &middot; datasets.bot &middot; <a href="https://datasets.bot/datasets/dexycb">datasets.bot page</a></p>
+<p><strong>One-liner.</strong> NVIDIA RGB-D benchmark: 582K frames of 10 humans grasping 20 YCB objects, captured from 8 RealSense cameras with hand/object pose labels.</p>
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> DexYCB is a large-scale RGB-D dataset of 582,000 frames capturing 10 human subjects grasping 20 objects from the YCB-Video set, recorded synchronously from 8 calibrated Intel RealSense D415 cameras around a tabletop (640x480 @ 30fps, 1,000 trials total). Each frame is annotated with segmentation masks, 6D object poses, MANO hand pose, and 2D/3D hand joints. It supports tasks including 2D detection, 6D object pose estimation, 3D hand pose estimation, and a robotics-relevant safe human-to-robot handover grasp-generation task. License: CC-BY-NC-4.0. Download: https://dex-ycb.github.io/.</li>
+  <li><strong>Hardware / simulator:</strong> Embodiment: human. Environment: lab, tabletop. Realness: physical.</li>
+</ul>
+<h2>Schema</h2>
+<p>per-frame label files (NPZ): {color, depth, segmentation, 6D object poses, MANO hand pose, 2D/3D hand joints}; organized by date/subject sequences across 8 camera views</p>
+<h2>Links</h2>
+<ul>
+  <li><a href="https://datasets.bot/datasets/dexycb">datasets.bot page</a></li>
+  <li><a href="https://dex-ycb.github.io/">Homepage</a></li>
+  <li><a href="https://arxiv.org/abs/2104.04631">Paper</a></li>
+  <li><a href="https://dex-ycb.github.io/">Download</a></li>
+</ul>
+</body>
+</html>

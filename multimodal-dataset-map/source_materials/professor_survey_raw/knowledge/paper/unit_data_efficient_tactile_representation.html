@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>UniT: Data Efficient Tactile Representation with Generalization to Unseen Objects</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Xu, Uppuluri, Zhang, Fitch, Crandall, Shou, Wang, She">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2408.06481">
+<meta name="url" content="https://arxiv.org/abs/2408.06481">
+<meta name="pdf" content="../../raw/papers/unit_data_efficient_tactile_representation.pdf">
+<meta name="tags" content="tactile-representation, data-efficient, representation-learning, vision-based-tactile, gelsight, self-supervised-learning, diffusion-policy, imitation-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>UniT: Data Efficient Tactile Representation with Generalization to Unseen Objects</h1>
+<p class="meta">
+  Zhengtong Xu, Raghava Uppuluri, Xinwei Zhang, Cael Fitch, Philip Glen Crandall,
+  Wan Shou, Dongyi Wang, Yu She
+  &middot; Purdue University / University of Arkansas
+  &middot; 2025
+  &middot; <a href="https://arxiv.org/abs/2408.06481">arXiv:2408.06481</a>
+  &middot; <a href="../../raw/papers/unit_data_efficient_tactile_representation.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Train a VQGAN autoencoder on the tactile images
+from <em>one simple object</em> (an Allen key or a small ball, &lt;20&nbsp;min
+of GelSight-mini data) and its encoder becomes a plug-and-play tactile
+representation that zero-shot generalizes to unseen objects and beats T3, MAE,
+BYOL, and from-scratch ResNet on pose estimation, classification, and
+visuo-tactile diffusion-policy learning.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Vision-based tactile sensors (GelSight) carry rich contact geometry, in-hand
+pose, and force-distribution information that pure RGB / point-cloud inputs miss
+in contact-rich manipulation. But existing tactile representation learners
+either are task-specific or &mdash; like the scaling-oriented
+<a href="../../raw/papers/t3_transferable_tactile_transformers.pdf">T3</a> and
+masked-autoencoder approaches &mdash; demand large, multi-sensor / multi-task
+tactile datasets. The authors ask whether a single, <em>simple</em> object can
+yield a tactile representation that (1) generalizes, (2) preserves as much of
+the rich tactile signal as possible, and (3) transfers zero-shot across many
+downstream tasks. The key insight motivating the method: tactile images have a
+much more compact, low-variance color distribution than natural images (the
+imaging process discards object/background color, keeping only contact geometry
+and marker shear), so a VQ-regularized latent should be learnable from very
+little data.</p>
+
+<h2>Method</h2>
+<p><strong>Backbone &mdash; VQGAN as a tactile autoencoder.</strong> UniT
+repurposes VQGAN (a VQVAE generator + patch-based discriminator, originally for
+high-res image synthesis, Fig&nbsp;1) purely as an autoencoder for tactile image
+compression. A CNN encoder <code>E</code> maps a tactile image
+<code>x &isin; R^{H&times;W&times;3}</code> to a latent
+<code>z = E(x) &isin; R^{h&times;w&times;c}</code> through a quantization layer;
+a CNN decoder <code>G</code> reconstructs <code>x&#770;</code>; a patch-based
+discriminator <code>D</code> supplies an adversarial real/fake loss. The whole
+thing is trained self-supervised (reconstruction + VQ + adversarial). The
+authors argue VQ regularization yields a <em>structured, low-variance</em>
+latent that amplifies salient contact features and suppresses background color
+variance (Fig&nbsp;6 visualizes CNN-vs-VQGAN latents: without VQ the latent still
+mirrors the input color distribution; with VQ it becomes a distinct, dichotomous
+representation).</p>
+
+<p><strong>Train with a single simple object.</strong> The autoencoder is
+trained on tactile images from one object &mdash; an Allen key (10,854 images)
+or a small ball (4,831 images), each collected from one GelSight mini in
+&lt;20&nbsp;min at 10&nbsp;Hz by continuously varying contact configuration and
+force. Both objects lack surface texture; the small ball is the extreme case
+(no texture, edges, sharp shape; omnidirectionally symmetric), so generalization
+from it is the hardest test of the approach.</p>
+
+<p><strong>Decoder head for downstream tasks.</strong> After training, the
+decoder and discriminator are discarded; the frozen (or fine-tuned) encoder is
+connected to lightweight decoder blocks built from <code>Conv2D</code>,
+<code>GroupNorm</code>, and <code>SEBlock</code> modules (Fig&nbsp;2) feeding
+perception or policy heads. The paper shows that freezing the UniT encoder and
+training only the decoder head matches full fine-tuning. For policy learning,
+UniT plugs in as the tactile encoder of a <a href="../paper/ambient_diffusion_policy_imitation_learning_from_suboptimal_data.html">diffusion policy</a>-style
+visuo-tactile imitation pipeline, identical to baselines except for the tactile
+encoder.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected GelSight-mini
+    tactile datasets (Allen key 10,854 imgs; small ball 4,831 imgs) for
+    representation training. Downstream: USB-plug 3D pose (quaternion) and 6D
+    pose (position + quaternion) estimation, self-collected with OptiTrack
+    ground truth (10,111 train / 1,229 test images, 9:1 episode split);
+    YCB-Sight tactile classification (6 objects, 240 contact images, 8:2 split);
+    three real Aloha manipulation tasks (Chicken Legs Hanging, Chips Grasping,
+    Allen Key Insertion); a simulated peg-insertion task built on TacSL
+    (30 demos via SpaceMouse).</li>
+  <li><strong>Hardware / simulator:</strong> GelSight mini sensors with markers
+    (3 used for reconstruction generalization tests). Aloha low-cost dual-arm
+    platform, each gripper carrying a GelSight Mini; bimanual 14-DoF / single-arm
+    7-DoF action spaces, 10&nbsp;Hz rollout, 24 diffusion denoising steps.
+    Simulated peg insertion uses TacSL with two camera views + one GelSight image.</li>
+  <li><strong>Baselines:</strong> T3 (state-of-the-art tactile transformer;
+    Tiny/Small/Medium/Large, pretrained on large tactile data), MAE
+    (ViT-Tiny/Base, mask ratios 0.25/0.5/0.75), BYOL, ResNet from scratch and
+    ResNet with ImageNet pretraining; for policy: vision-only diffusion policy
+    and visual-tactile diffusion policy with from-scratch tactile encoder.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (model sizes given: UniT
+    rep-dim 16&times;20 is 79.81&nbsp;M params vs MAE ViT-Base 143.20&nbsp;M;
+    training schedule 500 epochs for policies, rollouts every 25 epochs).</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>USB-plug pose estimation (mean absolute error; lower is better).</strong>
+On 6D pose (Table II), UniT achieves rotation error 0.155&nbsp;rad and position
+error 4.8&nbsp;mm, beating all baselines:</p>
+
+<table>
+  <tr><th>Method (6D pose)</th><th>Rotation (rad)&darr;</th><th>Position (mm)&darr;</th></tr>
+  <tr><td>BYOL</td><td>1.202</td><td>11.2</td></tr>
+  <tr><td>MAE (best, 0.75)</td><td>0.284</td><td>6.0</td></tr>
+  <tr><td>T3 (best, Medium)</td><td>0.306</td><td>5.8</td></tr>
+  <tr><td>ResNet (pretrain)</td><td>0.336</td><td>5.8</td></tr>
+  <tr><td><strong>UniT</strong></td><td><strong>0.155</strong></td><td><strong>4.8</strong></td></tr>
+</table>
+
+<p>On 3D pose (Table I), UniT (Allen-key-trained, rep-dim 16&times;20) reaches
+0.128&nbsp;rad on Allen key and 0.166 on small ball, best among methods including
+T3-Large (0.332). Notably <strong>UniT trained only on a small ball
+(0.166)</strong> still beats T3 and ResNet, underscoring the single-simple-object
+claim.</p>
+
+<p><strong>Classification (YCB-Sight, Table III).</strong> UniT hits 92.1% in the
+<em>freeze</em> (zero-shot transfer) setting &mdash; far above MAE (max 81.0%),
+T3 (max 82.3%), and ResNet (85.4%). After fine-tuning, UniT 97.3% is comparable
+to ResNet-pretrain (97.9%) and BYOL (97.5%); the headline advantage is zero-shot.</p>
+
+<p><strong>Policy learning (Table V, real tasks).</strong> Visual-tactile policy
+with UniT gives the best success on all three real tasks: Chicken Legs Hanging
+13/15 one-leg &amp; 9/15 two-legs (vs vision-only 9/15, 6/15), Chips Grasping
+14/15, Allen Key Insertion 23/30 total (vs 15/30 vision-only, 17/30 scratch). On
+simulated peg insertion (Table VI), UniT-Freeze 0.571 / UniT-Fine-Tune 0.575 beat
+vision-only (0.501), scratch visual-tactile (0.502), and T3 (0.509/0.516).</p>
+
+<p><strong>Where it loses / is only a tie.</strong> In the fine-tuned
+classification and the fine-tuned-pose regimes, UniT is roughly comparable to,
+not clearly ahead of, ResNet-with-pretraining and BYOL &mdash; the authors
+attribute their strength to small dataset size. Ablations (Table I) show removing
+VQ hurts across all rep-dims, and the discriminator generally helps (with a minor
+exception on the small ball at 8&times;10).</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>UniT does <strong>not</strong> transfer across <em>different sensor types</em>
+    with drastically different image characteristics &mdash; it relies on minimal
+    data from a single sensor type, so a new sensor needs new (small) data.</li>
+  <li>The single-object training caps texture diversity; future work proposes
+    training on a broader set of physical objects (e.g., intricate fabric-like
+    patterns) to enrich fine-texture capture.</li>
+  <li>Approach is scoped to GelSight-family marker-gel sensors; other sensor
+    families are assumed compatible but untested.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>Real-task results are reported as count-of-success out of 10&ndash;15
+    (e.g., 13/15, 8/10), not rates over multiple seeds &mdash; a smaller
+    statistical claim than the pose/classification tables, and with N this small
+    the per-task gaps over baselines are noisy.</li>
+  <li>The central claim ("a <em>single simple object</em> suffices") is shown for
+    two objects (Allen key, small ball) on essentially one downstream-sensor type.
+    Whether the choice of training object matters is only lightly probed &mdash;
+    Fig&nbsp;3/text note the Allen key generalizes better than the ball, but there's
+    no systematic study of which object properties drive the representation.</li>
+  <li>VQGAN is borrowed wholesale; the paper offers an intuition (compact tactile
+    color distribution) for <em>why</em> VQ helps but no quantitative analysis of
+    the codebook (utilization, size sensitivity) &mdash; the mechanism is argued
+    visually (Fig&nbsp;6) rather than measured.</li>
+  <li>Everything stays at the level of a learned dense feature; UniT produces a
+    good tactile <em>embedding</em> but no symbolic / interpretable structure
+    (no force or contact-state read-out), so downstream heads must relearn any
+    task-relevant predicate from scratch.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>Direct relevance to the thesis behind
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+many manipulation predicates BLADE would want &mdash; <code>is_grasped</code>,
+<code>is_inserted</code>, <code>is_screwed_tight</code>,
+<code>surface_is_rough</code> &mdash; are <em>not</em> visually evaluable; they
+live in contact geometry and shear, exactly what a GelSight image encodes. BLADE
+currently learns predicate classifiers from RGB crops; UniT is a concrete answer
+to "what feature backbone feeds a <em>tactile</em> predicate classifier," and its
+data-efficiency story (one object, &lt;20&nbsp;min) is attractive because
+collecting per-predicate tactile labels is expensive. UniT's USB-plug 6D-pose
+result is essentially a learned continuous read-out of in-hand insertion state &mdash;
+the kind of signal BLADE's purely-categorical abstraction layer cannot currently
+express (a limitation I flagged in BLADE's own "what I noticed"). This makes UniT
+a candidate perception module for a force/contact-aware extension of BLADE's
+predicate set.</p>
+<p>That said, UniT is a <em>representation-learning</em> paper, not a planning or
+language paper &mdash; it has no symbolic abstraction, no language, and no
+long-horizon composition. Its relevance is as an upstream sensory encoder, not a
+method comparison for BLADE's bi-level planning. Within this batch it sits in
+Cluster B (tactile representation backbones) alongside Sparsh and T3, which it
+directly outperforms on the shared benchmarks.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Can we use a single simple object to learn a data efficient tactile
+  representation of one type of GelSight that 1) possesses generalizability,
+  2) incorporates as much of the rich information present in tactile images as
+  possible, and 3) can be applied in a zero-shot manner across a variety of
+  downstream tasks involving different objects?
+  <span class="quote-cite">&mdash; &sect;I Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  In this paper, we demonstrate that VQGAN can serve as a highly effective
+  tactile representation learner that can be trained with minimal data.
+  <span class="quote-cite">&mdash; &sect;III Background / p.2</span>
+</blockquote>
+<blockquote>
+  Recording images at a frequency of 10 Hz enables the acquisition of such a
+  dataset for a single object for no more than 20 minutes.
+  <span class="quote-cite">&mdash; &sect;IV-B / p.4</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[10] Zhao et al. &mdash; T3: Transferable Tactile Transformers</strong>
+    &mdash; the SOTA tactile-representation baseline UniT beats; the scale-driven
+    counterpoint to UniT's data-efficiency thesis.
+    (<a href="../../raw/papers/t3_transferable_tactile_transformers.pdf">expected PDF</a>)</li>
+  <li><strong>[21] Higuera et al. &mdash; Sparsh</strong> &mdash; self-supervised
+    multi-sensor touch representations; the other major tactile-foundation backbone
+    in this batch.
+    (<a href="../../raw/papers/sparsh_self_supervised_touch_representations.pdf">expected PDF</a>)</li>
+  <li><strong>[22] Yang et al. &mdash; Binding Touch to Everything (UniTouch)</strong>
+    &mdash; aligns tactile embeddings to pretrained image/everything embeddings;
+    the multimodal-binding alternative to UniT's pure reconstruction.
+    (<a href="../../raw/papers/binding_touch_to_everything_unitouch.pdf">expected PDF</a>)</li>
+  <li><strong>[1] Chi et al. &mdash; Diffusion Policy</strong> (RSS 2023) &mdash;
+    the policy backbone UniT plugs into; shared low-level controller with BLADE.</li>
+  <li><strong>[4] Yuan, Dong &amp; Adelson &mdash; GelSight</strong> &mdash; the
+    sensor and marker-tracking method underpinning UniT's tactile images.
+    (<a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">expected PDF</a>)</li>
+  <li><strong>[30] Akinola et al. &mdash; TacSL</strong> &mdash; the visuo-tactile
+    sim library used for the simulated peg-insertion benchmark.</li>
+  <li><strong>[23] Esser et al. &mdash; Taming Transformers (VQGAN)</strong> /
+    <strong>[24] van den Oord et al. &mdash; VQVAE</strong> &mdash; the
+    autoencoder formalism UniT repurposes.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; the anchor: UniT is a candidate tactile backbone for the
+    non-visually-evaluable predicates BLADE's abstraction layer can't currently
+    express.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a>,
+    <a href="t3_transferable_tactile_transformers.html">T3</a>,
+    <a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>, and
+    <a href="mvitac_visuotactile_contrastive_pretraining.html">MViTac</a>
+    &mdash; same Cluster B tactile-representation family; UniT's data-efficiency
+    angle is the contrast to their scaling/multimodal-alignment approaches.</li>
+  <li><a href="dexterity_from_touch_self_supervised_pretraining.html">T-DEX</a> and
+    <a href="see_to_touch_tactile_dexterity_visual_incentives.html">See to Touch</a>
+    &mdash; self-supervised tactile pretraining for dexterity; downstream-policy
+    siblings to UniT's policy-learning experiments.</li>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a> and
+    <a href="touch_vision_language_dataset_multimodal_alignment.html">TVL</a>
+    &mdash; the touch&ndash;language / multimodal-binding line; a route to make
+    a UniT-style encoder language-queryable for predicate grounding.</li>
+</ul>
+
+</body>
+</html>

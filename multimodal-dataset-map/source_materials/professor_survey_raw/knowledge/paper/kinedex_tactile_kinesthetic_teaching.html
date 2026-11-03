@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>KineDex: Learning Tactile-Informed Visuomotor Policies via Kinesthetic Teaching for Dexterous Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Zhang, Yuan, Wen, Zhang, Zhao, Gao">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2505.01974">
+<meta name="url" content="https://arxiv.org/abs/2505.01974">
+<meta name="pdf" content="../../raw/papers/kinedex_tactile_kinesthetic_teaching.pdf">
+<meta name="tags" content="tactile-sensing, kinesthetic-teaching, imitation-learning, dexterous-manipulation, visuo-tactile, force-control, diffusion-policy, contact-rich, learning-from-demonstration">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>KineDex: Learning Tactile-Informed Visuomotor Policies via Kinesthetic Teaching for Dexterous Manipulation</h1>
+<p class="meta">
+  Di Zhang*, Chengbo Yuan, Chuan Wen, Hai Zhang, Junqiao Zhao, Yang Gao&dagger;
+  &middot; Tongji / Tsinghua / SJTU / HKU / Shanghai Qi Zhi / Shanghai AI Lab
+  &middot; 2025 &middot; arXiv preprint
+  &middot; <a href="https://arxiv.org/abs/2505.01974">arXiv:2505.01974</a>
+  &middot; <a href="../../raw/papers/kinedex_tactile_kinesthetic_teaching.pdf">PDF</a>
+  &middot; <a href="https://dinomini00.github.io/KineDex/">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> KineDex collects tactile-rich dexterous-hand demos
+by hand-over-hand kinesthetic teaching (the operator literally "wears" the robot
+hand via finger straps), inpaints the operator's body out of the camera view, and
+trains a diffusion policy that predicts both joint targets <em>and</em> fingertip
+forces &mdash; turning force into an explicit action channel so contact-rich tasks
+like squeezing toothpaste actually apply pressure instead of just touching.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Dexterous manipulation benefits enormously from tactile sensing, but the
+bottleneck is <em>collecting</em> high-fidelity tactile demonstrations. The two
+dominant data-collection paradigms both fail at this: (i) teleoperation (VR
+headsets, data gloves) and (ii) video retargeting suffer from kinematic
+<em>mismatch</em> between the human and robot hand, and critically the operator
+receives <strong>no real-time tactile feedback</strong> &mdash; so demo quality
+hinges on operator expertise and the recorded contact forces are unreliable.
+Exoskeleton rigs add haptic proxies but the interaction still differs from direct
+contact and collection stays slow. KineDex's pitch: let the operator physically
+guide the robot hand hand-over-hand, so contact forces transmit directly to the
+human and the recorded tactile data is physically grounded. The remaining catch is
+that the human hand occludes the camera during teaching &mdash; a train/inference
+domain shift the paper resolves with video inpainting.</p>
+
+<h2>Method</h2>
+
+<p><strong>1. Kinesthetic data collection (Fig 1, &sect;3.2).</strong> Ring-shaped
+straps are attached to the dorsal sides of the four non-thumb fingers of the robot
+hand; the operator slips fingers through them and guides the hand "as if wearing a
+glove," so contact forces during motion are immediately felt. Because of the
+human/robot thumb morphology mismatch, the operator controls the thumb separately
+with their <em>left</em> hand while the right hand drives the other four fingers.
+Two RGB cameras record (front workspace view + wrist-mounted close-range view).
+Recorded per-demo modalities: visual frames, proprioception (arm end-effector pose
++ hand joint positions), per-finger dense tactile matrix, and an aggregated 3D
+fingertip force vector <code>f = (f<sub>x</sub>, f<sub>y</sub>, f<sub>z</sub>)</code>
+per fingertip.</p>
+
+<p><strong>2. Inpainting away the human hand (&sect;3.3).</strong> The front camera
+inevitably captures the operator's body, creating a severe out-of-distribution
+shift at inference when the human is gone (the paper shows w/o-inpainting collapses
+to 0% everywhere). Pipeline: <code>Grounded-SAM</code> [51] extracts masks of the
+operator's body parts, then <code>ProPainter</code> [30] inpaints the occluded
+regions (Fig 2). The inpainting model is not robot-specific and removal isn't
+perfect, but it is shown sufficient for policy training &mdash; and is positioned
+as a more scalable alternative to prior trajectory-replay methods (DexForce [28]).</p>
+
+<p><strong>3. Policy learning (&sect;3.3).</strong> Backbone is <a
+href="../../raw/papers/chi_diffusion_policy.pdf">Diffusion Policy</a> [44],
+conditioned on inpainted visual observations, tactile sensing, and proprioception.
+The observation at step <em>t</em> comprises RGB from <em>N<sub>o</sub></em> views
+<em>o<sub>t</sub></em>, tactile vectors from <em>N<sub>q</sub></em> sensing points
+per fingertip <em>q<sub>t</sub></em>, and proprioceptive joint signals
+<em>x<sub>t</sub></em>. The policy models <code>p(x<sub>d</sub>, f<sub>d</sub> |
+o<sub>t</sub>, q<sub>t</sub>, x<sub>t</sub>)</code>, predicting both target joint
+positions <em>x<sub>d</sub></em> and <em>N<sub>f</sub></em>-dimensional target
+fingertip forces <em>f<sub>d</sub></em>. Force supervision uses only the normal
+component <em>f<sub>z</sub></em> (the axis the fingertip can actively exert along).
+The policy emits action chunks [52] for smoother control.</p>
+
+<p><strong>4. Force control at inference ("force-informed action", &sect;3.4).</strong>
+This is the key trick. A pure position-controlled PD law <code>u = K<sub>p</sub>(x<sub>d</sub>
+- x) + K<sub>d</sub>(&#7819;<sub>d</sub> - &#7819;)</code> (Eq. 1) merely tracks the
+recorded joint positions and thus only <em>touches</em> the object surface without
+applying meaningful force. KineDex instead exploits a physical property: a nonzero
+position error against a rigid object generates pressure, as if the target lies
+<em>inside</em> the object. Using the predicted forces <em>f<sub>d</sub></em>
+(orthogonal to the contact surface), it computes <strong>force-informed target
+positions</strong> for the fingertip and base joints (Eq. 2):
+<code>x<sub>d</sub><sup>tip</sup> = x<sup>tip</sup> + K<sup>tip</sup>&middot;f<sub>d</sub></code>
+and <code>x<sub>d</sub><sup>base</sup> = x<sup>base</sup> + K<sup>base</sup>&middot;f<sub>d</sub></code>,
+with stiffness hyperparameters <em>K<sup>tip</sup>, K<sup>base</sup></em> fixed
+across tasks. The fingers then actively track the desired contact forces.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected kinesthetic
+    demonstrations on a suite of <strong>nine contact-rich dexterous tasks</strong>:
+    Bottle Picking, Cup Picking, Egg Picking, Cap Twisting, Nut Tightening, Peg
+    Insertion, Charger Plugging, Toothpaste Squeezing, Syringe Pressing. No public
+    benchmark; task descriptions in Appendix A. <em>Number of demos per task: not
+    reported in main text.</em></li>
+  <li><strong>Hardware / simulator:</strong> Real-world only. Franka Emika Panda
+    7-DoF arm + Robotera XHand1 dexterous hand (12 DoF: 2 joints per finger, plus
+    an extra rotational joint on thumb and index; 120 tactile sensing points per
+    finger). Two RGB cameras (front + wrist). Efficiency experiments use an Inspire
+    Hand to replicate the Open-TeleVision [15] / Meta Quest 3 teleop setup for a
+    fair comparison.</li>
+  <li><strong>Baselines:</strong> Three ablated variants of KineDex itself &mdash;
+    <em>w/o Force Control</em> (position control only at inference), <em>w/o Tactile
+    Input</em> (tactile dropped from policy inputs, still predicts/executes forces),
+    <em>w/o Inpainting</em> (skip the body-removal preprocessing). For
+    data-collection efficiency, the baseline is <em>teleoperation</em>. No external
+    learned-policy baselines.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: KineDex averages <strong>74.4%</strong> success across the nine tasks,
+a <strong>+57.7%</strong> absolute improvement over the no-force-control variant
+(which averages 16.7%). Tactile input alone is worth <strong>+26.7%</strong> on
+the three most contact-intensive tasks (Cap Twisting, Toothpaste Squeezing, Syringe
+Pressing). Inference-time success, successful trials out of 20 (Table 1):</p>
+
+<table>
+  <tr><th>Task</th><th>KineDex</th><th>w/o Force Ctrl</th><th>w/o Tactile</th><th>w/o Inpaint</th></tr>
+  <tr><td>Bottle Picking</td><td><strong>17</strong></td><td>0</td><td>15</td><td>0</td></tr>
+  <tr><td>Cup Picking</td><td><strong>20</strong></td><td>16</td><td>17</td><td>0</td></tr>
+  <tr><td>Egg Picking</td><td>17</td><td>5</td><td><strong>18</strong></td><td>0</td></tr>
+  <tr><td>Cap Twisting</td><td><strong>15</strong></td><td>2</td><td>10</td><td>0</td></tr>
+  <tr><td>Nut Tightening</td><td><strong>16</strong></td><td>7</td><td>12</td><td>0</td></tr>
+  <tr><td>Peg Insertion</td><td>15</td><td>0</td><td><strong>16</strong></td><td>0</td></tr>
+  <tr><td>Charger Plugging</td><td><strong>12</strong></td><td>0</td><td>10</td><td>0</td></tr>
+  <tr><td>Toothpaste Squeezing</td><td><strong>9</strong></td><td>0</td><td>3</td><td>0</td></tr>
+  <tr><td>Syringe Pressing</td><td><strong>13</strong></td><td>0</td><td>8</td><td>0</td></tr>
+</table>
+
+<p>Where it wins and loses:</p>
+<ul>
+  <li><strong>Force control is decisive on contact-rich tasks.</strong> w/o Force
+    Control drops to 0/20 on Bottle Picking, Peg Insertion, Charger Plugging,
+    Toothpaste Squeezing, Syringe Pressing &mdash; the hand contacts but never
+    applies pressure. Fig 3 shows the force-informed policy tracks predicted contact
+    forces in magnitude and timing, while the position-only variant's executed force
+    stays flat.</li>
+  <li><strong>Tactile is not always net-positive.</strong> On Egg Picking (18 vs 17)
+    and Peg Insertion (16 vs 15), the w/o-Tactile variant slightly <em>beats</em>
+    full KineDex &mdash; visual info suffices there, and tactile adds noise. Tactile
+    matters for occlusion-heavy / contact-reliant tasks.</li>
+  <li><strong>Inpainting is load-bearing.</strong> w/o Inpainting is 0/20 on every
+    task &mdash; raw demos with the human body present are unusable for training.</li>
+  <li><strong>Data-collection efficiency (Table 2):</strong> across five teleop-feasible
+    tasks, KineDex hits near-100% collection success (e.g. 20/20 on Bottle/Cup/Cap,
+    18/20 Charger) vs teleoperation's 39% average (Charger Plugging 0/20). Per Fig 4,
+    KineDex collects &gt;2&times; faster &mdash; ~half the time on Syringe Pressing,
+    &lt;one-third on Bottle Picking. A 5-participant user study (Fig 5) reports 100%
+    agreement that KineDex collects more accurate tactile data and suits complex
+    tasks better; 80% found it easier to use.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors (&sect;6):</em></p>
+<ul>
+  <li>Inpainting is sufficient here but may degrade under more severe occlusions;
+    fine-tuning the inpainter on robot-specific data could help.</li>
+  <li>The current rig needs <strong>two human hands</strong> to control one dexterous
+    hand (because of the thumb morphology mismatch), so it does not scale to bimanual
+    demonstrations; better biomimetic hardware could enable single-handed kinesthetic
+    teaching.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>All results are count-of-success out of 20, single setting</strong> &mdash;
+    no seeds, no variance, no confidence intervals. The headline "74.4% / +57.7%"
+    rests on 9&times;20 = 180 trials with no statistical error bars; the small
+    Egg/Peg reversals (1 trial) are within plausible noise.</li>
+  <li><strong>No external baselines.</strong> Every comparison is an ablation of
+    KineDex; there's no head-to-head against a teleoperation-trained policy or a
+    competing tactile-policy method (e.g. DexForce [28], which they call the closest
+    prior). The efficiency study compares <em>data collection</em> success, not
+    final policy success of teleop-trained policies.</li>
+  <li>Force supervision uses <em>only</em> the normal component <em>f<sub>z</sub></em>;
+    shear/tangential forces (critical for slip detection, twisting) are discarded
+    from the action target even though the tactile matrix presumably captures them.</li>
+  <li>The force-control law (Eq. 2) is an open-loop position offset proportional to
+    predicted force, with hand-tuned fixed stiffness &mdash; it assumes rigid contact
+    and won't obviously transfer to soft/deformable objects where the
+    error&rarr;force mapping is nonlinear.</li>
+  <li>"Demos per task" and training compute are not reported, so sample-efficiency
+    claims can't be assessed.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This sits squarely on the thesis I keep coming back to from
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+many manipulation predicates &mdash; <code>is_screwed_tight(cap)</code>,
+<code>is_inserted(peg)</code>, <code>is_full(syringe)</code>,
+<code>tube_is_squeezed</code> &mdash; are <strong>not visually evaluable</strong>;
+they live in touch and force. KineDex is a clean, concrete demonstration of
+<em>that</em> gap at the control layer: its central empirical result is that a
+position-only policy <em>looks</em> like it's doing the task (it touches the object)
+but applies no force and fails, while making force an explicit predicted action
+channel recovers 57.7%. For BLADE specifically, this is the missing continuous /
+force-modulated layer I flagged in BLADE's "Why I care": BLADE's abstraction is
+purely categorical and shoves all continuous parameters (pour amount, grasp pose,
+force) inside the diffusion policy. KineDex shows how to make <em>force</em> a
+first-class, supervised output of exactly such a diffusion-policy body &mdash; a
+candidate recipe for a force-aware behavior <em>body</em> whose effects
+(<code>is_screwed_tight</code>) could then be checked by a tactile predicate
+classifier rather than a visual one. It also strengthens the
+learning-from-demonstration angle: hand-over-hand teaching is a data source where
+the force ground truth is physically real, not retargeted.</p>
+<p>Off the BLADE planning axis, this is a perception/control paper, not a
+language/planning one &mdash; no symbolic abstraction, no language. Its relevance is
+to the <em>sensing substrate</em> that future predicate-invention work would need.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  Based on these demonstrations, we then train a visuomotor policy using
+  tactile-augmented inputs and implement force control during deployment for
+  precise contact-rich manipulation.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+
+<blockquote>
+  Relying solely on position control &hellip; results in merely contacting the
+  object's surface without applying meaningful forces, as the recorded fingertip
+  positions remain unchanged regardless of the forces applied during kinesthetic
+  teaching. This discrepancy often leads to unstable grasps, slipping, or
+  ineffective manipulation.
+  <span class="quote-cite">&mdash; &sect;3.4 / p.5</span>
+</blockquote>
+
+<blockquote>
+  Across these tasks, KineDex achieves an average success rate of 74.4%,
+  representing a 57.7% improvement over the variant without force control.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[28] Chen et al. 2025 &mdash; DexForce</strong> &mdash; the closest
+    prior: also extracts force-informed actions from kinesthetic demonstrations, on
+    simpler/fewer-DoF hardware; KineDex's direct conceptual predecessor and the
+    method it most distinguishes itself from. High-priority ingest.</li>
+  <li><strong>[44] Chi et al. 2024 &mdash; Diffusion Policy</strong> &mdash; the
+    backbone; foundational dependency (shared with BLADE).</li>
+  <li><strong>[45] Ze et al. 2024 &mdash; 3D Diffusion Policy</strong> &mdash;
+    point-cloud-conditioned DP variant; natural extension of KineDex's perception.</li>
+  <li><strong>[15] Cheng et al. 2024 &mdash; Open-TeleVision</strong> &mdash; the
+    teleop system KineDex replicates as its efficiency baseline.</li>
+  <li><strong>[29] Liu et al. 2024 &mdash; ForceMimic</strong> &mdash; force-centric
+    imitation with a force-motion capture system for contact-rich manipulation;
+    sibling line.</li>
+  <li><strong>[46] Sun et al. 2025 &mdash; VTAO-BiManip</strong> &mdash; masked
+    visual-tactile-action pretraining for bimanual dexterous manipulation; relevant
+    to the bimanual limitation.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="mimictouch_human_tactile_demos.html">MimicTouch</a> &mdash; same
+    cluster F; learning from human <em>tactile</em> demonstrations, the closest
+    cousin in data-collection philosophy (humans as the tactile teacher).</li>
+  <li><a href="foar_force_aware_reactive_policy.html">FoAR</a> and
+    <a href="tactile_conditioned_diffusion_policy_force_aware.html">Tactile-Conditioned
+    Diffusion Policy</a> &mdash; force-aware diffusion policies; same backbone +
+    force-as-signal design, alternative ways to fold force into the policy.</li>
+  <li><a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive
+    Diffusion Policy</a> &mdash; slow-fast visuotactile control; complementary take
+    on real-time tactile reactivity that KineDex's action-chunking sidesteps.</li>
+  <li><a href="factr_force_attending_curriculum_training.html">FACTR</a> /
+    <a href="factr2_external_force_sensing_commodity_arms.html">FACTR 2</a> &mdash;
+    force-attending policy training and external force sensing on commodity arms;
+    adjacent on the force-as-input axis.</li>
+  <li><a href="making_sense_of_vision_and_touch.html">Making Sense of Vision and
+    Touch</a> &mdash; foundational visuo-tactile fusion; the representation-learning
+    ancestor of KineDex's tactile-augmented inputs.</li>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a> and
+    <a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>
+    &mdash; cluster C; force/tactile pushed into the VLA paradigm, the
+    larger-model counterpart to KineDex's task-specific diffusion policy.</li>
+</ul>
+
+</body>
+</html>

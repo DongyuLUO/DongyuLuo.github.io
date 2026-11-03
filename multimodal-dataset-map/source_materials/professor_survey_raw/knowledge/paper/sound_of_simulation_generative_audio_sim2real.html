@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Sound of Simulation: Learning Multimodal Sim-to-Real Robot Policies with Generative Audio</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Wang, Geng, Li, Wang, Anumanchipalli, Darrell, Li, Abbeel, Malik, Efros">
+<meta name="year" content="2025">
+<meta name="venue" content="CoRL 2025">
+<meta name="arxiv_id" content="2507.02864">
+<meta name="url" content="https://arxiv.org/abs/2507.02864">
+<meta name="pdf" content="../../raw/papers/sound_of_simulation_generative_audio_sim2real.pdf">
+<meta name="tags" content="audio-sensing, acoustic-sensing, contact-audio, sim-to-real, generative-audio, audio-visual, multisensory, sensory-fusion, diffusion-policy, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>The Sound of Simulation: Learning Multimodal Sim-to-Real Robot Policies with Generative Audio</h1>
+<p class="meta">
+  Renhao Wang, Haoran Geng, Tingle Li, Feishi Wang, Gopala Anumanchipalli,
+  Trevor Darrell, Boyi Li, Pieter Abbeel, Jitendra Malik, Alexei A. Efros
+  &middot; UC Berkeley
+  &middot; CoRL 2025
+  &middot; <a href="https://arxiv.org/abs/2507.02864">arXiv:2507.02864</a>
+  &middot; <a href="../../raw/papers/sound_of_simulation_generative_audio_sim2real.pdf">PDF</a>
+  &middot; <a href="https://multigen-audio.github.io">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> Instead of physically simulating sound (which is
+notoriously hard), MULTIGEN bolts a finetuned video-to-audio diffusion model onto
+a physics simulator so it can <em>generate</em> realistic pouring audio from
+simulated video, then trains an audio-visual diffusion policy entirely in sim that
+transfers <em>zero-shot</em> to real-world pouring &mdash; closing the multimodal
+sim-to-real gap for a non-visual modality without a single real robot trajectory.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Sim-to-real has worked mostly for vision-based tasks; multimodal transfer is
+"largely unrealized." Dynamic, contact-rich behaviors like pouring rely on
+auditory feedback (occlusion, transparency, and visual ambiguity make liquid
+flow and fill-level hard to read from pixels alone), but sound is "notoriously
+hard to model in simulation" &mdash; its propagation depends on complex wave
+dynamics and material interactions, making high-fidelity audio sim expensive and
+impractical at scale. The two intertwined challenges this paper attacks:
+(1) simulating a hard-to-model modality, and (2) transferring a multimodal policy
+sim-to-real. The bet is that a <em>generative</em> model conditioned on simulator
+state can synthesize the missing sensory stream cheaply and faithfully enough that
+a policy trained on it generalizes.</p>
+
+<h2>Method</h2>
+<p>MULTIGEN is a hybrid pipeline (Fig 1, Fig 2): a physics-based simulator runs in
+parallel with a generative model that conditions on simulator output to produce
+the modality the simulator can't &mdash; here, audio. Two main components, then a
+policy.</p>
+
+<p><strong>1. Generative audio model.</strong> Built on <strong>MMAudio</strong>,
+a pretrained video-to-audio diffusion transformer (cross-attention over visual /
+audio / text, trained with conditional flow-matching). Zero-shot MMAudio is
+inadequate for two reasons the authors identify: it was trained on noisy Foley
+sounds unlike liquids, and pouring is a long-tail event under-represented in its
+corpora (so it poorly captures pitch-rises-as-container-fills, viscosity
+dependence, and transient onset/offset impulses). They <strong>finetune on a
+curated 1031-video pouring dataset</strong> drawn from EPIC-Kitchens plus a
+YouTube crawl (various liquids/containers, 5&ndash;60 s clips). To bridge the
+real-vs-sim <em>visual</em> domain gap, they add a <strong>SAMv2 semantic
+segmentation conditioning pathway</strong>: extract per-frame masks over
+task-relevant classes (cup, mug, water, juice), propagate with SAMv2, and inject
+a lightweight-CNN segmentation embedding <code>s_t</code> into the transformer via
+a learned gate (<code>alpha * seg_embed + (1 - alpha) * c_g</code>), preserving
+the pretrained backbone.</p>
+
+<p><strong>2. Simulation framework.</strong> Built on <strong>RoboVerse</strong>
+for photorealistic, parallelized, asset-diverse physics sim. Pouring trajectories
+are <strong>motion-planned</strong>: each episode has a pouring container
+(pre-filled to 70%&plusmn;5%) and a receiving container; sample a grasp within a
+5% offset of the container center, move above the receiver, sample pour height,
+sample one of four discrete pour amounts (one-quarter / one-half / three-quarters
+/ full), compute a deterministic tilt angle, then untilt. Structured
+<strong>domain randomization</strong> covers liquid properties (density,
+viscosity, color, transparency, friction), camera pose, lighting, and textures.
+Audio generation runs in a second thread off a <em>dedicated frontal virtual
+camera</em> on the receiving container &mdash; in-distribution with the real
+pouring videos used for finetuning, avoiding occluded/misaligned sim camera views.</p>
+
+<p><strong>3. Policy.</strong> A <strong>diffusion policy</strong> trained
+<em>from scratch</em> on MULTIGEN's simulated proprioception + vision + audio.
+RGB encoded by CLIP ViT-B/16; audio encoded by an Audio Spectrogram Transformer
+(AST) after downsampling 24-bit/192 kHz to 16-bit/16 kHz log-mel (window 400, hop
+160, 64 mels). A transformer encoder fuses the streams with attention pooling and
+CLIP-text language commands ("Pour half the bottle"); the policy outputs 6-DoF
+Cartesian delta end-effector actions at 10 Hz, converted to 7-DoF via MoveIt IK.
+No real demonstrations or real robot data are used at any stage.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Finetuning audio dataset = 1031
+    in-the-wild pouring videos (EPIC-Kitchens + YouTube crawl). Policy eval
+    benchmark = 8 real pouring conditions (4 opaque, 4 transparent containers;
+    Table 1), each scored over 12 evaluations (4 language commands &times; 3
+    random locations). Ablation uses 10 real demos for an augmentation baseline
+    and 100 sim trajectories for audio-quality analysis.</li>
+  <li><strong>Hardware / simulator:</strong> RoboVerse simulator (with MuJoCo /
+    ManiSkill backends shown). Real: Kinova Gen3 + Robotiq 2F-85 gripper,
+    egocentric Logitech BRIO 4K webcam (monocular RGB), MAONO omnidirectional USB
+    lapel mic on the end-effector (24-bit, 192 kHz).</li>
+  <li><strong>Baselines:</strong> Vision-only Diffusion Policy (V) vs.
+    vision+audio Diffusion Policy (V+A); plus a noise-augmentation audio baseline
+    following ManiWAV's protocol (ESC-50 environment noise + robot motor sounds
+    overlaid at 50% probability); plus a zero-shot-vs-finetuned MMAudio ablation.</li>
+  <li><strong>Compute:</strong> Audio model finetuned 100K steps (~40 epochs),
+    batch 32, AdamW lr 1e-5. Policy trained 500 epochs, batch 64, AdamW lr 1e-4.
+    GPU type / count / wall-clock <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: zero-shot sim-to-real pouring with average <strong>NMAE 0.46</strong>
+(normalized mean absolute error of poured volume, lower better), and adding audio
+gives a <strong>23.3% average NMAE reduction</strong> over vision-only. Audio
+helps most on <strong>opaque containers (29.4% reduction)</strong> vs.
+<strong>transparent (16.2%)</strong> &mdash; intuitive, since occluded visual
+feedback is where sound carries the fill-level signal.</p>
+
+<table>
+  <tr><th>Setting</th><th>Diffusion Policy (V)</th><th>Diffusion Policy (V+A)</th></tr>
+  <tr><td>Opaque: water&mdash;white cup&mdash;red cup</td><td>0.54 &plusmn; 0.23</td><td><strong>0.44 &plusmn; 0.19</strong></td></tr>
+  <tr><td>Opaque: coffee&mdash;metal thermos&mdash;paper cup</td><td>0.54 &plusmn; 0.20</td><td><strong>0.33 &plusmn; 0.17</strong></td></tr>
+  <tr><td>Opaque: sake&mdash;sake carafe&mdash;sake cup</td><td>0.68 &plusmn; 0.30</td><td><strong>0.43 &plusmn; 0.28</strong></td></tr>
+  <tr><td>Opaque: water&mdash;metal thermos&mdash;metal mug</td><td>0.47 &plusmn; 0.29</td><td><strong>0.37 &plusmn; 0.15</strong></td></tr>
+  <tr><td>Transp.: water&mdash;white cup&mdash;plastic cup</td><td>0.53 &plusmn; 0.20</td><td><strong>0.42 &plusmn; 0.27</strong></td></tr>
+  <tr><td>Transp.: juice&mdash;plastic bottle&mdash;plastic cup</td><td>0.46 &plusmn; 0.20</td><td><strong>0.38 &plusmn; 0.21</strong></td></tr>
+  <tr><td>Transp.: soda&mdash;metal can&mdash;plastic cup</td><td><strong>0.43 &plusmn; 0.20</strong></td><td>0.39 &plusmn; 0.22</td></tr>
+  <tr><td>Transp.: juice&mdash;plastic bottle&mdash;glass mug</td><td>0.49 &plusmn; 0.21</td><td>0.43 &plusmn; 0.18</td></tr>
+</table>
+
+<p>Audio wins on 7 of 8 conditions; on soda&mdash;metal can&mdash;plastic cup the
+two are within noise (0.43 vs 0.39, overlapping std). Audio-quality ablations
+(Fig 4): MULTIGEN audio is both <em>more diverse</em> (higher Log-Spectral
+Distance spread) and <em>more accurate</em> (higher Signal-to-Distortion Ratio)
+than ManiWAV-style noise augmentation, and policies trained on it
+<strong>scale better</strong> with dataset size (lower policy error from 10&rarr;1000
+trajectories). Zero-shot-vs-finetuned ablation (App B.2) shows finetuning is
+essential: SDR 7.8&rarr;11.3 dB (+45%), LSD 1.95&rarr;1.43 (&minus;26.7%), diversity
+0.67&rarr;1.02 (+52.2%), policy NMAE 0.50&rarr;0.37 (&minus;26.0%).</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Still requires projecting real-world conditions into sim (approximate camera
+    placement, correct embodiment) &mdash; loose but non-zero manual setup.</li>
+  <li>Limited generalization to extreme container geometries: significantly larger
+    or irregular containers introduce unmodeled dynamics (unexpected sloshing)
+    that degrade performance.</li>
+  <li>Policies don't account for collision avoidance / cluttered environments;
+    real deployment would need obstacle-aware planning.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The whole pipeline is validated on <strong>exactly one task family
+    (pouring)</strong>. The framing ("inject entirely new sensory streams") is
+    general, but every empirical claim is pouring-specific; nothing tests whether
+    a generative audio model transfers to, e.g., insertion clicks or scraping.</li>
+  <li><strong>The generated audio is never grounded against real fluid physics.</strong>
+    Fidelity is measured as SDR/LSD against real microphone recordings of pouring,
+    not against the simulator's actual (unsimulated) liquid state. So the policy
+    could be learning to imitate a generative model's <em>plausible</em> sound
+    rather than physically correct flow cues &mdash; a subtle distribution-matching
+    vs. causal-correctness gap the paper doesn't probe.</li>
+  <li>NMAE on pour volume is a forgiving metric: a policy that always pours a
+    "median" amount could score moderately without any audio reasoning. No
+    success-rate or per-command breakdown showing the policy actually modulates
+    flow <em>differently</em> across the four pour commands using audio.</li>
+  <li>The audio-quality ablation (Fig 4) is the strongest evidence, but the
+    decisive policy-learning ablation there is on only a 4-condition subset; the
+    main Table 1 has no audio-vs-no-audio paired statistical test (just overlapping
+    std bars over 12 evals).</li>
+  <li>Finetuning data is YouTube + EPIC-Kitchens pouring &mdash; real human pouring
+    sounds. So "no real robot data" is true, but the method is far from
+    real-data-free; it leans heavily on a curated real audiovisual corpus.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This sits squarely on the batch thesis that many manipulation predicates are
+<strong>not visually evaluable</strong> &mdash; <code>is_full</code> during an
+occluded pour lives in <em>sound</em>, exactly the case audio rescues here
+(opaque containers benefit 29.4% vs 16.2% transparent). Relative to
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+BLADE learns visual predicate classifiers and assumes the relevant state is
+readable from pixels; this paper is a concrete counterexample where the state
+estimator <em>must</em> be acoustic. A natural fusion direction is a BLADE-style
+<code>is_full(container)</code> or <code>fill_level &ge; target</code> predicate
+whose classifier reads an audio spectrogram, not RGB &mdash; predicate grounding in
+a non-visual modality.</p>
+<p>The deeper relevance is <strong>methodological, and orthogonal to BLADE's
+symbolic line</strong>: it's a generative-sim-augmentation paper, not an
+abstraction-learning one. Its real contribution is the "generate the
+hard-to-simulate modality" recipe, which could in principle supply the
+<em>training data</em> for force/audio predicate classifiers that a long-horizon
+planner would compose. I'd file it under audio-as-state-sensing rather than as a
+planning paper; the bi-level / predicate-invention themes it does not touch.</p>
+<p>Most directly comparable batch papers:
+<a href="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">ManiWAV</a> (the
+augmentation baseline it beats),
+<a href="../../raw/papers/making_sense_audio_vibration_pouring.pdf">Making Sense of
+Audio Vibration (pouring)</a> (same task, classical audio-for-fill-level), and the
+SoundSpaces-2 line of physics-based audio sim it argues against.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Sound, for example, is notoriously hard to model in simulation: its physical
+  propagation depends on complex wave dynamics and material interactions, making
+  high-fidelity audio simulation both expensive and impractical at scale.
+  <span class="quote-cite">&mdash; &sect;1 Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  Instead, we show how they can be used for introducing entirely new sensory
+  streams in simulation.
+  <span class="quote-cite">&mdash; &sect;2 Related Work, Generative models in simulation / p.3</span>
+</blockquote>
+<blockquote>
+  This is intuitive: in settings where visual feedback is limited, audio plays a
+  crucial role in estimating flow rate and container fill levels.
+  <span class="quote-cite">&mdash; &sect;4.3 Results: Zero-Shot Sim-to-Real Transfer / p.7</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[19] Liu et al. 2024 &mdash; ManiWAV</strong> (CoRL) &mdash; the
+    in-the-wild audio-visual imitation work; both the data-augmentation baseline
+    and the AST-audio-encoding lineage.
+    <a href="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">expected slug: maniwav_in_the_wild_audio_visual</a></li>
+  <li><strong>[16] Liang et al. 2019 &mdash; Making sense of audio vibration for
+    liquid height estimation in robotic pouring</strong> (IROS) &mdash; the
+    classical pouring-from-sound predecessor.
+    <a href="../../raw/papers/making_sense_audio_vibration_pouring.pdf">expected slug: making_sense_audio_vibration_pouring</a></li>
+  <li><strong>[23] Chen et al. 2022 &mdash; SoundSpaces 2.0</strong> (NeurIPS)
+    &mdash; the physics-based visual-acoustic simulator MULTIGEN positions itself
+    against.
+    <a href="../../raw/papers/soundspaces_2_visual_acoustic.pdf">expected slug: soundspaces_2_visual_acoustic</a></li>
+  <li><strong>[17] Li et al. 2022 &mdash; See, Hear, and Feel</strong> &mdash;
+    smart sensory fusion for manipulation; sibling multisensory-policy work.
+    <a href="../../raw/papers/see_hear_feel_sensory_fusion.pdf">expected slug: see_hear_feel_sensory_fusion</a></li>
+  <li><strong>[18] Du et al. 2022 &mdash; Play it by Ear</strong> &mdash;
+    audio-visual imitation under occlusion.
+    <a href="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">expected slug: play_it_by_ear_audio_visual_imitation</a></li>
+  <li><strong>[43] / [19] Chi et al. 2023 &mdash; Diffusion Policy</strong> &mdash;
+    the policy backbone (foundational dependency).</li>
+  <li><strong>[45] Gong et al. 2021 &mdash; AST</strong> &mdash; audio spectrogram
+    transformer used as the audio encoder.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a> &mdash; closest
+    peer; same audio-visual-policy / contact-audio space and the explicit
+    augmentation baseline MULTIGEN outperforms.</li>
+  <li><a href="making_sense_audio_vibration_pouring.html">Making Sense of Audio
+    Vibration (pouring)</a> &mdash; same exact task (pouring fill-level from sound),
+    classical counterpart to this generative approach.</li>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a> and
+    <a href="play_it_by_ear_audio_visual_imitation.html">Play it by Ear</a> &mdash;
+    audio-visual fusion / occlusion-robust imitation; the manipulation-policy
+    neighbors.</li>
+  <li><a href="that_sounds_right_auditory_self_supervision.html">That Sounds Right</a>,
+    <a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>,
+    <a href="active_acoustic_sensing_manipulation.html">Active Acoustic Sensing</a>,
+    and <a href="vibecheck_active_acoustic_tactile_sensing.html">VibeCheck</a>
+    &mdash; the rest of cluster D (audio/acoustic sensing for manipulation);
+    contrast: those sense real contact audio, this one <em>generates</em> it in sim.</li>
+  <li><a href="soundspaces_2_visual_acoustic.html">SoundSpaces 2.0</a> &mdash; the
+    physics-based audio simulator this paper argues is too expensive/impractical;
+    direct methodological foil.</li>
+  <li><a href="audio_vla_contact_audio_perception.html">Audio-VLA</a> &mdash;
+    cluster-C contact-audio VLA policy; the VLA-scale counterpart to this paper's
+    task-specific diffusion policy.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Kaiwu: A Multimodal Manipulation Dataset and Framework for Robot Learning and Human-Robot Interaction</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Jiang, Li, Ren, Zhou, Wang, He">
+<meta name="year" content="2025">
+<meta name="venue" content="IEEE Robotics and Automation Letters (RA-L)">
+<meta name="arxiv_id" content="2503.05231">
+<meta name="url" content="https://arxiv.org/abs/2503.05231">
+<meta name="pdf" content="../../raw/papers/kaiwu_multimodal_manipulation_dataset.pdf">
+<meta name="tags" content="multimodal-dataset, multisensory, learning-from-demonstration, human-robot-interaction, tactile-sensing, force-torque, audio-sensing, proprioception, contact-rich, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Kaiwu: A Multimodal Manipulation Dataset and Framework for Robot Learning and Human-Robot Interaction</h1>
+<p class="meta">
+  Shuo Jiang, Haonan Li, Ruochen Ren, Yanmin Zhou, Zhipeng Wang, Bin He
+  &middot; 2025
+  &middot; IEEE Robotics and Automation Letters (RA-L)
+  &middot; <a href="https://arxiv.org/abs/2503.05231">arXiv:2503.05231</a>
+  &middot; <a href="../../raw/papers/kaiwu_multimodal_manipulation_dataset.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Kaiwu is a human-demonstration dataset for
+industrial assembly that records, time-synchronized to absolute timestamps,
+the modalities most manipulation datasets omit &mdash; per-finger tactile
+pressure, EMG muscle signals, eye gaze, full-body motion capture, and ambient
+contact sound &mdash; alongside RGB-D video, so robots can learn the
+<em>dynamics and intention</em> behind dexterous contact-rich skills rather
+than just their kinematics.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Foundation-model and imitation-learning methods are bottlenecked on
+large-scale, high-quality, multimodal data, but the authors argue current
+robot datasets share two critical limitations. First, most rely on
+<em>video</em> and therefore capture only kinematics (trajectory, velocity);
+they lack the dynamics &mdash; force, tactile pressure, muscle activation
+&mdash; that govern real contact-rich manipulation, leaving learning
+"superficial." Second, there is no universal, intuitive human-perception
+framework: prior datasets incorporate some sensing (video, IMU) but miss the
+synchronized, fine-grained, multi-sensory signal needed for complex assembly
+in open, human-inhabited settings. Kaiwu (named after the Ming-dynasty
+encyclopedia <em>Tiangong Kaiwu</em>) targets this gap with a wearable +
+environment-mounted sensor framework aimed at assembly-style human-robot
+collaboration and human-intention prediction.</p>
+
+<h2>Method</h2>
+<p>This is a dataset/framework paper; the "method" is the data-collection
+platform, sensor suite, and annotation pipeline (Fig 1, Fig 5). The three
+stated contributions are: (1) a multimodal collection framework with full
+situational awareness (manipulation dynamics, neural/EMG signals, attention,
+multi-view vision); (2) a high-quality large-scale dataset of 11,664
+integrated action instances across 20 subjects and 30 interaction objects;
+(3) rich cross-modal spatio-temporal synchronization and fine-grained
+multi-level annotation.</p>
+
+<p><strong>Sensor suite.</strong> Wearable and environment-mounted devices,
+each on its own sampling rate, fused via absolute timestamps:</p>
+<ul>
+  <li><strong>Data glove</strong> (Fig 2): 19 finger <em>angle</em> sensors
+    + 19 finger <em>pressure/tactile</em> sensors (accuracy 9g), plus an arm
+    sensor recording quaternion data for palm, forearm, and upper arm. Glove
+    data format (Table II) packs hand/forearm/upper-arm quaternions, 19 angle
+    columns (15&ndash;33), and 19 tactile columns (34&ndash;52).</li>
+  <li><strong>EMG + ACC</strong>: 16 Trigno EMG sensors (8 left, 8 right) on
+    forearm muscle groups, each with an integrated 9-DoF IMU providing
+    acceleration (ACC) time-synchronized to the EMG.</li>
+  <li><strong>RGB-D camera</strong>: front-facing, captures body posture and
+    environment RGB + depth.</li>
+  <li><strong>Eye tracker</strong>: binocular dark-pupil corneal-reflex
+    tracker, average accuracy 0.6&deg;, data-loss rate 0.01%, giving
+    first-person gaze / region-of-interest over the assembly.</li>
+  <li><strong>Microphones</strong>: four mics &mdash; two on the operator's
+    table (operating-environment sound), two in the accessory area (gripping
+    tools/parts sound) &mdash; capturing contact/rubbing audio.</li>
+  <li><strong>Motion capture (ground truth)</strong>: optical mocap with 37
+    reflective body markers, giving high-precision 3D skeleton.</li>
+</ul>
+
+<p><strong>Collection platform.</strong> Multi-threaded/multi-processing
+software for synchronized streaming, storage, and visualization across
+heterogeneous sampling rates; outputs are aligned through absolute
+timestamps. <strong>Calibration</strong> is staged: one-point eye-tracker
+calibration per subject, mocap skeleton calibration per subject, and a
+per-session "process initialization" gesture calibration to start data
+synchronization (0&ndash;10 s sync window inside each ~140 s action session).</p>
+
+<p><strong>Annotation</strong> (Table IV, Fig 4). Five annotation types over
+absolute-timestamped streams: gesture classification (10 object tags / 4,959
+instances), AOIs / regions-of-interest as personal attention (298), semantic
+segmentation of 30 key objects (610,778 closed-area annotations; errors held
+under 8 px), action segmentation (26 tags / 7,197 motion-segmentation
+events), and gesture segmentation (9 tags / 4,467). Action annotation is
+two-level: coarse left/right-hand <strong>action</strong> segments, then
+fine-grained <strong>gesture</strong> states within them. Hand states use 8
+grasp taxonomy classes (Cylindrical, Oblique palmar, Lumbrical, Intermediate
+power-precision, Pinch, Lateral pinch, Special pinch, Non-prehensile).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> The Kaiwu dataset itself
+    &mdash; 20 subjects &times; 15 assembly tasks (C1&ndash;C15: e.g. Drill a
+    Hole, Clamp a Patch, File Rough Edge, Tighten a Steel Column, Install a
+    Bearing, Fasten a Screw/Nut, Install a Motor) &times; left/right =
+    6&times;15&times;20 sets, 11,664 total integrated action instances. ~6.3
+    hours of assembling; each subject ~19 min of data, 2 h recorded. Compared
+    against TSU, Harmonic, HBOD, Humbi, OXE, ActionSense in Table I (Kaiwu is
+    the only one combining IMU + Motion Capture + Hand Pose + Arm + Gaze + EMG
+    + Tactile + RGB + Depth + Audio for industrial assembly).</li>
+  <li><strong>Hardware / simulator:</strong> Wearable data glove (angle +
+    pressure), 16 Trigno EMG/IMU sensors, RGB-D camera, binocular eye
+    tracker, 4 microphones, optical motion-capture rig (37 markers). No robot
+    is run; this is a human-demonstration capture rig. Per-modality sampling
+    rates (Table V): glove 100 Hz, glove export 20 Hz, eye 25 Hz, RGB-D 60 Hz,
+    mocap 60 Hz, audio 50 Hz, ACC 40 Hz, EMG 40 Hz.</li>
+  <li><strong>Baselines:</strong> <em>not reported</em> &mdash; no learning
+    benchmark or model is trained/evaluated; the paper is a dataset
+    descriptor. Related <em>datasets</em> are compared qualitatively (Table I)
+    but there are no method baselines.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>There are no experimental learning results; the "results" are dataset
+descriptive statistics. Headline figures: <strong>20 participants</strong>
+(mean height 172.4&plusmn;6.5 cm, mean age 23.95&plusmn;5.1 yr), recorded
+over 11 working days; <strong>30 interaction objects</strong>;
+<strong>11,664 integrated action instances</strong>; <strong>~6.3 hours</strong>
+of assembling. Storage footprint per modality (Table V):</p>
+
+<table>
+  <tr><th>Data type</th><th>Size</th><th>Sampling rate</th></tr>
+  <tr><td>Glove data</td><td>264 MB</td><td>100 Hz</td></tr>
+  <tr><td>Glove export</td><td>1,124 MB</td><td>20 Hz</td></tr>
+  <tr><td>Eye tracking</td><td>14 GB</td><td>25 Hz</td></tr>
+  <tr><td>RGB-D video</td><td>3,476 GB</td><td>60 Hz</td></tr>
+  <tr><td>Motion capture</td><td>4,160 MB</td><td>60 Hz</td></tr>
+  <tr><td>Audio</td><td>7,955 MB</td><td>50 Hz</td></tr>
+  <tr><td>ACC</td><td>354 MB</td><td>40 Hz</td></tr>
+  <tr><td>EMG</td><td>362 MB</td><td>40 Hz</td></tr>
+</table>
+
+<p>Annotation totals (Table IV): 4,959 gesture-classification instances, 298
+AOIs, 610,778 semantic-segmentation closed-area annotations, 7,197
+action-segmentation events, 4,467 gesture-segmentation instances. Data is
+released on ScienceDB (keyword "Kaiwu"), packaged as Kaiwu Data Annotation
+(31.84 GB), AOIs (17.9 GB), gesture segmentation (973 MB), semantic
+segmentation (11.6 GB), gesture classification (417 MB), plus a raw-data
+directory and an action-segmentation supplement (193 MB) adding four missing
+experimental sets. Directory layout is per-subject (P1&ndash;P20) with
+EMGData / GloveData / KinectData / KonovaData / TobiiData / VoiceData
+sub-folders (Fig 5).</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Authors note finger tactile sensors "struggle to detect data changes in
+    small, delicate parts," so action units are deliberately kept coarse
+    (large components only) and small parts are pre-assembled before capture.</li>
+  <li>The dataset ships with "missing data and additions to the raw data"
+    &mdash; an action-segmentation supplement exists precisely because some
+    experimental sets were missing from the main segmentation.</li>
+  <li>Future work (Conclusion) is framed as <em>downstream</em> use
+    &mdash; cross-modal prediction, assembly-logic sequence prediction, task
+    planning, robot self-assembly &mdash; none demonstrated here; "holding
+    potential for future benchmark" is explicitly aspirational.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>No model, no metric.</strong> Despite the "Robot Learning"
+    title, the paper trains nothing and reports zero task-success or
+    prediction numbers. Its value is entirely as a data artifact; the claim
+    that dynamics signals cure "superficial learning" is asserted, not
+    measured against a video-only ablation.</li>
+  <li><strong>Single-site, narrow demographic.</strong> 20 subjects, mean age
+    ~24, one industrial-assembly domain. Generalization beyond this assembly
+    bench is untested, and 20 subjects is small for foundation-model claims.</li>
+  <li><strong>RGB-D dominates storage (3.5 TB) while the distinctive
+    modalities are tiny</strong> (EMG 362 MB, glove 264 MB). The signals the
+    paper sells as its differentiator are a rounding error in the byte budget,
+    which raises questions about their effective resolution/coverage relative
+    to the vision stream.</li>
+  <li><strong>Synchronization is timestamp-based across very different rates</strong>
+    (20&ndash;100 Hz). Sub-frame alignment quality for fast contact events
+    (the sound/force transients that matter most) is asserted but not
+    quantified.</li>
+  <li>The 19-pressure-sensor glove gives <em>where</em> on the finger contact
+    happens but pressure (not calibrated force vectors); how usable this is as
+    a true force-dynamics signal vs. a binary contact cue is unclear.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>Directly on-thesis for the batch's core claim: <strong>many manipulation
+predicates are not visually evaluable</strong> &mdash; <code>is_grasped</code>,
+<code>is_screwed_tight</code>, <code>is_inserted</code>,
+<code>surface_is_rough</code> live in touch, force, and sound. Kaiwu is the
+rare dataset that actually <em>records human demonstrations with those
+non-visual channels</em> (per-finger tactile, EMG, contact audio) on
+contact-rich tasks where the predicate of interest (a nut fastened, a bearing
+seated, a column tightened) is exactly the kind of thing a camera can't see.
+For <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>,
+whose biggest acknowledged gap is that segmentation and predicate classifiers
+are <em>vision-grounded</em> (gripper-state segmentation, visual predicate
+classifiers) and whose continuous force parameters hide inside the diffusion
+policy, a dataset like this is the raw material for learning
+<em>tactile/force-grounded</em> predicate classifiers and a richer
+contact-segmentation signal than gripper open/close. The grasp-taxonomy and
+fine-grained gesture annotation also speak to the "predicate invention" line:
+the 8 grasp classes are essentially human-labeled symbolic contact states.</p>
+<p>That said, Kaiwu is a <strong>data resource, not a method</strong> &mdash;
+no language conditioning, no policy, no planning abstraction. Its relevance is
+upstream (it could feed a force/tactile-grounded BLADE-style pipeline), not as
+a method comparison. It pairs naturally with the tactile-representation and
+multisensory-policy clusters of this batch, which would turn its raw signals
+into learnable embeddings.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Missing dynamics information including force will deteriorate the learning
+  performance, resulting in the superficial learning.
+  <span class="quote-cite">&mdash; &sect;I, Introduction / p.1</span>
+</blockquote>
+<blockquote>
+  The Kaiwu dataset directly collects dynamic and static data using wearable
+  sensors. It integrates assembly actions into a coherent process, enhancing
+  human-robot interaction with a narrative and causal structure.
+  <span class="quote-cite">&mdash; &sect;II, Related work / p.3</span>
+</blockquote>
+<blockquote>
+  Absolute timestamp records are used during data collection, and the output
+  of each module's data stream is synchronized through absolute timestamps.
+  <span class="quote-cite">&mdash; &sect;III, Data synchronization / p.5</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>ManiWAV (Liu et al. 2024, ref [11])</strong> &mdash; in-the-wild
+    audio-visual manipulation; the contact-audio analogue of Kaiwu's
+    microphone modality, but with a trained policy.
+    <a href="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">expected PDF</a>.</li>
+  <li><strong>ActionSense (DelPreto et al. 2022, ref [18])</strong> &mdash; the
+    closest comparator in Table I: multimodal kitchen-activity capture with
+    wearable EMG + tactile + gaze. Direct dataset peer.</li>
+  <li><strong>Open X-Embodiment (Padalkar et al., ref [15])</strong> and
+    <strong>RT-2 (Brohan et al., ref [9])</strong> &mdash; the foundation-model
+    datasets Kaiwu positions itself against (vision-heavy, dynamics-poor).</li>
+  <li><strong>RH20T (ref [12])</strong>, <strong>DROID (ref [13])</strong>,
+    <strong>GraspNet-1Billion (ref [14])</strong> &mdash; large-scale
+    manipulation datasets in the same competitive landscape.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a> &mdash;
+    contact-audio for manipulation; turns Kaiwu's microphone modality into a
+    learned policy.</li>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a> and
+    <a href="making_sense_of_vision_and_touch.html">Making Sense of Vision and Touch</a>
+    &mdash; multisensory (vision + touch + audio) fusion for manipulation; the
+    method side of what Kaiwu only provides as data.</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a> &mdash;
+    in-hand acoustic/vibration sensing; complements Kaiwu's contact-audio
+    capture for object/material reasoning.</li>
+  <li><a href="touch_and_go_human_collected_vision_touch.html">Touch and Go</a>
+    and <a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a>
+    &mdash; sibling multisensory datasets/benchmarks in Cluster I; vision-touch
+    and vision-touch-audio resources Kaiwu sits alongside.</li>
+  <li><a href="sparsh_self_supervised_touch_representations.html">Sparsh</a> and
+    <a href="anytouch_unified_static_dynamic_visuotactile.html">AnyTouch</a>
+    &mdash; tactile representation learners that could turn Kaiwu's raw
+    per-finger pressure into learnable embeddings.</li>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">FuSe (Beyond Sight)</a>
+    &mdash; fuses heterogeneous sensors with language into a VLA; the
+    downstream policy paradigm a Kaiwu-style multimodal corpus is meant to feed.</li>
+</ul>
+
+</body>
+</html>

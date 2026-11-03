@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Mobile ALOHA</title>
+<meta name="type" content="paper">
+<meta name="authors" content="">
+<meta name="year" content="2024">
+<meta name="venue" content="datasets.bot public catalog">
+<meta name="arxiv_id" content="2401.02117">
+<meta name="url" content="https://arxiv.org/abs/2401.02117">
+<meta name="pdf" content="https://arxiv.org/abs/2401.02117">
+<meta name="tags" content="datasets-bot,open-data,mobile-manipulator,physical,language,proprioception,rgb,hdf5,rlds">
+<meta name="status" content="datasets-bot-crosscheck">
+<meta name="ingested" content="2026-06-28">
+<meta name="source_prompt" content="datasets.bot public catalog cross-check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .meta { color: #777; font-size: 0.9em; }
+  a { color: #2962ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>Mobile ALOHA</h1>
+<p class="meta">Stanford University &middot; 2024 &middot; datasets.bot &middot; <a href="https://datasets.bot/datasets/mobile-aloha">datasets.bot page</a></p>
+<p><strong>One-liner.</strong> Stanford mobile bimanual manipulation demos (kitchen/home tasks) on the Mobile ALOHA robot; RLDS in Open X / TFDS.</p>
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Mobile ALOHA is a teleoperated mobile bimanual manipulation dataset collected by Fu, Zhao, and Finn (Stanford) using the low-cost whole-body Mobile ALOHA system, with ~50 human demonstrations per task across whole-body tasks such as sauteing shrimp, opening a two-door cabinet, calling/entering an elevator, and rinsing a pan. The TFDS/Open X release contains 276 episodes with 3 RGB cameras (overhead + two wrist cameras at 480x640), a 14-dim state, a 16-dim action, and per-step language instructions. Raw HDF5 demonstrations are also distributed via the project's Google Drive. License: CC-BY-4.0. Download: https://www.tensorflow.org/datasets/catalog/aloha_mobile.</li>
+  <li><strong>Hardware / simulator:</strong> Embodiment: aloha. Environment: home, lab, kitchen. Realness: physical.</li>
+</ul>
+<h2>Schema</h2>
+<p>episodes -&gt; steps -&gt; {observation: {cam_high, cam_left_wrist, cam_right_wrist (480x640x3), state(14)}, action(16), language_instruction, reward, discount, is_first/is_last/is_terminal}</p>
+<h2>Links</h2>
+<ul>
+  <li><a href="https://datasets.bot/datasets/mobile-aloha">datasets.bot page</a></li>
+  <li><a href="https://mobile-aloha.github.io/">Homepage</a></li>
+  <li><a href="https://arxiv.org/abs/2401.02117">Paper</a></li>
+  <li><a href="https://www.tensorflow.org/datasets/catalog/aloha_mobile">Download</a></li>
+</ul>
+</body>
+</html>

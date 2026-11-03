@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Objects that Sound</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Arandjelović, Zisserman">
+<meta name="year" content="2018">
+<meta name="venue" content="ECCV 2018">
+<meta name="arxiv_id" content="1712.06651">
+<meta name="url" content="https://arxiv.org/abs/1712.06651">
+<meta name="pdf" content="../../raw/papers/objects_that_sound.pdf">
+<meta name="tags" content="audio-visual, self-supervised-learning, cross-modal-retrieval, representation-learning, multimodal, audio-sensing">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<!-- Off-genre: audio-visual ML/CV paper, no robot. Structure kept; "Why I care" marks it as a method anchor / adjacent. -->
+
+<h1>Objects that Sound</h1>
+<p class="meta">Relja Arandjelovi&cacute; , Andrew Zisserman (DeepMind / VGG, Oxford)
+  &middot; 2018 &middot; ECCV 2018
+  &middot; <a href="https://arxiv.org/abs/1712.06651">arXiv:1712.06651</a>
+  &middot; <a href="../../raw/papers/objects_that_sound.pdf">PDF</a></p>
+
+<p><strong>One-liner.</strong> Train two ConvNets from scratch on unlabelled video with a single self-supervised objective &mdash; "does this frame and this 1&nbsp;s of audio come from the same video?" &mdash; and you get (a) aligned audio/visual embeddings good enough for cross-modal retrieval and (b), with a tiny architectural change, a network that points at <em>which pixels</em> are making the sound, all without a single label or bounding box.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Unlabelled video gives you a synchronized image stream and audio stream for free, an enormous source of "automatic" supervision. The prior <code>L&sup3;-Net</code> (Arandjelovi&cacute; &amp; Zisserman, "Look, Listen and Learn", ICCV 2017) showed the audio-visual correspondence (AVC) task &mdash; classify a (frame, audio) pair as matched or mismatched &mdash; teaches good unimodal features. But its features are <em>fused by concatenation</em> only after the fully-connected layers, so the two modalities are never aligned in a shared space and are useless for cross-modal retrieval. And no prior cross-modal network was actually designed or shown to answer "<em>where</em> in the image is the object making this sound?" This paper targets both gaps: a network whose embeddings are directly comparable across modalities, and a network that localizes the sounding object &mdash; both still label-free.</p>
+
+<h2>Method</h2>
+<p><strong>Shared backbone.</strong> A vision ConvNet ingests a 224&times;224 RGB frame; an audio ConvNet ingests 1&nbsp;s of audio resampled to 48&nbsp;kHz and converted to a 257&times;200 log-spectrogram treated as a greyscale image (Fig 2a, 2b). Both are trained from scratch, no ImageNet init.</p>
+<p><strong>AVE-Net (retrieval; Fig 2c).</strong> The key move vs. <code>L&sup3;-Net</code> is to push the fully-connected layers <em>into</em> each subnetwork, so each modality produces a 128-D, L2-normalized embedding. Correspondence is then computed as a function of the <em>Euclidean distance</em> between the two embeddings: the single scalar distance is the only information bottleneck, passed through a tiny FC (which scales/shifts it and effectively learns a distance threshold) and a softmax for the matched/mismatched decision. Because the only channel through which the network can solve AVC is that distance, training forces the visual and audio embeddings into a shared, retrieval-ready metric space. The authors note this resembles a parameter-free contrastive/metric-learning loss but with no margin hyper-parameter to tune.</p>
+<p><strong>AVOL-Net (localization; Fig 4).</strong> To localize, the vision subnetwork stops pooling and keeps operating at 14&times;14 spatial resolution; its FC layers are converted to 1&times;1 convolutions, yielding a 14&times;14 grid of 128-D region descriptors. A single 128-D audio embedding is compared (scalar product) against each of the 196 region descriptors, producing a 14&times;14 similarity / localization map. This is framed as Multiple Instance Learning: the <em>max</em> similarity over the grid is taken as the image-audio correspondence score and trained with the AVC logistic loss. For matched pairs at least one region must respond strongly (highlighting the sounding object); for mismatched pairs the whole map should stay low. The audio embedding effectively acts as a filter that "looks" for matching image patches &mdash; an attention-like mechanism.</p>
+<p><strong>Shortcut prevention.</strong> A cautionary contribution: naive AVC negative sampling lets the net cheat. Positives always align the audio midpoint to a frame at a multiple of 0.04&nbsp;s (25&nbsp;fps); if negatives don't, the net learns to detect audio sampled at multiples of 0.04&nbsp;s (an MPEG/resampling artifact) instead of semantics. Fix: sample negative audio only at multiples of 0.04&nbsp;s too.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> AudioSet (10&nbsp;s YouTube clips), filtered to 110 musical-instrument / singing / tools classes &mdash; the "AudioSet-Instruments" subset: 263k train, 30k val, 4.3k test clips. Labels used <em>only</em> for evaluation, never for training. 500 val clips were hand-annotated with the sounding instrument's location for quantitative localization eval.</li>
+  <li><strong>Hardware / simulator:</strong> 16 GPUs, synchronous TensorFlow training, per-worker batch of 128 (effective batch 2048). No robot / no simulator (vision+audio ML paper).</li>
+  <li><strong>Baselines:</strong> <code>L&sup3;-Net</code> (retrained, same data/procedure); <code>L&sup3;-Net</code> aligned with CCA; VGG16-ImageNet visual features (supervised) aligned to <code>L&sup3;</code>-audio via CCA; random chance. Localization: a "predict image center" baseline.</li>
+  <li><strong>Compute:</strong> Adam, weight decay 1e-5, LR by grid search with a 6%-every-16-epochs decay schedule; stride-2 first conv for 4&times; speedup. Exact GPU-hours <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>On the AVC task itself, AVE-Net reaches 81.9% accuracy vs. <code>L&sup3;-Net</code> 80.8% &mdash; but the authors stress AVC accuracy is only a proxy; retrieval is the real test. Cross-modal and intra-modal retrieval measured by mean nDCG@30 (im = image, aud = audio):</p>
+<table>
+  <tr><th>Method</th><th>im-im</th><th>im-aud</th><th>aud-im</th><th>aud-aud</th></tr>
+  <tr><td>Random chance</td><td>.407</td><td>.407</td><td>.407</td><td>.407</td></tr>
+  <tr><td>L&sup3;-Net</td><td>.567</td><td>.418</td><td>.385</td><td>.653</td></tr>
+  <tr><td>L&sup3;-Net + CCA</td><td>.578</td><td>.531</td><td>.560</td><td>.649</td></tr>
+  <tr><td>VGG16-ImageNet (supervised)</td><td>.600</td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td></tr>
+  <tr><td>VGG16-ImageNet + L&sup3;-Audio CCA</td><td>.493</td><td>.458</td><td>.464</td><td>.618</td></tr>
+  <tr><td><strong>AVE-Net</strong></td><td><strong>.604</strong></td><td><strong>.561</strong></td><td><strong>.587</strong></td><td><strong>.665</strong></td></tr>
+</table>
+<p>AVE-Net beats every baseline on all four query-database modality combos. Notably it edges out fully-supervised VGG16-ImageNet on image-image (.604 vs .600) despite never training on classification, and crushes raw <code>L&sup3;-Net</code> on cross-modal (im-aud .561 vs .418) because <code>L&sup3;</code>'s un-aligned features sit near chance across modalities. AVE-Net even does intra-modal retrieval (im-im, aud-aud) well via transitivity, though never explicitly trained for it.</p>
+<p><strong>Localization (AVOL-Net).</strong> AVC accuracy is unchanged under the MIL setup, i.e. switching to localization costs no semantic quality. Quantitatively, AVOL-Net localizes the sounding instrument with 81.7% accuracy vs. 57.2% for the center-prediction baseline. Crucially, mismatch experiments (Fig 6) show it is <em>not</em> just a saliency detector: given an image of a piano+flute, playing flute audio highlights the flute, playing piano audio highlights the piano &mdash; localization genuinely depends on the sound.</p>
+<p><strong>Negative result worth noting:</strong> adding multiple frames (AVE+MF) or optical flow (AVE+OF) <em>raised</em> AVC accuracy (84.7%, 84.9%) but did <em>not</em> improve retrieval &mdash; the net exploits low-level motion correlations to solve AVC more cheaply, reducing pressure to learn semantics. So a single frame is used everywhere else.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><strong>Author-stated.</strong> Being unsupervised, the localizer may fire on only a discriminative <em>part</em> of an object (piano keys, not the whole piano), raising the "what is an object that makes a sound" question (body? keyboard? player?). Max-pooling is crude; the authors propose an explicit soft-attention mechanism as future work. AudioSet is noisy: audio is often dubbed (album cover, unrelated visuals), and ideal nDCG of 1 is unreachable since one frame / 1&nbsp;s can miss the labelled event. Failure cases include firing on overlaid text/music-sheet artifacts.</p>
+<p><strong>What I noticed reading it.</strong> (i) Localization is evaluated on a small home-grown set of 500 hand-annotated clips with a single coarse metric (is the heatmap mode inside the annotation), because no instrument bounding-box dataset exists &mdash; so the headline 81.7% rests on one author-defined protocol, not a community benchmark. (ii) Everything is musical instruments / singing / tools; whether AVC localization transfers to non-periodic, transient contact sounds (a click, a snap, a pour) is untested &mdash; instrument timbre is an unusually clean, sustained audio signal. (iii) The whole result hinges on the Euclidean-distance bottleneck, but there is no ablation isolating "distance bottleneck vs. concat+FC" under matched capacity beyond the AVE-Net-vs-<code>L&sup3;</code> comparison, which also changes where the FCs live. (iv) The shortcut-prevention finding is a genuinely transferable warning: self-supervised correspondence objectives over real data invite exactly this kind of low-level cheating, and the "fix" is dataset-specific (0.04&nbsp;s grid) rather than principled.</p>
+
+<h2>Why I care</h2>
+<p><strong>This is an off-theme, non-robot audio-visual ML paper &mdash; I treat it as a method anchor / adjacent, not a manipulation result.</strong> It does not touch robots, manipulation, planning, or language-conditioned policies, so I won't manufacture relevance. Its value to my agenda is as the canonical <em>architecture pattern</em> for label-free cross-modal alignment and sound-source grounding, and it is the conceptual ancestor of much of the audio-for-manipulation cluster I'm building (ManiWAV, SonicSense, See/Hear/Feel).</p>
+<p>The thread that <em>does</em> connect to my thesis: many manipulation predicates I care about for <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>-style abstraction learning &mdash; <code>is_inserted</code>, <code>is_full</code>, <code>is_screwed_tight</code>, <code>surface_is_rough</code> &mdash; are not visually evaluable; they live in touch, force, and sound. "Objects that Sound" is the cleanest demonstration that a contact/audio signal can be <em>grounded into spatial structure</em> with zero labels via a correspondence objective. The AVOL-Net MIL trick (audio embedding as a spatial filter over a vision grid) is a template I'd reach for if I ever wanted to localize <em>where</em> a manipulation sound is coming from on an object without annotation. But that bridge is mine to build; the paper itself stops at instrument videos.</p>
+
+<h2>Quotable</h2>
+<blockquote>"The AVC task stimulates the learnt visual and audio representations to be both discriminative... and semantically meaningful... the only way for a network to solve the task is if it learns to classify semantic concepts in both modalities, and then judge whether the two concepts correspond."
+<span class="quote-cite">&mdash; &sect;1 / p.2</span></blockquote>
+<blockquote>"In essence, the audio representation forms a filter which 'looks' for relevant image patches in a similar manner to an attention mechanism."
+<span class="quote-cite">&mdash; &sect;4 / p.10</span></blockquote>
+<blockquote>"Deep neural networks are notorious for finding subtle data shortcuts to exploit in order to 'cheat'... the audio for the negative pair is also sampled only from multiples of 0.04s."
+<span class="quote-cite">&mdash; &sect;3.3 / p.8</span></blockquote>
+
+<h2>Related</h2>
+<p><strong>Cited here, candidates to ingest next:</strong></p>
+<ul>
+  <li><a href="../../raw/papers/the_sound_of_pixels.pdf">The Sound of Pixels</a> (Zhao et al., ECCV 2018) &mdash; concurrent ECCV work; goes beyond localization to audio source separation from video.</li>
+  <li><a href="../../raw/papers/visually_indicated_sounds.pdf">Visually Indicated Sounds</a> (Owens et al., CVPR 2016) &mdash; predicts sound from silent video of contact events; the contact-audio direction most relevant to manipulation.</li>
+</ul>
+<p><strong>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</strong></p>
+<ul>
+  <li><a href="the_sound_of_pixels.html">The Sound of Pixels</a> &mdash; same ECCV'18 venue, same AVC self-supervision lineage, extends from localization to separation.</li>
+  <li><a href="visually_indicated_sounds.html">Visually Indicated Sounds</a> &mdash; the other Cluster-E adjacent anchor; closest to physical contact-sound prediction.</li>
+  <li><a href="audioclip_extending_clip.html">AudioCLIP</a> &mdash; later, scaled-up audio-visual-text embedding; AVE-Net is its small label-free ancestor.</li>
+  <li><a href="clap_audio_concepts_language.html">CLAP</a> &mdash; audio-language contrastive embedding; same cross-modal-alignment family one rung up the abstraction ladder.</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a> &mdash; carries the "objects that sound" intuition onto a robot hand for in-hand acoustic property inference.</li>
+</ul>
+
+<p class="meta"><a href="../../index.html">&larr; Index</a></p>
+
+</body>
+</html>

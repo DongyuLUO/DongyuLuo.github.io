@@ -1,0 +1,331 @@
+{
+  "generated_at": "2026-06-28T08:27:00.247Z",
+  "paper_count": 149,
+  "dataset_relevant_count": 140,
+  "introduces_data_artifact_count": 92,
+  "open_or_partial_count": 87,
+  "dataset_roles": [
+    {
+      "name": "introduces dataset",
+      "count": 75
+    },
+    {
+      "name": "uses existing datasets",
+      "count": 27
+    },
+    {
+      "name": "self-collected eval data",
+      "count": 21
+    },
+    {
+      "name": "introduces benchmark",
+      "count": 12
+    },
+    {
+      "name": "introduces simulator",
+      "count": 5
+    },
+    {
+      "name": "survey / review",
+      "count": 5
+    },
+    {
+      "name": "sensor / foundation paper",
+      "count": 4
+    }
+  ],
+  "openness": [
+    {
+      "name": "open / public",
+      "count": 61
+    },
+    {
+      "name": "not open",
+      "count": 29
+    },
+    {
+      "name": "partial or indirect",
+      "count": 26
+    },
+    {
+      "name": "unknown",
+      "count": 24
+    },
+    {
+      "name": "not applicable",
+      "count": 9
+    }
+  ],
+  "modalities": [
+    {
+      "name": "vision",
+      "count": 134
+    },
+    {
+      "name": "language",
+      "count": 80
+    },
+    {
+      "name": "proprioception",
+      "count": 65
+    },
+    {
+      "name": "tactile",
+      "count": 57
+    },
+    {
+      "name": "point cloud / 3D",
+      "count": 53
+    },
+    {
+      "name": "audio",
+      "count": 43
+    },
+    {
+      "name": "force",
+      "count": 43
+    },
+    {
+      "name": "thermal",
+      "count": 14
+    }
+  ],
+  "annotation_types": [
+    {
+      "name": "demonstrations / trajectories",
+      "count": 85
+    },
+    {
+      "name": "simulation labels",
+      "count": 70
+    },
+    {
+      "name": "class labels",
+      "count": 51
+    },
+    {
+      "name": "self-supervised pairs",
+      "count": 50
+    },
+    {
+      "name": "property labels",
+      "count": 33
+    },
+    {
+      "name": "temporal / event labels",
+      "count": 26
+    },
+    {
+      "name": "instructions / commands",
+      "count": 13
+    },
+    {
+      "name": "predicates / constraints",
+      "count": 10
+    },
+    {
+      "name": "captions/descriptions",
+      "count": 9
+    }
+  ],
+  "data_supervision": [
+    {
+      "name": "demonstrations / trajectories",
+      "count": 85
+    },
+    {
+      "name": "simulation labels",
+      "count": 70
+    },
+    {
+      "name": "class labels",
+      "count": 51
+    },
+    {
+      "name": "self-supervised pairs",
+      "count": 50
+    },
+    {
+      "name": "property labels",
+      "count": 33
+    },
+    {
+      "name": "temporal / event labels",
+      "count": 26
+    }
+  ],
+  "language_annotations": [
+    {
+      "name": "none apparent",
+      "count": 104
+    },
+    {
+      "name": "task instructions / commands",
+      "count": 23
+    },
+    {
+      "name": "captions / descriptions",
+      "count": 17
+    },
+    {
+      "name": "property words",
+      "count": 7
+    },
+    {
+      "name": "predicates / constraints",
+      "count": 5
+    },
+    {
+      "name": "temporal phrases",
+      "count": 2
+    }
+  ],
+  "task_families": [
+    {
+      "name": "simulation / sim2real",
+      "count": 86
+    },
+    {
+      "name": "policy learning / VLA",
+      "count": 61
+    },
+    {
+      "name": "grasping / lifting",
+      "count": 51
+    },
+    {
+      "name": "representation learning",
+      "count": 42
+    },
+    {
+      "name": "contact-rich manipulation",
+      "count": 37
+    },
+    {
+      "name": "cooking / food state",
+      "count": 30
+    },
+    {
+      "name": "material recognition",
+      "count": 23
+    },
+    {
+      "name": "insertion / assembly",
+      "count": 20
+    },
+    {
+      "name": "pouring / liquids",
+      "count": 19
+    },
+    {
+      "name": "failure detection / recovery",
+      "count": 8
+    },
+    {
+      "name": "object property reasoning",
+      "count": 5
+    }
+  ],
+  "concept_types": [
+    {
+      "name": "object state",
+      "count": 93
+    },
+    {
+      "name": "static property",
+      "count": 30
+    },
+    {
+      "name": "state transition",
+      "count": 19
+    },
+    {
+      "name": "correction signal",
+      "count": 17
+    },
+    {
+      "name": "event",
+      "count": 16
+    },
+    {
+      "name": "affordance / action effect",
+      "count": 1
+    }
+  ],
+  "environments": [
+    {
+      "name": "offline perception",
+      "count": 110
+    },
+    {
+      "name": "real robot",
+      "count": 95
+    },
+    {
+      "name": "simulation",
+      "count": 70
+    },
+    {
+      "name": "human collection",
+      "count": 13
+    },
+    {
+      "name": "web / video",
+      "count": 10
+    }
+  ],
+  "data_formats": [
+    {
+      "name": "images / video",
+      "count": 114
+    },
+    {
+      "name": "trajectories / actions",
+      "count": 96
+    },
+    {
+      "name": "force / torque time series",
+      "count": 84
+    },
+    {
+      "name": "text / language",
+      "count": 77
+    },
+    {
+      "name": "audio waveforms",
+      "count": 43
+    },
+    {
+      "name": "3D / meshes",
+      "count": 32
+    },
+    {
+      "name": "tactile images",
+      "count": 31
+    },
+    {
+      "name": "custom",
+      "count": 23
+    },
+    {
+      "name": "lerobot",
+      "count": 15
+    },
+    {
+      "name": "hdf5",
+      "count": 10
+    },
+    {
+      "name": "rlds",
+      "count": 8
+    },
+    {
+      "name": "rosbag",
+      "count": 7
+    },
+    {
+      "name": "zarr",
+      "count": 1
+    }
+  ]
+}

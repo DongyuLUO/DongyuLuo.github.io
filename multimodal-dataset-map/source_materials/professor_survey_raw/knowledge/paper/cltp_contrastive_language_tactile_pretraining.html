@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CLTP: Contrastive Language-Tactile Pre-training for 3D Contact Geometry Understanding</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Ma, Cao, Zhang, Zhang, Yang, Hao, Fang, Cai, Cui, Wang">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint (cs.RO)">
+<meta name="arxiv_id" content="2505.08194">
+<meta name="url" content="https://arxiv.org/abs/2505.08194">
+<meta name="pdf" content="../../raw/papers/cltp_contrastive_language_tactile_pretraining.pdf">
+<meta name="tags" content="tactile-language, touch-language, contrastive-learning, tactile-representation, manipulation, tactile-sensing, multimodal, representation-learning, foundation-models">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-25">
+<meta name="source_prompt" content="related-work ingest: dynamic state-change concept grounding for manipulation">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1>CLTP: Contrastive Language-Tactile Pre-training for 3D Contact Geometry Understanding</h1>
+<p class="meta">
+  Wenxuan Ma*, Xiaoge Cao*, Yixiang Zhang, Chaofan Zhang, Shaobo Yang,
+  Peng Hao, Bin Fang, Yinghao Cai, Shaowei Cui&dagger;, Shuo Wang
+  &middot; Institute of Automation CAS / Beihang / BUPT / Samsung Research China
+  &middot; 2025
+  &middot; arXiv preprint (cs.RO, 13 May 2025)
+  &middot; <a href="https://arxiv.org/abs/2505.08194">arXiv:2505.08194</a>
+  &middot; <a href="../../raw/papers/cltp_contrastive_language_tactile_pretraining.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> CLTP aligns <em>3D contact-deformed tactile point
+clouds</em> with natural-language descriptions of multidimensional contact
+state (shape, area, depth, position, texture) by distilling into a frozen
+pre-aligned CLIP vision-language space, yielding a tactile encoder that
+supports zero-shot contact-state classification and feeds an LLM that can
+reason over &mdash; and emit corrective adjustments about &mdash; what the
+sensor is touching.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Existing tactile&ndash;language alignment work (TVL, Touch100K, UniTouch,
+TacQuad) operates on 2D tactile <em>images</em> and describes mostly
+<em>superficial</em> material attributes ("hard", "smooth", texture), which
+the authors argue is insufficient for contact-rich manipulation: what a
+controller needs is <em>contact-state</em> information &mdash; where on the
+gel the contact is, how deep the press, the geometry of the contact patch,
+the force. Two stated gaps: (1) robust tactile&ndash;language alignment needs
+<em>sensor-agnostic</em> representations that transfer across hardware
+(optical vs resistive) and across sim2real; (2) there is no
+language-annotated dataset for contact <em>states</em> (location, area,
+depth) as opposed to texture labels. CLTP targets the contact-geometry layer
+of tactile semantics that prior touch-language models skip.</p>
+
+<h2>Method</h2>
+<p>Two pieces: a dataset (TCL3D) and a CLIP-style alignment recipe (CLTP).</p>
+
+<p><strong>Representation choice.</strong> Rather than a tactile image, CLTP
+uses the <em>3D contact-deformed point cloud</em> read off the sensor gel
+(1024 points sampled). This is the load-bearing modality decision: a 3D
+deformation field captures contact location/depth/geometry directly and is
+posited to transfer across sensor types better than raw images.</p>
+
+<p><strong>Frozen-CLIP bridge.</strong> CLTP trains only a 3D tactile encoder
+<em>E<sub>T</sub></em>; the image encoder <em>E<sub>I</sub></em> and text
+encoder <em>E<sub>L</sub></em> are the frozen, pre-aligned vision-language
+encoders from CLIP (the model is built on ULIP-2). For each contact the
+tactile point cloud is pulled toward both (i) the text feature of its
+generated contact-state description and (ii) the image feature of a rendered
+RGB image of that contact. Training minimizes the sum of two CLIP-style
+contrastive losses, a tactile-to-language term
+<em>L<sub>T2L</sub></em> and a tactile-to-image term
+<em>L<sub>T2I</sub></em> (Eqs. 1&ndash;3). The text term injects high-level
+contact semantics; the image term recovers fine shape/texture detail that
+text words discretize away.</p>
+
+<p><strong>TCL3D dataset construction.</strong> Each sample is a triplet
+(tactile 3D point cloud, language description, rendered contact image).
+Tactile point clouds come mostly from the TACTO simulator over PyBullet
+(cheap, scalable), with real samples from GelStereo and GelSight Mini sensors
+to verify sim2real. Contact state is annotated along <em>five discretized
+dimensions</em>: contact shape (19 categories, e.g. spherical/cylindrical),
+texture (5, e.g. smooth/ridged), depth (4, e.g. slight/moderate/deep),
+position (9, e.g. top-left/center), and area (5, e.g. tiny/small/medium).
+Shape and texture are characterized by GPT-4o from the rendered image;
+position, depth, and area are computed directly from the point cloud.
+A template prompt composes these into sentences such as "a [Texture] [Shape]
+object, pressed [Depth] in [Position] with [Area] contact area." Images for
+each contact are synthesized by meshing the tactile point cloud and rendering
+from the sensor's view.</p>
+
+<p><strong>Downstream uses.</strong> The frozen pretrained tactile encoder is
+applied three ways: (a) zero-shot 3D contact-state classification via cosine
+similarity to text prompts per dimension; (b) supervised contact-state
+classification (freeze encoder, finetune per-attribute MLP heads);
+(c) <strong>Tac3D-LLM</strong> &mdash; an MLP aligns tactile features to LLM
+tokens (Qwen2.5-VL-3B backbone, LLaVA-style captioning finetune) so the LLM
+can do tactile question-answering and multimodal reasoning over contact
+state.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> TCL3D, the paper's own dataset
+    &mdash; 52,425 samples (50,860 simulated; 1,450 GelStereo real; 115
+    GelSight real), 117 objects (62 large, mostly YCB; 55 small pegs /
+    McMaster parts), ~400&ndash;500 contact samples per object. Evaluated on
+    zero-shot 3D classification, standard contact-state classification (TCL3D
+    + real-world), and Tac3D-LLM QA.</li>
+  <li><strong>Hardware / simulator:</strong> TACTO tactile simulator + PyBullet
+    for synthesis; real data from GelStereo and GelSight Mini (visuotactile,
+    optical) sensors pressed via a 3D CNC with shaped probes. 1024 points
+    sampled per tactile point cloud.</li>
+  <li><strong>Baselines:</strong> Point-BERT and Point-MAE (3D point-cloud
+    encoders) for classification; an ablated CLTP (w/o image loss); for
+    Tac3D-LLM, PointMAE-LLM and PointBERT-LLM.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Zero-shot contact-state classification (Table 1, accuracy %): the full CLTP
+beats the no-image ablation on every dimension &mdash; Shape 70.1 vs 52.6,
+Texture 68.8 vs 65.7, Depth 98.3 vs 96.5, Position 94.4 vs 91.9, Area 81.8
+vs 67.1 &mdash; confirming the tactile-to-image loss is what supplies
+fine-grained shape/texture detail.</p>
+
+<p>Standard (supervised-head) contact-state classification (Table 2, accuracy %):</p>
+<table>
+  <tr><th>Method</th><th colspan="2">Shape (TCL3D / Real)</th><th colspan="2">Texture</th><th colspan="2">Depth</th></tr>
+  <tr><td>Point-BERT</td><td>28.7</td><td>21.9</td><td>89.5</td><td>91.1</td><td>64.4</td><td>52.1</td></tr>
+  <tr><td>Point-MAE</td><td>31.6</td><td>23.9</td><td>90.2</td><td>89.2</td><td>68.1</td><td>52.1</td></tr>
+  <tr><td>CLTP (w/o image)</td><td>61.2</td><td>55.3</td><td>94.5</td><td>90.3</td><td>94.7</td><td>77.3</td></tr>
+  <tr><td><strong>CLTP</strong></td><td><strong>84.8</strong></td><td><strong>71.2</strong></td><td><strong>96.1</strong></td><td><strong>92.7</strong></td><td><strong>99.2</strong></td><td><strong>83.6</strong></td></tr>
+</table>
+<p>Headlines: CLTP reaches 84.8% shape accuracy on TCL3D vs 28.7/31.6 for
+Point-BERT/Point-MAE, and &gt;95% on texture, position, and area. On real-world
+sensor data it gets 71.2% shape, surpassing Point-MAE by +47.3 points, and
+the full model beats its own no-image variant by +15.9 on real shape &mdash;
+the language + visual supervision both help, and the encoder trained mostly on
+sim transfers to real GelSight/GelStereo data. The case study (Fig. 4) shows
+CLTP matching GT on shape/depth/position where Point-BERT/Point-MAE miss.
+Tac3D-LLM (Sec. 5.3, Fig. 7) does contact-description and comparative-reasoning
+QA ("which object is most likely to be this touch point cloud and why?") and
+generalizes to unseen question types where the unaligned baselines only answer
+their training-question type.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Shape ambiguity: the 19 shape classes overlap (triangle vs peak, sphere
+    vs ellipsoid), causing confusable labels (Fig. 6, Case 0).</li>
+  <li>The "contact position" is defined as the deepest contact point, which is
+    noisy for large flat contacts (Fig. 6, Case 1).</li>
+  <li>Real-world data is far smaller than simulated (1,450 + 115 vs 50,860),
+    so sim2real claims rest on a thin real set.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The contact state is entirely <strong>static</strong>: a single press
+    snapshot annotated on five dimensions. There is no temporal axis &mdash;
+    no notion of a contact <em>state change</em> over time (became firmer,
+    started slipping, contact growing as object deforms). The dataset is a
+    set of independent snapshots, not trajectories.</li>
+  <li>Language is restricted to a fixed template over discretized bins; it is
+    descriptive, not <em>predictive</em> or <em>corrective</em> at the
+    representation level &mdash; the "corrective adjustment" capability lives
+    only in the downstream Tac3D-LLM, and only as free-text generation, not as
+    a grounded action signal or a predicate over state.</li>
+  <li>No closed-loop manipulation experiment in the main paper: classification
+    and QA only. The grasping demo (strawberry positioning / delicate
+    grasping) is deferred to an appendix, so the manipulation payoff is
+    asserted more than evaluated.</li>
+  <li>"Sensor-agnostic" is argued via the 3D-point-cloud choice but tested only
+    across two optical/visuotactile sensors (GelStereo, GelSight); the harder
+    optical-vs-resistive transfer it motivates is not actually evaluated.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is the tactile-language analogue of <a href="../paper/octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+for BLADE's missing <em>non-visual predicate</em> layer:
+<a href="../paper/learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+learns visual predicate classifiers, and CLTP is exactly the recipe for a
+<em>tactile</em> classifier &mdash; a learned encoder that maps raw 3D contact
+geometry to language-aligned contact-state labels. Predicates like
+<code>is_grasped</code>, <code>is_inserted</code>, or a contact-firmness
+precondition could in principle be read off a CLTP encoder where vision can't
+see them. The downstream Tac3D-LLM even closes my "tactile state &rarr;
+reasoned correction" loop on paper: the seed brief frames this cluster as
+"an LLM can emit corrective adjustments ('slightly reduce gripping force')",
+and the strawberry-grasping appendix gestures at exactly that.</p>
+<p>But it sits on the wrong side of the axis I actually care about. CLTP grounds
+<strong>static contact geometry</strong> &mdash; one snapshot, five descriptive
+dimensions &mdash; not a <em>dynamic state-change</em> concept. There is no
+time axis, no "became slippery after wetting", no monitored transition.
+Compared to BLADE's symbolic predicates with preconditions/effects, CLTP's
+"state" is a neural/textual descriptor with no transition structure; compared
+to closed-loop-correction work like
+<a href="../paper/reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>
+or <a href="../paper/inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>,
+its correction story is unevaluated. So for the dynamic-state-change idea it is
+the <em>grasp-stabilization, static-contact-geometry</em> reference point: the
+strongest existing tactile&rarr;language grounding, and a clean illustration of
+exactly the temporal / transition gap the idea wants to fill. It also pairs with
+<a href="../paper/tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>
+(force-word grounding + CoT correction) as the "tactile + language + correction"
+neighbors that stop short of dynamic state.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Existing tactile descriptions remain limited to superficial attributes like
+  texture, neglecting critical contact states essential for robotic
+  manipulation.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  To the best of our knowledge, this is the first study to align tactile and
+  language representations from the contact state perspective for manipulation
+  tasks, providing great potential for tactile-language-action model learning.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  Their textual descriptions predominantly focus on material texture evaluation
+  rather than grasping state information critical for contact-rich manipulation
+  tasks&mdash;such as contact location, depth, and interaction dynamics.
+  <span class="quote-cite">&mdash; &sect;2.2, Tactile-Language Pre-training</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that could be ingested next:</p>
+<ul>
+  <li><strong>Fu et al. &mdash; TVL (Touch-Vision-Language dataset / model)</strong>
+    [23] &mdash; the 2D tactile-image&ndash;language alignment baseline CLTP
+    positions itself against (already in corpus as TVL).</li>
+  <li><strong>Cheng et al. &mdash; Touch100K / TVL-Link</strong> [22] &mdash;
+    open tactile-visual-text dataset; a direct tactile-language predecessor.</li>
+  <li><strong>Yang et al. &mdash; UniTouch</strong> [50] &mdash; tactile aligned
+    to visual/textual/auditory modalities.</li>
+  <li><strong>Feng et al. &mdash; TacQuad / AnyTouch</strong> [51] &mdash;
+    cross-sensor alignment of <em>dynamic contact sequences</em> with vision and
+    text; the closest cited work that does add a temporal axis (worth ingesting
+    for the dynamic-state angle).</li>
+  <li><strong>Xue et al. &mdash; ULIP / ULIP-2</strong> [36, 44] &mdash; the
+    point-cloud&ndash;image&ndash;text alignment framework CLTP is built on.</li>
+  <li><strong>Radford et al. &mdash; CLIP</strong> [13] &mdash; the frozen
+    vision-language space CLTP distills into.</li>
+  <li><strong>Zhu et al. &mdash; PointCLIP</strong> [45, 46] &mdash; CLIP-for-3D
+    open-world classification precedent.</li>
+</ul>
+<p>Related ingested papers:</p>
+<ul>
+  <li><a href="octopi_object_property_reasoning_tactile_language.html">Octopi</a>
+    &mdash; the static tactile <em>property</em>-reasoning sibling; CLTP is the
+    contact-<em>geometry</em> counterpart, both pre-dynamic.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>
+    &mdash; force-word grounding + CoT correction; the closest "tactile +
+    language + closed-loop correction" neighbor.</li>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; anchor; CLTP is a candidate tactile-predicate-classifier layer for
+    BLADE's visual-only predicate learning.</li>
+  <li><a href="reflect_summarizing_robot_experiences_for_failure_explanation.html">REFLECT</a>
+    and <a href="inner_monologue_embodied_reasoning_through_planning_with_language_models.html">Inner Monologue</a>
+    &mdash; closed-loop semantic correction; the capability Tac3D-LLM gestures at
+    but does not evaluate.</li>
+</ul>
+
+</body>
+</html>

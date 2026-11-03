@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Recognition of Heat-Induced Food State Changes by Time-Series Use of Vision-Language Model for Cooking Robot</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Kanazawa, Kawaharazuka, Obinata, Okada, Inaba">
+<meta name="year" content="2023">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2309.01528">
+<meta name="url" content="https://arxiv.org/abs/2309.01528">
+<meta name="pdf" content="../../raw/papers/heat_induced_food_state_changes_time_series_vlm.pdf">
+<meta name="tags" content="vlm, object-state-recognition, state-change, thermal-sensing, cooking, foundation-models, process-monitoring, temporal-reasoning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-25">
+<meta name="source_prompt" content="related-work ingest: dynamic state-change concept grounding for manipulation">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1>Recognition of Heat-Induced Food State Changes by Time-Series Use of Vision-Language Model for Cooking Robot</h1>
+<p class="meta">
+  Naoaki Kanazawa, Kento Kawaharazuka, Yoshiki Obinata, Kei Okada, Masayuki Inaba
+  &middot; The University of Tokyo
+  &middot; 2023 &middot; arXiv preprint
+  &middot; <a href="https://arxiv.org/abs/2309.01528">arXiv:2309.01528</a>
+  &middot; <a href="../../raw/papers/heat_induced_food_state_changes_time_series_vlm.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Run CLIP over a cooking-robot camera video and
+track, frame by frame, the classification probability of a positive vs.
+negative natural-language description of a heat-induced food change (e.g.
+"boiling and bubbling water" vs. "not boiling liquid water"); the
+time-series of that probability, smoothed and thresholded, becomes a
+recognizer for <em>when</em> the state change occurred &mdash; a purely visual,
+recognition-only, language-grounded detector for dynamic thermal cooking
+transitions.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Cooking is defined by large, special state changes of the foodstuff
+(vaporization, melting, browning, coagulation) that don't occur in most
+manipulation tasks, and applying heat on a stove produces many such changes
+depending on the recipe. Prior cooking-with-heat robots (pancake robot,
+omelette-quality batch-Bayesian-optimization robot) adjusted by <em>heating
+time</em> rather than recognizing the state change itself &mdash; brittle to
+ingredient variation, randomness, and unknown recipes. Prior food-state
+recognition trained CNNs on bespoke datasets and only classified the
+<em>final</em> post-cooking state; none addressed detecting the <em>change
+point</em> of a real-time transition during cooking. Collecting labeled data
+for every possible ingredient state change is infeasible, which motivates
+using an open-vocabulary VLM (CLIP) as a language-driven feature calculator
+so the state to recognize is specified by a textual description instead of a
+trained class.</p>
+
+<h2>Method</h2>
+<p>A unified, training-free pipeline built on frozen
+<a href="../../raw/papers/learning_transferable_visual_models_natural_language.pdf">CLIP</a>
+(ingest candidate; not yet in corpus):</p>
+<ul>
+  <li><strong>Two-prompt degree-of-change signal.</strong> For each target
+    transition, prepare a <em>positive</em> and a <em>negative</em> linguistic
+    description (e.g. positive "Boiling water" / negative "Not boiling
+    water"). At every video frame, CLIP computes the classification
+    probability of the image against the two prompts; the positive
+    probability is read as the instantaneous "degree of state change."</li>
+  <li><strong>Four prompt styles compared.</strong> (a) simple state-change
+    phrase ("Boiling water"); (b) phrase with extra description of the
+    change ("Boiling and bubbling water"); (c) ingredient-word-first
+    ("Water that is boiling"); (d) ingredient-first plus extra change
+    description ("Water that is boiling and bubbling"). Hypothesis:
+    more detailed change descriptions are more sensitive to the transition.</li>
+  <li><strong>Prompt selection by slope.</strong> The per-frame degree-of-change
+    time series is fit with a linear approximation; the prompt whose line has
+    the largest slope (LA Slope) over the cooking session is chosen as the
+    best recognizer &mdash; i.e. the prompt under which the signal rises most
+    monotonically across the change.</li>
+  <li><strong>Change-point recognition.</strong> A human annotates the time
+    they perceive the change. The smoothed signal (simple moving average,
+    window 10) at that annotated time is taken as a threshold; on unseen
+    videos, the first time the smoothed signal crosses that threshold is the
+    recognized change point. (For the discrete Maillard data, raw values are
+    thresholded since there are too few samples to smooth.)</li>
+  <li><strong>Gaze region.</strong> Two image crops are compared: the whole
+    pot/pan ("entire") vs. only the contents inside it ("contents").</li>
+</ul>
+
+<!-- Off-genre note: vision-only, recognition-only, training-free VLM-probing paper; not a manipulation/policy paper. Setup adapted but structure kept. -->
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected. Robot-camera
+    videos of four canonical heat-induced changes &mdash; <em>vaporization</em>
+    (water brought to a boil), <em>melting</em> (butter in a frying pan),
+    <em>thermal denaturation of proteins</em> (egg cooked sunny-side-up),
+    and <em>Maillard reaction</em> (onions stir-fried to a candy color). No
+    public benchmark; no train/test split in the usual sense &mdash; "known"
+    data tunes prompt + threshold, "unknown" data (same and different heat
+    power) is evaluated. <em>Number of trials per condition not reported.</em></li>
+  <li><strong>Hardware / simulator:</strong> Cart-mobile robot PR2, recording
+    with its onboard camera. For the Maillard experiment the robot
+    direct-teach stir-fried onions with a spatula and periodically paused
+    stirring to capture clean (arm-/spatula-free) images, yielding discrete
+    rather than continuous samples.</li>
+  <li><strong>Baselines:</strong> No external method baseline. Internal
+    comparisons only: 4 prompt styles &times; 2 gaze regions, and same- vs.
+    different-heat-power generalization. Recognized change time is compared
+    against a single human annotation per video.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Prompt-style finding (Tables 1, 3, 5, 7): the ingredient-word-ending prompt
+that also describes the change &mdash; style (b), e.g. "Boiling and bubbling
+water" &mdash; gave the largest LA Slope and best recognition in almost all
+conditions; the lone exception was vaporization with the "contents" gaze,
+where the simple prompt (a) won. Including a description of the change beat a
+bare state phrase, confirming the sensitivity hypothesis.</p>
+
+<p>Gaze finding (counter to the authors' hypothesis): gazing at the
+<em>entire</em> pot/pan generally beat gazing only at the contents, despite
+the change happening in the contents. Conjectured causes: CLIP's training
+images of whole pots, or whole-pot images being easier to read as "food
+being cooked."</p>
+
+<p>Change-point recognition error (gap between recognized time and human
+annotation; lower is better):</p>
+<table>
+  <tr><th>Transition</th><th>Best config</th><th>Same power (s)</th><th>Diff. power (s)</th></tr>
+  <tr><td>Vaporization</td><td>(b)-entire</td><td>1.6</td><td>6.5</td></tr>
+  <tr><td>Melting</td><td>(b)-entire</td><td>12.6</td><td>0.9</td></tr>
+  <tr><td>Protein denaturation</td><td>(b)-entire</td><td>100.0</td><td>6.3</td></tr>
+  <tr><td>Maillard reaction</td><td>(b)-entire</td><td>0.0</td><td>0.0</td></tr>
+</table>
+<p>Vaporization and melting were recognized well (errors of seconds with the
+entire-pot gaze). Maillard matched the human annotation exactly at the entire-pan
+gaze &mdash; but the authors attribute the perfect match to the data being
+<em>discrete</em> (few candidate times to choose among), tempering the claim.
+Thermal denaturation of proteins was the failure case: even with matched
+prompts/gaze the per-trial signal plots differ in shape, and recognition only
+worked for the entire-pot / different-power condition (Table 6, Fig 9&ndash;10).
+The authors suspect either that the four prompt styles don't capture the egg
+transition, or that protein denaturation simply has larger visual variance
+across trials than the other changes.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>The method recognizes vaporization, melting, and Maillard, but
+    <strong>fails on thermal denaturation of proteins</strong>; a more robust
+    recognizer needs an automated way to search for suitable prompts and
+    better time-series processing.</li>
+  <li>To cover more state-change types, the authors say it "may be necessary
+    to integrate them into a multimodal recognition method" &mdash; i.e. vision
+    alone is insufficient.</li>
+  <li>Threshold is set from a single human annotation per change; no
+    discussion of inter-annotator variance or threshold robustness.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>The "recognizer" is just a thresholded scalar CLIP-probability curve.
+    It detects a <em>monotone visual drift</em> labeled by language, not a
+    grounded predicate over the physical process &mdash; there is no notion of
+    "boiling" as a precondition/effect that a planner could consume, and no
+    closed loop back to action.</li>
+  <li>Evaluation is thin: a handful of self-collected videos, one human
+    annotation each, no success-rate statistics, no external baseline. The
+    "perfect" Maillard number is an artifact of discrete sampling, as the
+    authors concede.</li>
+  <li>Prompt selection requires the change to have <em>already</em> happened
+    in a known video (to fit the slope and read the threshold), so the method
+    is not truly open-recipe at deployment &mdash; it needs a labeled exemplar
+    of each transition first.</li>
+  <li>The thermal axis is entirely <em>visual</em>: "heat-induced" describes
+    the cause, but the only sensing is RGB. Vaporization/melting are
+    visually obvious (bubbles, liquefaction); the failure on eggs is exactly
+    where the visual signature is weak and where a thermal or other
+    non-visual sensor would carry the signal.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is the closest existing work to the <em>"dynamic thermal state grounded
+in language"</em> corner of the idea &mdash; and it cleanly exposes the gap.
+It does three things the idea wants: (1) grounds a <strong>dynamic, change-oriented
+concept</strong> ("becoming boiling", "coming to a melt") rather than a static
+property; (2) binds that concept to <strong>natural language</strong> via an
+open-vocabulary VLM, so the target is specified textually instead of as a
+trained class; (3) <strong>monitors over time</strong>, producing a temporal
+signal and an explicit change point.</p>
+<p>But it misses every other axis. It is <strong>vision-only</strong> &mdash;
+"heat-induced" is the <em>cause</em>, yet the only modality is RGB, with no
+thermal/tactile/audio sensing; the authors themselves end by saying multimodal
+integration is needed, which is precisely the thesis. It is
+<strong>recognition-only</strong> &mdash; a passive thresholded curve, with no
+loop back into action, no replanning, no semantic correction. And it is
+<strong>sub-symbolic</strong> &mdash; the output is a scalar probability, not a
+predicate with preconditions/effects that
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>-style
+bi-level planning could consume. Versus BLADE, whose visual predicate
+classifiers label <em>static</em> relations from single frames and feed a
+symbolic planner, this paper is the temporal/dynamic complement on the
+perception side but stops short of both the symbolic abstraction and the
+control loop. It is the cleanest evidence for the central bet: the state changes
+that matter (and the one that fails here &mdash; egg coagulation) are exactly
+where vision is weakest and where thermal/non-visual sensing should ground the
+"hot enough now" predicate. Same authors / lab as the
+<a href="real_world_cooking_robot_system_from_recipes_with_foundation_models_and_pddl.html">Kanazawa cooking robot (food-state &rarr; PDDL)</a>
+and the VQA-based
+<a href="continuous_object_state_recognition_cooking_vlm.html">continuous object-state recognition</a>
+line &mdash; this is the time-series-VLM predecessor that those build on.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  We propose a unified method for recognizing changes in the cooking state of
+  robots by using the vision-language model that can discriminate open-vocabulary
+  objects in a time-series manner.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  We confirmed that the proposed method can recognize vaporization, melting,
+  and Maillard reaction, but thermal denaturation of protein was difficult to
+  recognize only with the proposed method&hellip; it may be necessary to
+  integrate them into a multimodal recognition method.
+  <span class="quote-cite">&mdash; &sect;5, Conclusions</span>
+</blockquote>
+<blockquote>
+  The best prompt is selected by comparing the slope of a linear approximation
+  of the positive classification probability, and the value smoothed by a simple
+  moving average is used for threshold processing to recognize the state change.
+  <span class="quote-cite">&mdash; Fig. 1 caption</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that could be ingested next:</p>
+<ul>
+  <li><strong>[4] Radford et al. 2021 &mdash; CLIP (Learning Transferable Visual
+    Models from Natural Language Supervision)</strong> (ICML) &mdash; the
+    open-vocabulary VLM this method probes frame-by-frame. Foundational dependency.
+    (<a href="../../raw/papers/learning_transferable_visual_models_natural_language.pdf">PDF slot</a>, not yet ingested.)</li>
+  <li><strong>[15] Kawaharazuka et al. 2023 &mdash; VQA-based Robotic State
+    Recognition Optimized with Genetic Algorithm</strong> (ICRA) &mdash; the
+    same group's sibling state-recognition method using VQA + GA prompt search;
+    direct companion.</li>
+  <li><strong>[1] Beetz et al. 2011 &mdash; Robotic roommates making pancakes</strong>
+    and <strong>[2] Junge et al. 2020 &mdash; Improving robotic cooking using
+    batch Bayesian optimization</strong> &mdash; the heat-by-time cooking robots
+    this paper argues against.</li>
+  <li><strong>[8] Takata et al. 2022 &mdash; Efficient Task/Motion Planning for a
+    Dual-arm Robot from Language Instructions and Cooking Images</strong> (IROS)
+    &mdash; same-lab cooking-TAMP context.</li>
+</ul>
+<p>Related ingested papers:</p>
+<ul>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; the anchor; learns symbolic predicate classifiers (static, single-frame,
+    vision) for a bi-level planner. This paper is the dynamic/time-series perception
+    complement that lacks the symbolic abstraction and the control loop.</li>
+  <li><a href="real_world_cooking_robot_system_from_recipes_with_foundation_models_and_pddl.html">Kanazawa cooking robot (food-state &rarr; PDDL)</a>
+    &mdash; same lead author / lab; lifts food-state recognition into PDDL-grounded
+    recipe execution. The downstream integration this recognizer feeds.</li>
+  <li><a href="continuous_object_state_recognition_cooking_vlm.html">Continuous Object State Recognition for Cooking Robots using VLMs</a>
+    &mdash; same lab's continuous-valued successor to this binary-prompt time-series approach.</li>
+  <li><a href="look_for_the_change_object_states_state_modifying_actions.html">Look for the Change</a>
+    &mdash; vision-only object-state-change detection from video (ChangeIt); the
+    web-video analogue to this robot-camera recognizer.</li>
+  <li><a href="dynamic_concept_learner_physical_concepts_visual_reasoning.html">Dynamic Concept Learner (DCL)</a>
+    &mdash; grounds dynamic physical concepts via visual reasoning over video;
+    the structured-reasoning contrast to this scalar-threshold approach.</li>
+</ul>
+
+</body>
+</html>

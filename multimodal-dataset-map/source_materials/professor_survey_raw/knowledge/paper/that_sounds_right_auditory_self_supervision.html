@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>That Sounds Right: Auditory Self-Supervision for Dynamic Robot Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Thankaraj, Pinto">
+<meta name="year" content="2022">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2210.01116">
+<meta name="url" content="https://arxiv.org/abs/2210.01116">
+<meta name="pdf" content="../../raw/papers/that_sounds_right_auditory_self_supervision.pdf">
+<meta name="tags" content="audio-sensing, acoustic-sensing, contact-audio, self-supervised-learning, representation-learning, robot-learning, learning-from-demonstration">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>That Sounds Right: Auditory Self-Supervision for Dynamic Robot Manipulation</h1>
+<p class="meta">Abitha Thankaraj, Lerrel Pinto (NYU) · 2022 · arXiv preprint ·
+   <a href="https://arxiv.org/abs/2210.01116">arXiv</a> ·
+   <a href="../../raw/papers/that_sounds_right_auditory_self_supervision.pdf">PDF</a></p>
+
+<p><strong>One-liner.</strong> AURL shows that <em>contact sound alone</em> — recorded by cheap contact mics and compressed by a BYOL-style self-supervised encoder — is enough to predict the motion-primitive parameters of fast, contact-rich behaviors (swatting, striking, rattling), with self-supervision cutting prediction error far below supervised-from-scratch or pretrained-vision baselines in the low-data regime.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Most robot manipulation policies are built on visual observations, which carry rich spatial information but miss the high-frequency temporal signal that dynamic, contact-rich tasks (a tennis strike, cracking an egg, swatting a fly) produce. Tactile sensing captures contact but is too delicate for large-scale data collection. Sound is an "often ignored" third channel: a contact microphone gives a high-frequency, direct readout of <em>what just happened</em> at the moment of impact, and humans demonstrably use audition as a success signal in motor learning (the paper cites neuroscience on rowing/sonification). The question the paper poses: can audio be leveraged to learn dynamic manipulation skills <em>on its own</em>, without vision or multimodal fusion? The blocker to using raw audio directly is data hunger — reasoning over raw waveforms needs large datasets — so the paper attacks that with self-supervised representation learning.</p>
+
+<h2>Method</h2>
+<p>AURL frames each task as a dataset <code>D = {o_k, a_k}</code> of audio observations <code>o_k</code> paired with action parameters <code>a_k</code>, and learns a policy <code>a_k = f(o_k)</code> that predicts the action from sound. The pipeline (Fig 3) is three stages.</p>
+<p><strong>Audio preprocessing.</strong> Each 4-second clip is recorded at 44.1 kHz, padded/clipped to fixed length, downsampled to 11 kHz, then converted to a <strong>mel spectrogram</strong> (STFT window 400, hop 160, 16 mel banks; mel chosen over raw STFT / log-mel from initial experiments). Crucially, each contact microphone is treated as a <strong>separate channel</strong>, so a multi-mic recording becomes a multi-channel 2D "image" that a CNN can ingest. Tasks use 1 or 2 mics depending on whether spatial position of contact matters.</p>
+<p><strong>Self-supervised representation learning.</strong> A <strong>ResNet-18</strong> encoder (input channels = number of mics) is trained with <strong>BYOL</strong> (Bootstrap Your Own Latent): online + target networks, target as slow EMA of online, objective = minimize distance between representations of two augmented views of the same audio. The latent <code>z_k</code> is fixed at length 512. The key augmentation finding: <strong>random resize+crop on the mel spectrogram works; Mixup (the standard BYOL-A audio augmentation) hurts</strong>, because mixing waveforms destroys the temporal structure that encodes the behavior. Trained 1000 epochs, LARS optimizer, lr 0.2, batch 1024.</p>
+<p><strong>Audio-to-behavior finetuning.</strong> Following the linear-probe convention from SSL vision, a <strong>linear model</strong> <code>w_θ</code> maps frozen <code>z_k</code> to action parameters by minimizing squared loss <code>Σ ‖w_θᵀ z_k − a_k‖²</code>. High-capacity encoder for representations, low-capacity linear head to avoid overfitting on the modest dataset.</p>
+<p><strong>Self-supervision variants.</strong> Because they control data generation, the authors can build invariances <em>into</em> the data instead of only via augmentation: <code>AURL+Act</code> treats two audio clips from the <em>same behavior</em> as a positive pair (5 repeats per behavior were collected for exactly this); <code>AURL+AA</code> combines that with augmentations; <code>AURL+All</code> pretrains one encoder across all five tasks' audio jointly.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected <strong>audio-behavior dataset, 25,000 datapoints</strong> across <strong>five dynamic tasks</strong> — rattling a rattle, shaking a tambourine, swatting a fly swatter, striking a horizontal surface, striking a vertical surface. 1,000 unique behaviors × 5 repeats = 5,000 per task; per-task split 4,000 train / 1,000 test. Action parameters sampled uniformly from a parameterized primitive space; tasks are self-resetting for minimal supervision. RGB video also recorded (third-person) for the vision baseline.</li>
+  <li><strong>Hardware / simulator:</strong> <strong>UR10</strong> arm, joint-velocity control, dynamic behaviors via motion primitives (velocity/acceleration/oscillation-count, etc., per task). <strong>Commodity contact microphones</strong> (1–2 per task) on the tool or in the environment; audio at 44.1 kHz, 4 s clips. Deformable tools used for safety.</li>
+  <li><strong>Baselines:</strong> Random (lower bound), Oracle (nearest-train-action by L2, rough upper bound), Supervised (ResNet+linear from scratch, MSE), Supervised+Aug, Pretrained-audio (<code>data2vec</code> features + linear probe), Pretrained-vision (5 frames through ImageNet ResNet + linear probe). AURL variants: AURL, AURL+Act, AURL+AA, AURL+All.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (encoder: 1000 epochs, batch 1024, LARS; only that the vision baseline was capped at 5 frames because more frames were too compute-heavy).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Two metrics: <strong>MSE on predicted behavior parameters</strong> (Table I, offline) and <strong>normalized DTW distance between desired vs. produced amplitude envelopes</strong> on real UR10 rollouts (Table II, online closed-loop "make-this-sound" evaluation). Headline: self-supervised pretraining gives <strong>34.5% lower MSE than plain supervised learning and 54.3% lower than visual training</strong>, and online rollouts beat supervised by ~<strong>11.5%</strong> on audio similarity. Pretrained audio (data2vec) and pretrained vision both do poorly — speech/music pretraining is out-of-distribution for contact sound, and 5-frame vision lacks temporal resolution. Where it <strong>loses / only ties</strong>: on Striking-Horizontal and Shaking, AURL is only marginally better than supervised and well short of Oracle.</p>
+
+<table>
+<caption style="text-align:left;font-size:0.85em;color:#777;">Table I — MSE (↓) on behavior-parameter prediction (selected rows).</caption>
+<tr><th>Method</th><th>Rattling</th><th>Shaking</th><th>Swatting</th><th>Striking-H</th><th>Striking-V</th></tr>
+<tr><td>Random</td><td>2.36</td><td>2.61</td><td>0.67</td><td>1.10</td><td>1.06</td></tr>
+<tr><td>Oracle (upper)</td><td>0.07</td><td>0.07</td><td>0.06</td><td>0.31</td><td>0.32</td></tr>
+<tr><td>Supervised</td><td>0.25</td><td>0.28</td><td>0.09</td><td>0.59</td><td>0.45</td></tr>
+<tr><td>Sup+Aug</td><td>2.37</td><td>2.19</td><td>0.27</td><td>0.76</td><td>0.58</td></tr>
+<tr><td>Pretrained-audio</td><td>3.10</td><td>4.19</td><td>0.25</td><td>0.65</td><td>0.53</td></tr>
+<tr><td>Pretrained-vision</td><td>2.30</td><td>3.05</td><td>0.05</td><td>0.52</td><td>0.48</td></tr>
+<tr><td><strong>AURL</strong></td><td><strong>0.12</strong></td><td>0.22</td><td>0.02</td><td>0.53</td><td>0.39</td></tr>
+<tr><td>AURL+AA</td><td>0.14</td><td>0.26</td><td><strong>0.01</strong></td><td>0.54</td><td><strong>0.38</strong></td></tr>
+<tr><td>AURL+All</td><td>0.12</td><td><strong>0.15</strong></td><td>0.01</td><td>0.60</td><td>0.43</td></tr>
+</table>
+
+<p>Notable findings from the ablations: (1) <strong>Supervised+Aug is often worse than plain supervised</strong> (e.g. 2.37 vs 0.25 on Rattling) — augmentations only help when the SSL objective extracts invariance from them, not when fed naively. (2) <strong>Scaling (Fig 5):</strong> SSL's advantage is largest in the low-data regime and shrinks as data grows — authors conjecture plain supervision may suffice at the data limit. (3) <strong>Task-specific &gt; multi-task pretraining:</strong> AURL+All only beats single-task on 1/5 tasks, because striking tasks (sparse sharp spikes) and rattle/shake/swat (dense spikes) have very different spectrogram distributions. (4) <strong>Contact mics beat standard mics</strong> for ambient-noise rejection.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><strong>(a) Author-stated.</strong> Only mild gains over supervised on Striking-Horizontal and Shaking, and far from Oracle on those — better SSL or large-scale audio pretraining needed. The framework learns only from a fixed labeled (self-collected) dataset, so it can only reproduce behaviors present in training; they suggest RL-based data collection to go task-directed.</p>
+<p><strong>(b) What I noticed reading it.</strong> (1) <strong>No success-rate or task-completion metric.</strong> Everything is MSE on action parameters or DTW envelope distance — proxies. There is no "did the swat actually land / did the strike succeed" number, and no human-rated audio similarity beyond DTW, so the 11.5% online improvement is on a hand-built metric, not task success. (2) <strong>The action space is the real target, and it's low-dimensional.</strong> AURL predicts a handful of primitive parameters (joint velocities, accelerations, oscillation counts), not closed-loop motor control — so "learning dynamic behavior from sound" is really "regressing primitive parameters from a single post-hoc sound clip." It is open-loop: sound is consumed <em>after</em> the action, used to map a <em>desired</em> sound to an action, not as feedback during execution. (3) <strong>Statistics are thin</strong> — single split per task, no seeds/variance/CIs reported on Tables I–II, and several AURL-vs-baseline gaps (Striking-H/V) are within plausible noise. (4) <strong>The DTW metric normalizes against same-action variance</strong>, which can flatter methods on noisy tasks; Shaking has high distances across the board (Oracle 7.61), suggesting the metric or task is poorly conditioned there. (5) Generalization to <em>new</em> objects/tasks/mic placements is untested — encoders are per-task and the input channel count is hard-wired to mic count.</p>
+
+<h2>Why I care</h2>
+<p>This is squarely on-theme for the thesis that <strong>many manipulation predicates are not visually evaluable</strong> — <code>is_struck_hard_enough</code>, <code>contact_made</code>, <code>is_rattling</code> live in the high-frequency acoustic signal, not in pixels. AURL is an early, clean existence proof that a contact-sound channel carries enough information to recover the <em>parameters of a contact event</em>, which is exactly the kind of signal a non-visual predicate classifier would need. For <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>, where predicate classifiers are currently visual, this is suggestive of an <strong>acoustic predicate</strong> head: a self-supervised audio encoder feeding a light classifier could ground symbols like <em>is_inserted</em> or <em>is_screwed_tight</em> that vision cannot read. The honest caveat is altitude: AURL is a single-step, open-loop primitive-parameter regressor with no language, no planning, and no compositional structure — it sits far below the long-horizon / TAMP layer BLADE operates at. Its contribution to my line of work is the <em>sensor-and-representation</em> argument (sound + BYOL on mel spectrograms, task-specific, low-data), not a policy or planning architecture. Related directly to the audio-imitation work it cites (<a href="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">Play it by Ear</a>) and the contact-audio sensing line.</p>
+
+<h2>Quotable</h2>
+<blockquote>"we propose a data-centric approach to dynamic manipulation that uses an often ignored source of information: sound."
+<span class="quote-cite">— Abstract / p.1</span></blockquote>
+<blockquote>"this self-supervised 'pretraining' is crucial to achieving high performance, with a 34.5% lower MSE than plain supervised learning and a 54.3% lower MSE over visual training."
+<span class="quote-cite">— Abstract / p.1</span></blockquote>
+<blockquote>"To the best of our knowledge, AURL represents the first work to demonstrate that dynamic behaviors can be learned solely from auditory inputs."
+<span class="quote-cite">— §II / p.2</span></blockquote>
+
+<h2>Related</h2>
+<p><strong>(a) Cited here, worth ingesting next:</strong></p>
+<ul>
+  <li><a href="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">Play it by Ear (Du et al. 2022)</a> — cited [19] as the closest prior audio-for-manipulation work; learns imitation policies under occlusion from audio-visual input. Direct comparison point.</li>
+  <li>Gandhi, Gupta &amp; Pinto, "Swoosh! Rattle! Thump! — Actions that Sound" (arXiv:2007.01851) — cited [8], same-lab predecessor connecting sound to planar manipulation; the conceptual ancestor of AURL. (Not in the batch list; candidate for ingest.)</li>
+  <li>Clarke et al., "Learning audio feedback for estimating amount and flow of granular material" — cited [7], the granular-pouring contact-audio anchor; conceptually adjacent to the pouring work below.</li>
+</ul>
+<p><strong>(b) Newly ingested in 2026-06-24 batch — directly relevant:</strong></p>
+<ul>
+  <li><a href="play_it_by_ear_audio_visual_imitation.html">Play it by Ear</a> — audio-visual imitation under occlusion; the imitation-policy counterpart to AURL's parameter-regression approach.</li>
+  <li><a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a> — in-the-wild audio-visual manipulation; later, scaled take on contact audio for policy learning.</li>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a> — multisensory (incl. audio) fusion for manipulation; contrasts AURL's audio-only stance with full sensory fusion.</li>
+  <li><a href="making_sense_audio_vibration_pouring.html">Making Sense of Audio Vibration (pouring)</a> — contact-audio for a contact-rich task; same "sound reveals contact state" thesis applied to pouring.</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a> — in-hand acoustic/vibration sensing; pushes acoustic sensing toward in-hand state estimation.</li>
+  <li><a href="hearing_touch_audio_visual_pretraining.html">Hearing Touch</a> — audio-visual pretraining bridging sound and touch representations.</li>
+</ul>
+
+</body>
+</html>

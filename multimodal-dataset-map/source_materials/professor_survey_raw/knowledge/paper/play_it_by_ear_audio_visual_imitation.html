@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Play it by Ear: Learning Skills amidst Occlusion through Audio-Visual Imitation Learning</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Du, Lee, Nair, Finn">
+<meta name="year" content="2022">
+<meta name="venue" content="RSS 2022">
+<meta name="arxiv_id" content="2205.14850">
+<meta name="url" content="https://arxiv.org/abs/2205.14850">
+<meta name="pdf" content="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">
+<meta name="tags" content="audio-visual, contact-audio, audio-sensing, imitation-learning, occlusion, robot-learning, multisensory, sensory-fusion, manipulation-planning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Play it by Ear: Learning Skills amidst Occlusion through Audio-Visual Imitation Learning</h1>
+<p class="meta">
+  Maximilian Du*, Olivia Y. Lee*, Suraj Nair, Chelsea Finn
+  &middot; Stanford University
+  &middot; RSS 2022
+  &middot; <a href="https://arxiv.org/abs/2205.14850">arXiv:2205.14850</a>
+  &middot; <a href="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> When the target object is fully hidden from the
+camera (keys inside a grocery bag), a cheap microphone on the gripper turns
+<em>contact sounds</em> into the missing state signal &mdash; and a memory-augmented
+audio-visual policy, behavior-cloned from teleop demos then fine-tuned with a
+handful of human interventions, doubles success over a vision-only policy on a
+real Franka.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Vision-based manipulation breaks under <em>occlusion</em>: some tasks
+(extracting keys from a bag) leave the target permanently out of sight, so
+vision alone cannot solve them. Tactile sensing could help but robust contact
+tactile remains an open hardware problem. The authors argue a gripper-mounted
+microphone is a cheap, robust alternative: contact events (the gripper brushing
+keys) emit sounds that localize the target even when nothing is visible. Two
+hard sub-problems follow: (1) sensors are <em>intermittently</em> informative &mdash;
+a key sound several timesteps ago may be what disambiguates the current grasp,
+so the policy needs <strong>memory</strong>; (2) the high-dimensional, temporally
+correlated audio-visual-history observation space makes offline behavior cloning
+brittle to state-distribution shift, motivating <strong>online interactive
+fine-tuning</strong>. This is squarely a partial-observability problem where the
+missing predicate (roughly, <em>are the keys grasped / where are they</em>) lives
+in sound, not pixels.</p>
+
+<h2>Method</h2>
+<p>Three components, summarized in Algorithm 1 and the architecture of Fig 2.</p>
+
+<p><strong>1. Audio-visual-proprioceptive fusion.</strong> The agent operates in a
+controlled Markov process with a partially-observed, multi-modal observation
+<code>o = [o<sup>v</sup>, o<sup>s</sup>, o<sup>p</sup>]</code> (vision, sound,
+proprioception). It learns a <em>memory</em> policy
+<code>&pi;<sub>&theta;</sub>: O<sup>v</sup><sub>(t-H):t</sub> &times; O<sup>s</sup><sub>(t-H):t</sub> &times; O<sup>p</sup><sub>(t-H):t</sub> &rarr; A</code>
+trained with a behavior-cloning MSE loss (Eq 1). <em>Vision:</em> 84&times;84 RGB
+from a third-person camera (target object obscured from this view), upsampled to
+224&times;224 and encoded by a ResNet18 [22] into a 512-d embedding, with
+random-crop / color-jitter / affine augmentation. <em>Sound:</em> last 2 seconds
+of waveform from the gripper microphone, converted to a spectrogram of shape
+<code>[L=57, S=160]</code> and passed through a 1D conv (for temporal
+equivariance) to an audio embedding of size 264. <em>Proprioception:</em>
+end-effector position + gripper status, shape <code>(1,7)</code>.</p>
+
+<p><strong>2. Early + late fusion across time.</strong> Single-timestep inputs give
+poor performance under partial observability, so history is encoded two ways
+(Fig 2). <em>Early fusion:</em> the past 3 timesteps of images are channel-stacked
+(9 input channels into a modified ResNet18) to capture short-timescale arm
+motion. <em>Late fusion:</em> per-step visual+audio+proprio embeddings
+<code>[e<sup>v</sup>, e<sup>s</sup>, o<sup>p</sup>]<sub>t</sub></code> are
+concatenated, MLP-fused into a joint embedding <code>z<sub>t</sub></code>, and a
+sequence of <code>z<sub>t</sub></code> over the past <code>H=10</code> timesteps is
+fed to a one-layer LSTM [23] (hidden dim <code>D=50</code>). The LSTM output goes to
+a 2-hidden-layer MLP producing a continuous delta end-effector action plus a
+discrete gripper action.</p>
+
+<p><strong>3. Online interactive fine-tuning (HG-DAgger).</strong> Offline BC suffers
+distribution shift in this high-dim space, so the policy is fine-tuned with
+human-gated DAgger [35] (Fig 3): the policy is first trained offline on demos
+<code>D</code> to convergence, then rolled out while a human watches and chooses
+when to intervene, supplying expert actions
+<code>a<sub>t</sub>* = &pi;<sub>human</sub>(o<sub>(t-H):t</sub>)</code>. Intervention
+tuples go into a separate online buffer <code>D<sub>o</sub></code>, and the policy
+is fine-tuned on <em>balanced</em> batches drawn from both <code>D<sub>o</sub></code>
+and the original demos <code>D</code> (Eq 2). The authors deliberately reject the
+RL-finetuning alternative (residual RL / online RL): it needs a hard-to-specify
+real-robot reward and is sample-inefficient (they run residual RL [31] 5&times;
+longer and it still fails to beat offline BC).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Real key-extraction task (Easy:
+    keys centered below gripper; Hard: keys over a ~3 cm radius, must move within
+    the bag to make contact), 50 teleop demos. Object-differentiation task
+    (pick/drop a mystery bag, grasp only if it sounds like screws vs. packing
+    peanuts), 30 demos, evaluated over 20 trials. Zero-shot unseen-object test
+    (Table I). Two simulated tasks: Occluded Grasp with Visual Indicator and
+    Occluded Pick-and-Place, 50 scripted-expert demos each.</li>
+  <li><strong>Hardware / simulator:</strong> Franka Emika Panda 7-DoF arm; third-person
+    uncalibrated RGB camera; microphone attached to the gripper. Teleop via Oculus
+    Quest 2 VR controller. Simulation in MuJoCo [63] on top of robosuite [72];
+    since MuJoCo has no sound sim, "sound" is approximated by external contact
+    forces on the target object.</li>
+  <li><strong>Baselines:</strong> Ablations of the full system &mdash; <em>(-Audio)</em>,
+    <em>(-Vision)</em>, <em>(-Memory)</em>, and <em>(-Interventions)</em> (offline BC
+    only); plus <em>(-Interventions)(+Residual RL)</em> [31] using SAC [21] on top of
+    the offline BC policy. (No external multimodal-manipulation baseline is run.)</li>
+  <li><strong>Compute:</strong> Offline policy trained 10,000 steps (real) /
+    100,000 steps (sim); fine-tuned 1,000 steps after each online episode.
+    Otherwise <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: on the real Franka key-extraction task the full system reaches a
+<strong>70% success rate on Easy</strong> (from a 30% offline-only start, after just
+~20 episodes / ~1 hour of human intervention) and <strong>50% on Hard</strong> (after
+~40 episodes) &mdash; "more than double the success rate of an agent using only
+vision," and the abstract reports 50% higher than a no-audio policy.</p>
+
+<p>Real-robot ablations (Fig 5, success rate over online fine-tuning):</p>
+<table>
+  <tr><th>Method</th><th>Easy</th><th>Hard</th></tr>
+  <tr><td><strong>Ours (full)</strong></td><td><strong>~70%</strong></td><td><strong>~50%</strong></td></tr>
+  <tr><td>Ours (-Vision)</td><td>~50% (peak 60% w/o interv.)</td><td>~10%</td></tr>
+  <tr><td>Ours (-Audio)</td><td>~10% (never &gt;20%)</td><td>~0% (all fail)</td></tr>
+  <tr><td>Ours (-Memory)</td><td>~10% (40% w/o interv., then degrades)</td><td>~10%</td></tr>
+</table>
+<p>Where each modality matters: <em>(-Audio)</em> collapses because the agent
+can't tell whether a sound came from the bag vs. the keys, or where the keys are;
+<em>(-Vision)</em> survives on Easy (sound + proprio suffice to drop straight down)
+but fails on Hard, where seeing the bag deform helps disambiguate gripper-vs-key
+contact; <em>(-Memory)</em> can't track which task phase it's in, so it drops keys
+right after grasping. Notably, <em>(-Memory)</em> without interventions reaches 40%
+on Easy &mdash; sometimes <em>higher</em> than with interventions, because once trained
+on corrections it can't tell whether it has grasped, so memory and interventions
+interact.</p>
+
+<p><strong>Object differentiation (Fig 6):</strong> trained on 30 demos to grasp the
+bag if it sounds like screws and leave it if it sounds like packing peanuts; 14/20
+overall (7/10 each case) &mdash; sound alone drives the action choice.</p>
+
+<p><strong>Zero-shot unseen objects (Table I):</strong> a policy trained only on keys
+generalizes to objects that make a loud enough contact sound &mdash; Chip Bag 10/10,
+Aspirin Bottle 5/10, Pens 5/10, Candies 7/10 &mdash; but Cloth 0/10, because soft
+objects make no sound and the gripper never closes.</p>
+
+<p><strong>Simulation (Fig 7):</strong> removing interventions costs ~15% (grasp) and
+~25% (pick-and-place); removing memory hurts most among modality ablations (~10%);
+removing audio costs ~5% on both; residual RL on top of BC is ineffective and often
+destroys BC performance even at 5&times; the budget.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Heavy dependence on human supervision, both for offline demos and online
+    corrections; smarter human-gating (e.g. ThriftyDAgger [25]) could ease the burden.</li>
+  <li>A single microphone gives only incomplete audio information; two microphones
+    (like human ears) could enable directional/binaural localization of an object.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>No external baseline.</strong> Every comparison is an ablation of the
+    authors' own system; there is no comparison against a competing multimodal or
+    tactile manipulation method, so the absolute difficulty of the task relative to
+    prior art is hard to calibrate.</li>
+  <li><strong>Tiny-N statistics.</strong> Real-robot rates are over 10 trials per
+    evaluation; object differentiation is 14/20; unseen-object generalization is
+    out of 10. "70% on Easy" is 7/10 &mdash; wide confidence intervals that the
+    success-rate curves smooth over.</li>
+  <li><strong>Sim "sound" is a proxy.</strong> MuJoCo has no audio, so the simulated
+    audio signal is approximated by external contact forces &mdash; effectively a
+    clean force/contact-event channel, not a noisy spectrogram. The sim ablations
+    therefore test "contact-event memory" more than "audio" per se.</li>
+  <li><strong>Memory&times;intervention confound.</strong> The (-Memory)-without-
+    interventions case sometimes beats the full intervention pipeline, suggesting the
+    intervention distribution and the memory module interact in non-obvious ways the
+    paper doesn't fully untangle.</li>
+  <li>The audio signal is implicit and end-to-end &mdash; there is no explicit
+    "is-grasped" or "keys-located" predicate; the contact-state inference is buried
+    in the LSTM, which limits interpretability and reuse.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This paper is a clean, early instantiation of the batch's central thesis: <strong>many
+manipulation predicates are not visually evaluable &mdash; they live in sound and
+contact.</strong> "Are the keys grasped?", "did the gripper contact the target?" are
+exactly the kind of <code>is_grasped</code> / <code>made_contact</code> predicates that
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+would need to evaluate, and that a camera cannot read off an occluded scene. Where
+BLADE learns <em>visual</em> predicate classifiers and assumes the relevant state is
+observable in pixels, Play it by Ear shows a whole task family where the determining
+signal is acoustic. The natural connection to my line of work: a BLADE-style symbolic
+layer whose precondition/effect predicates are grounded in <em>audio</em> (or fused
+audio-visual) classifiers, so the planner can reason about occluded contact states it
+currently can't see. The paper itself stays fully end-to-end / implicit (LSTM memory,
+no symbols), which is precisely the gap a structured-abstraction approach could fill:
+turn "the LSTM heard a key sound 8 steps ago" into an explicit, re-planner-visible
+predicate. It is a real-robot manipulation paper, on-theme, and a strong anchor for
+the <em>contact-audio-as-state</em> argument.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  One pervasive yet often overlooked issue in vision-based manipulation is
+  occlusion, which can lead to partial observability and in some cases can make it
+  impossible to solve the task altogether.
+  <span class="quote-cite">&mdash; &sect;I / p.1</span>
+</blockquote>
+<blockquote>
+  We instead consider audio feedback as an alternative, since microphones are both
+  cheap and robust... a microphone attached to the robot's gripper can provide
+  sufficient information about contact when camera images are occluded.
+  <span class="quote-cite">&mdash; &sect;I / p.1</span>
+</blockquote>
+<blockquote>
+  Our method succeeds in total 14/20 trials, 7/10 in each case. Thus, we conclude
+  that giving training data of different objects, our method can differentiate
+  between object sounds and choose actions accordingly.
+  <span class="quote-cite">&mdash; &sect;IV-C / p.7</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[11] Clarke 2021 &mdash; Robot learning for manipulation of granular
+    materials using vision and sound</strong> (MS thesis, CMU) &mdash; the closest prior
+    on sound-as-input for manipulation (scooping); the audio-preprocessing pipeline is
+    borrowed from here.</li>
+  <li><strong>[37] Lee et al. 2019 &mdash; Making Sense of Vision and Touch</strong>
+    (ICRA) &mdash; the canonical visuo-tactile self-supervised fusion for contact-rich
+    tasks; in this batch as
+    <a href="../../raw/papers/making_sense_of_vision_and_touch.pdf">making_sense_of_vision_and_touch</a>.</li>
+  <li><strong>[19] Gao et al. 2021 &mdash; ObjectFolder</strong> (CoRL) &mdash; dataset of
+    objects with implicit visual/auditory/tactile representations; in this batch as
+    <a href="../../raw/papers/objectfolder_dataset_implicit_representations.pdf">objectfolder_dataset_implicit_representations</a>.</li>
+  <li><strong>[35] Kelly et al. 2019 &mdash; HG-DAgger</strong> (ICRA) &mdash; the
+    interactive-imitation fine-tuning algorithm this work adopts.</li>
+  <li><strong>[18] Gandhi et al. 2020 &mdash; Swoosh! Rattle! Thump! Actions that
+    Sound</strong> &mdash; using sound to identify object properties and robot actions.</li>
+  <li><strong>[5] Clester et al. 2021 &mdash; Robotic grasping of fully-occluded
+    objects using RF perception</strong> (ICRA) &mdash; the RF-tag alternative to
+    audio for occluded grasping.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a> &mdash;
+    Cluster D sibling; fuses vision, audio, and touch for manipulation; the
+    full-tri-modal extension of this paper's audio-visual fusion.</li>
+  <li><a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a> &mdash; Cluster D;
+    in-the-wild audio-visual imitation learning; the modern data-scaling counterpart to
+    this real-robot demo-collection setup.</li>
+  <li><a href="that_sounds_right_auditory_self_supervision.html">That Sounds Right</a>
+    and <a href="hearing_touch_audio_visual_pretraining.html">Hearing Touch</a> &mdash;
+    Cluster D; auditory self-supervision / audio-visual pretraining for contact; the
+    representation-learning angle on the same contact-sound signal.</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>,
+    <a href="vibecheck_active_acoustic_tactile_sensing.html">VibeCheck</a>,
+    <a href="active_acoustic_sensing_manipulation.html">Active Acoustic Sensing</a>, and
+    <a href="making_sense_audio_vibration_pouring.html">Making Sense of Audio Vibration</a>
+    &mdash; Cluster D; acoustic/vibration sensing for in-hand state estimation; same
+    "sound carries the hidden contact state" thesis with different sensing physics.</li>
+  <li><a href="audio_vla_contact_audio_perception.html">Audio-VLA</a> and
+    <a href="vlas_speech_instructions_vla.html">VLAS</a> &mdash; Cluster C; bring
+    contact-audio / speech into VLA policies; the foundation-model successors to this
+    bespoke audio-visual LSTM.</li>
+  <li><a href="beyond_sight_fuse_heterogeneous_sensors_language.html">Beyond Sight (FuSe)</a>
+    &mdash; Cluster C; fuses heterogeneous sensors (incl. audio) with language; the
+    generalized sensor-fusion framing.</li>
+</ul>
+
+</body>
+</html>

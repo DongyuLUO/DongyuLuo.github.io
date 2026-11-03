@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FACTR 2: Learning External Force Sensing for Commodity Robot Arms Improves Policy Learning</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Oh, Liu, Tao, Han, Shaw, Funabashi, Salakhutdinov, Pathak">
+<meta name="year" content="2026">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2606.12406">
+<meta name="url" content="https://arxiv.org/abs/2606.12406">
+<meta name="pdf" content="../../raw/papers/factr2_external_force_sensing_commodity_arms.pdf">
+<meta name="tags" content="force-torque, external-force-estimation, imitation-learning, contact-rich, proprioception, force-control, flow-matching, learning-from-demonstration, robot-learning, haptics">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>FACTR 2: Learning External Force Sensing for Commodity Robot Arms Improves Policy Learning</h1>
+<p class="meta">
+  Steven Oh*, Jason Jingzhou Liu*, Tony Tao*, Philip Han, Kenneth Shaw,
+  Satoshi Funabashi, Ruslan Salakhutdinov, Deepak Pathak
+  &middot; Carnegie Mellon University / Waseda University
+  &middot; 2026
+  &middot; <a href="https://arxiv.org/abs/2606.12406">arXiv:2606.12406</a>
+  &middot; <a href="../../raw/papers/factr2_external_force_sensing_commodity_arms.pdf">PDF</a>
+  &middot; <a href="https://jasonjzliu.com/factr2">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> FACTR 2 learns to estimate external joint
+torque on cheap force-sensor-less arms from just 10 minutes of free-motion
+data (NEXT), then uses that estimated force signal both to drive
+force-feedback teleoperation and to re-weight imitation-learning data toward
+pre-contact and contact phases (FIRST) &mdash; bringing force-aware
+manipulation to off-the-shelf robots with zero added sensing hardware.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Contact-rich manipulation &mdash; insertion, fastening, deformable
+handling &mdash; needs force sensitivity that humans rely on but that vision
+alone can't reliably infer. Dedicated force-torque (FT) sensors live mostly
+on expensive arms (Franka, Flexiv, KUKA); low-cost arms (AgileX Piper $2,500,
+YAM) lack them, and retrofitting end-effector FT sensors can cost more than
+the arm itself. Existing sensorless force-estimation approaches lean on
+analytical inverse-dynamics + system identification, which is fragile to
+friction dead zones, torque ripple, hysteresis, and other history-dependent
+actuator effects; learning-based methods exist but typically need paired
+FT-sensor labels or simulation contact data. FACTR 2 wants the force signal
+on commodity hardware with no FT supervision at all.</p>
+
+<h2>Method</h2>
+<p>The combined system has two pieces: <strong>NEXT</strong> (force
+estimation) and <strong>FIRST</strong> (force-informed policy training). It
+generalizes the prior <a href="../../raw/papers/factr_force_attending_curriculum_training.pdf">FACTR</a>
+(which assumed dedicated joint-torque sensors) to arms without them.</p>
+
+<p><strong>NEXT &mdash; Neural External Torque estimation.</strong> External
+joint torque is the residual <code>&tau;_ext = &tau;_m &minus; &tau;_f</code>,
+where measured motor torque <code>&tau;_m = K I_m</code> comes from motor
+current and <code>&tau;_f</code> is the torque that would be needed to realize
+the observed motion <em>in free space</em>. Rather than computing
+<code>&tau;_f</code> from a model-based rigid-body inverse-dynamics
+(<code>M q&#776; + C q&#775; + g + &tau;_other</code>, which demands accurate
+inertial/friction/gravity ID), NEXT <em>learns</em> a free-space inverse
+dynamics network <code>&tau;&#770;_f = f_&theta;(x)</code> directly from joint
+states. The input <code>x_i = [q_{i&minus;H:i}, q&#775;_{i&minus;H:i},
+&Delta;q_{d,i&minus;H:i}]</code> is a temporal history of joint position,
+velocity, and tracking error (commanded minus current position), with history
+length <code>H = 50</code>. Because the training data is collected
+<em>without contact</em>, measured motor torque equals free-space torque, so
+<code>&tau;_m</code> is its own supervision target (L2 regression, Eq. 4).
+<code>f_&theta;</code> is a 2-layer LSTM (hidden 128) with a 2-layer MLP head;
+a stateless sliding-window formulation avoids hidden-state drift over long
+trajectories. At deployment, external torque is the residual between measured
+motor torque and the predicted free-space torque (Fig 2). Training needs only
+~10 min of free-motion data (collected by teleop, motion planning, or replay)
+and ~1 min on an RTX 3090; inference runs at 568&nbsp;Hz (run at 100&nbsp;Hz).</p>
+
+<p><strong>Force-feedback teleoperation.</strong> The NEXT external torque
+estimate is plugged into the FACTR bilateral control law
+<code>&tau;_feedback = K_{f,p} &tau;_ext</code> (Eq. 8), giving haptic feedback
+on low-cost leader-follower setups that previously had none.</p>
+
+<p><strong>FIRST &mdash; Force-Informed Re-Sampling Training.</strong> A
+flow-matching behavior-cloning policy (conditioned on <code>M</code> camera
+images, joint position <code>q_t</code>, and estimated external torque
+<code>&tau;&#770;_ext,t</code>; velocity-prediction objective, Eq. 5) is
+trained, but FIRST changes <em>which</em> data points get sampled. Each
+demonstration timestep is labeled <em>free motion</em>, <em>pre-contact</em>,
+or <em>contact</em> using the scalar contact score
+<code>f_t = ||&tau;&#770;_ext,t||_1</code> with hysteresis thresholding
+(turns on at <code>T_high</code>, off at <code>T_low</code>). The 1-second
+window before each contact onset is labeled pre-contact; everything else is
+free motion (Eq. 6&ndash;7). FIRST then assigns phase-dependent sampling
+weights <code>w_F, w_PC, w_C</code> with <code>w_PC, w_C &gt; w_F</code>, so
+mini-batches over-represent the failure-prone pre-contact and contact phases
+(Fig 7 shows these phases have higher validation loss; up-sampling them lowers
+it). Motivation: failures concentrate not in free space but in the brief
+pre-contact alignment intervals and the contact phase requiring controlled,
+corrective interaction.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Force-estimation eval uses
+    5&nbsp;min held-out contact data + 5&nbsp;min free-space data on a Franka
+    (built-in FT sensor as ground truth) and free-space data on an AgileX
+    Piper (zero-torque as GT). FIRST is evaluated on five long-horizon
+    contact-rich tasks &mdash; LEGO Assembly, NIST Belt Assembly, NIST
+    Insertion, Tool Clean Up, Cap Screwing (Fig 3) &mdash; with 250
+    demonstrations per task, 20 rollouts per task, scored by task progress
+    rate (stage decomposition in Table 7).</li>
+  <li><strong>Hardware / simulator:</strong> Franka Panda (for force-eval
+    ground truth + a 20-participant teleop user study), AgileX Piper and YAM
+    (low-cost target arms). Bimanual Piper setup with four RGB cameras (two
+    wrist, two overhead) for policy learning. DINOv3-Base image encoder; all
+    real-robot, no simulator.</li>
+  <li><strong>Baselines:</strong> <em>Force estimation</em> &mdash; FILIC
+    (model-based MuJoCo inverse dynamics residual), Disturbance Observer (DO,
+    momentum-based), and the dedicated external sensor itself. <em>Policy
+    learning</em> &mdash; Base Policy (no force), Base Policy + Torque (NEXT
+    torque as extra input),
+    <a href="../../raw/papers/factr_force_attending_curriculum_training.pdf">FACTR</a>
+    (force + image blur curriculum), TA-VLA (auxiliary torque-reconstruction
+    objective). Run with both flow-matching and ACT policy architectures.</li>
+  <li><strong>Compute:</strong> NEXT trains in ~1 min on an NVIDIA RTX 3090
+    (24&nbsp;GB); inference 1.76&nbsp;ms/forward (568&nbsp;Hz) on an i9-10920X
+    CPU. Policies trained on an A6000 (48&nbsp;GB), 12&ndash;24 h wall-clock.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: NEXT matches a dedicated FT sensor's quality on the Franka,
+achieving <strong>0.547&nbsp;Nm</strong> average L1 contact error &mdash;
+87.6% lower than FILIC and 62.8% lower than the disturbance observer (Table 1).
+In free space (true external torque should be zero) NEXT reaches 0.414&nbsp;Nm,
+<em>beating even the dedicated sensor</em> (0.449&nbsp;Nm) by learning
+hardware-specific effects from on-robot data. On the low-cost Piper, NEXT hits
+0.018&nbsp;Nm free-space error (Table 5), far below both baselines.</p>
+
+<table>
+  <tr><th>Motion</th><th>Method</th><th>L1 error (Nm) &darr;</th></tr>
+  <tr><td rowspan="4">Contact (Franka)</td><td>External Sensor (GT)</td><td>0.000</td></tr>
+  <tr><td>FILIC</td><td>4.395 &plusmn; 1.531</td></tr>
+  <tr><td>Disturbance Observer</td><td>1.471 &plusmn; 0.761</td></tr>
+  <tr><td><strong>NEXT (ours)</strong></td><td><strong>0.547 &plusmn; 0.348</strong></td></tr>
+  <tr><td rowspan="4">Free space (Franka)</td><td>FILIC</td><td>2.460 &plusmn; 1.358</td></tr>
+  <tr><td>Disturbance Observer</td><td>2.429 &plusmn; 1.298</td></tr>
+  <tr><td>External Sensor</td><td>0.449 &plusmn; 0.208</td></tr>
+  <tr><td><strong>NEXT (ours)</strong></td><td><strong>0.414 &plusmn; 0.278</strong></td></tr>
+</table>
+
+<p><strong>Teleoperation user study</strong> (20 participants, Franka wiping
+task): NEXT-based feedback rated easier to use than no-feedback, DO, and
+position-position baselines, and comparable to FACTR Teleop which uses
+dedicated joint-torque sensors; it also lowered applied joint torque (less
+unnecessary exertion, Fig 4). Repeated on the sensorless Piper (Fig 9), NEXT
+again beats the baselines.</p>
+
+<p><strong>FIRST policy learning</strong>: across all five tasks FIRST gives
+the highest task progress, with the abstract claimed improvement of
+<strong>over 17% in task progress</strong> over prior force-aware policies
+(Fig 6, flow matching; Fig 11, ACT). The up-sampling ablation (Table 2) shows
+up-sampling <em>pre-contact</em> (PC) gives the best average task progress
+(0.818) vs contact-only (0.670) or PC+C (0.811); pre-contact alone wins on 3
+of 5 tasks, while Cap Screwing (sustained contact) prefers PC+C (0.825).</p>
+
+<table>
+  <tr><th>Task</th><th>C</th><th>PC</th><th>PC+C</th></tr>
+  <tr><td>LEGO Assembly</td><td>0.697</td><td><strong>0.913</strong></td><td>0.875</td></tr>
+  <tr><td>NIST Belt</td><td>0.494</td><td><strong>0.767</strong></td><td>0.649</td></tr>
+  <tr><td>NIST Insertion</td><td>0.800</td><td><strong>0.933</strong></td><td><strong>0.933</strong></td></tr>
+  <tr><td>Tool Clean Up</td><td>0.650</td><td><strong>0.805</strong></td><td>0.775</td></tr>
+  <tr><td>Cap Screwing</td><td>0.707</td><td>0.673</td><td><strong>0.825</strong></td></tr>
+  <tr><td><strong>Average</strong></td><td>0.670</td><td><strong>0.818</strong></td><td>0.811</td></tr>
+</table>
+
+<p>Ablation (Table 9) separates the two contributions: phase-based
+up-sampling helps even without force as a policy input, and force-conditioned
+policies beat their no-force counterparts; the two combined (NEXT torque as
+input + FIRST re-sampling) are best. NEXT-estimated torque also beats raw
+motor current as policy input on both NIST Insertion and Cap Screwing
+(Table 10), showing the learned free-space subtraction yields a cleaner
+contact signal than current alone.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>NEXT's <em>absolute</em> torque scale depends on the motor torque
+    constant <code>K</code>; if <code>K</code> is inaccurate, absolute scale
+    needs calibration against an external FT sensor. Less limiting for
+    teleop (forces scaled for comfort) and policy learning (inputs
+    normalized).</li>
+  <li>NEXT is robot-specific and may require retraining across arms due to
+    hardware variation.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li>NEXT is only validated against ground truth on the Franka (which has a
+    sensor); on the actual low-cost target arms, <em>contact</em> accuracy is
+    never directly measured &mdash; only free-space error (where GT is
+    trivially zero). The whole pitch is force on cheap arms, yet contact-phase
+    fidelity on the Piper/YAM is assessed only indirectly through the teleop
+    user study and downstream policy success, not against a reference signal.</li>
+  <li>FIRST's contact labeling is itself a function of NEXT's noisy estimate
+    via a hysteresis threshold; threshold sensitivity (<code>T_high</code>,
+    <code>T_low</code>) is never ablated, so the phase labels &mdash; and thus
+    the whole re-sampling benefit &mdash; rest on hand-tuned thresholds.</li>
+  <li>The "+17%" headline aggregates task <em>progress</em> (partial-stage
+    credit), not binary success; success-rate tables (Table 9) cover only 2 of
+    5 tasks. The strongest claim is on the softer metric.</li>
+  <li>Up-sampling magnitude saturates/degrades past m&asymp;5 (Fig 12) &mdash;
+    a real risk of over-biasing the data distribution that is acknowledged but
+    means the method has a task-specific knob to tune.</li>
+  <li>Free-space data collection assumes you can reliably generate truly
+    contact-free trajectories; for cluttered workspaces or compliant arms that
+    sag under gravity, "no contact" may be harder to guarantee than implied.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This sits squarely on the thesis I keep returning to from
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+<strong>many manipulation predicates are not visually evaluable</strong> &mdash;
+<code>is_inserted</code>, <code>is_screwed_tight</code>,
+<code>is_grasped</code>, <code>contact_made</code> live in force/touch, not
+pixels. FACTR 2 is a clean demonstration that the force channel needed to
+ground those predicates can be <em>recovered for free</em> on commodity
+hardware, no FT sensor required. NEXT's external-torque residual is, in effect,
+a learned <code>in_contact</code> / <code>contact_score</code> signal &mdash;
+and FIRST already discretizes it into free-motion / pre-contact / contact
+phases via hysteresis, which is precisely the kind of categorical,
+force-derived state that BLADE's purely-vision predicate classifiers cannot
+produce. A natural BLADE extension: segment demos and label
+<em>force-grounded</em> predicates (e.g. <code>is_inserted</code>) from
+NEXT-style torque rather than from cropped pixels, attacking BLADE's own
+limitation that "continuous parameters (force) sit entirely inside the
+diffusion policy." FACTR 2's relevance is direct, not tangential: it is the
+sensing substrate that would let the BLADE abstraction layer become non-purely
+categorical for force-modulated tasks. It also lands on the structure-vs-scale
+axis differently than BLADE &mdash; it is pure flat BC with a smarter data
+distribution, no symbolic plan &mdash; so it's a useful foil for what
+abstraction buys you on long-horizon contact tasks.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  NEXT trains in 1 minute from only 10 minutes of free-motion data, yet
+  achieves estimates comparable to dedicated joint-torque sensors.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+
+<blockquote>
+  Our ablations further show that pre-contact samples are often more valuable
+  than in-contact samples, providing an empirical guideline for force-aware
+  data reweighting.
+  <span class="quote-cite">&mdash; &sect;2.2, Related Works</span>
+</blockquote>
+
+<blockquote>
+  We believe FACTR 2 democratizes force sensing for any robot arm as we
+  evaluate this capability on platforms spanning low-cost arms such as the
+  Piper ($2,500) and high-end arms such as the Franka ($30,000).
+  <span class="quote-cite">&mdash; &sect;1, Introduction</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[6] Liu et al. 2025 &mdash; FACTR: Force-Attending Curriculum
+    Training</strong> (RSS) &mdash; the direct predecessor this paper
+    generalizes; same authors. Already in the batch as
+    <a href="../../raw/papers/factr_force_attending_curriculum_training.pdf">factr_force_attending_curriculum_training</a>.</li>
+  <li><strong>[19] Yu et al. 2026 &mdash; ForceVLA</strong> (NeurIPS) &mdash;
+    force-aware MoE for contact-rich manipulation; batch cross-ref
+    <a href="../../raw/papers/forcevla_force_aware_moe_contact_rich.pdf">forcevla_force_aware_moe_contact_rich</a>.</li>
+  <li><strong>[17] Zhang et al. 2025 &mdash; TA-VLA</strong> (CoRL) &mdash;
+    torque-aware VLA design space; a FIRST baseline.</li>
+  <li><strong>[20] He et al. 2025 &mdash; FoAR</strong> (RA-L) &mdash;
+    force-aware reactive policy; batch cross-ref
+    <a href="../../raw/papers/foar_force_aware_reactive_policy.pdf">foar_force_aware_reactive_policy</a>.</li>
+  <li><strong>[23] Xue et al. 2025 &mdash; Reactive Diffusion Policy</strong>
+    (RSS) &mdash; slow-fast visuo-tactile contact-rich policy; batch cross-ref
+    <a href="../../raw/papers/reactive_diffusion_policy_slow_fast_visuotactile.pdf">reactive_diffusion_policy_slow_fast_visuotactile</a>.</li>
+  <li><strong>[8] Buamanee et al. 2024 &mdash; Bi-ACT</strong> (AIM) &mdash;
+    bilateral-control imitation via action chunking; relevant to the teleop +
+    BC framing.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="factr_force_attending_curriculum_training.html">FACTR</a>
+    &mdash; the dedicated-sensor predecessor; FACTR 2 lifts its force-feedback
+    teleop + curriculum idea onto sensorless arms. Closest peer.</li>
+  <li><a href="foar_force_aware_reactive_policy.html">FoAR</a>
+    &mdash; another force-aware reactive contact-rich policy; same problem
+    family, different mechanism.</li>
+  <li><a href="reactive_diffusion_policy_slow_fast_visuotactile.html">Reactive Diffusion Policy</a>
+    and <a href="tactile_conditioned_diffusion_policy_force_aware.html">Tactile-Conditioned Diffusion Policy</a>
+    &mdash; force/tactile-conditioned diffusion controllers; FACTR 2 conditions
+    a flow-matching policy on estimated force instead.</li>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>
+    and <a href="taf_vla_tactile_force_alignment_vla.html">TaF-VLA</a>
+    &mdash; force-aware VLA policies; the VLA-scale counterparts to FACTR 2's
+    flat-BC + smart-resampling recipe.</li>
+  <li><a href="making_sense_of_vision_and_touch.html">Making Sense of Vision and Touch</a>
+    and <a href="mimictouch_human_tactile_demos.html">MimicTouch</a>
+    &mdash; cluster-F force/haptic policy peers; learning contact-rich behavior
+    from multimodal (non-visual) signals.</li>
+  <li><a href="kinedex_tactile_kinesthetic_teaching.html">KineDex</a>
+    &mdash; tactile kinesthetic teaching; complementary cheap-force-data angle.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic Foundation Models (survey)</a>
+    &mdash; situates FACTR 2 in the broader case for force in robot foundation
+    models.</li>
+</ul>
+
+</body>
+</html>

@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>LanguageBind: Extending Video-Language Pretraining to N-modality by Language-based Semantic Alignment</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Zhu, Lin, Ning, Yan, Cui, Wang, Pang, Jiang, Zhang, Li, Zhang, Li, Liu, Yuan">
+<meta name="year" content="2024">
+<meta name="venue" content="ICLR 2024">
+<meta name="arxiv_id" content="2310.01852">
+<meta name="url" content="https://arxiv.org/abs/2310.01852">
+<meta name="pdf" content="../../raw/papers/languagebind_language_anchored.pdf">
+<meta name="tags" content="multimodal-binding, representation-learning, foundation-models, learning-from-language, audio-language, multimodal-dataset, self-supervised-learning, contrastive-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>LanguageBind: Extending Video-Language Pretraining to N-modality by Language-based Semantic Alignment</h1>
+<p class="meta">
+  Bin Zhu, Bin Lin, Munan Ning, Yang Yan, JiaXi Cui, Hongfa Wang, Yatian Pang,
+  Wenhao Jiang, Junwu Zhang, Zongwei Li, Wancai Zhang, Zhifeng Li, Wei Liu, Li Yuan
+  &middot; 2024 &middot; ICLR 2024 &middot;
+  <a href="https://arxiv.org/abs/2310.01852">arXiv</a> &middot;
+  <a href="../../raw/papers/languagebind_language_anchored.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Instead of binding all modalities through images
+the way ImageBind does, LanguageBind freezes a CLIP text encoder and contrastively
+aligns each new modality (video, audio, depth, infrared) <em>directly</em> to
+language, arguing that the highly-semantic language space is a better shared hub
+than pixels and proving it with a 5-modality language-paired dataset (VIDAL-10M).</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Vision-language (VL) pretraining (CLIP) works well, but extending it to N&ge;3
+modalities is hard. <a href="imagebind_one_embedding_space.html">ImageBind</a>
+solves the scaling problem by binding everything <em>indirectly</em> through the
+image modality — but most downstream tasks (zero-shot retrieval, classification)
+ultimately require alignment to <em>language</em>, and routing through images
+introduces an extra hop that can degrade performance. LanguageBind's thesis: the
+language modality is "well-explored and contains rich semantics" (highest
+information density), so it should be the binding anchor, not images. A second
+bottleneck is data: existing multi-modal datasets either pair only vision+text or
+use truncated segments from long videos with fragmented semantics, and no
+large-scale dataset directly aligns depth/infrared/audio <em>to language</em>.
+The paper attacks both the method and the data gap.</p>
+
+<h2>Method</h2>
+<p>LanguageBind has three parts (Fig 3): (a) multi-modal encoders, (b) a frozen
+language encoder, and (c) language-anchored multi-modal joint learning.</p>
+
+<p><strong>Frozen language anchor.</strong> The language encoder is a 12-layer,
+768-dim transformer initialized from OpenCLIP and kept <em>frozen</em> throughout.
+Each text is BPE-tokenized and encoded to a logit <code>y &isin; R^(L&times;C)</code>.
+Because the anchor never moves, every modality is forced into the pre-existing,
+semantically-rich CLIP text space.</p>
+
+<p><strong>Per-modality encoders, initialized from OpenCLIP-large.</strong> All
+non-language modalities use a 24-layer, 1024-dim ViT (patch size 14) initialized
+from OpenCLIP-large. Modalities are coerced into image-like tensors:
+depth and infrared are treated as RGB and replicated 3&times; across the channel
+dimension; audio is turned into a 10-second spectrogram (128 mel-bins), repeated/
+padded for short clips, and for long clips three 10-s segments (front/middle/back
+1/3) are sampled and stacked. This "modality extending" recipe — process to a
+token sequence, then init from OpenCLIP — is what makes adding the N-th modality
+cheap.</p>
+
+<p><strong>Patch masking + LoRA fine-tuning for efficiency.</strong> Rather than
+fully fine-tune each ViT, they (i) mask tokens MAE-style (only a visible subset
+<code>x = {m'_i + P_i}</code> for <code>i &isin; M_v</code> is processed; a mask
+ratio of 0.5 is optimal, cutting compute to ~1/4), and (ii) apply
+<a href="../../raw/papers/lora_low_rank_adaptation.pdf">LoRA</a>: the frozen weight
+<code>W_0</code> gets a low-rank update <code>h(x) = W_0 x + BA x</code>, with
+<code>B &isin; R^(d&times;r)</code>, <code>A &isin; R^(r&times;k)</code>. Smaller LoRA
+rank works best (less overfitting). This is the key training-efficiency move:
+the language hub stays frozen, and each modality is adapted with minimal new
+parameters.</p>
+
+<p><strong>Contrastive language-binding objective.</strong> Each modality M is
+bound to text T with a symmetric InfoNCE loss (Eq. 3): a modality-to-text term
+<code>L_M2T</code> and a text-to-modality term <code>L_T2M</code>, both normalized
+features with temperature <code>&tau;</code> (learnable, initialized at 0.07,
+which beats ImageBind's fixed temperature). Crucially modalities are aligned to
+language <em>pairwise</em> and independently — there is no image intermediary —
+yet the shared frozen text anchor lets them implicitly align to each other,
+enabling <em>emergent</em> cross-modal retrieval (e.g. depth&rarr;infrared) never
+trained on.</p>
+
+<p><strong>VIDAL-10M dataset.</strong> To supply direct language pairs for the
+non-vision modalities, they build VIDAL-10M: 10M data points spanning
+<strong>V</strong>ideo, <strong>I</strong>nfrared, <strong>D</strong>epth,
+<strong>A</strong>udio and their <strong>L</strong>anguage (3M VL, 3M IL, 3M DL,
+1M AL). Construction (Fig 4): (1) build a 100k balanced search-term database by
+POS-tagging labels/captions from YouTube-8M, MSR-VTT, COCO, AVA, HMDB-51,
+ImageNet; (2) collect short videos (&le;20 s, &ge;2-word titles) from YouTube
+Shorts and audio from Freesound, filtered by ratings/comments/tags; (3)
+<strong>generate</strong> the extra modalities — depth via GLPN, infrared via an
+sRGB-TIR model — and enhance the language side with multi-view text (title +
+hashtags + OFA keyframe captions + mPLUG-owl video captions, all refined by
+ChatGPT, Fig 5). VIDAL-10M is claimed as the first large-scale multi-modal
+dataset with depth and infrared aligned to language.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Pretrain on VIDAL-10M (and 3M/10M
+  subsets). Evaluate on 15 benchmarks: video-text retrieval (MSR-VTT, MSVD,
+  DiDeMo, ActivityNet); video classification (Kinetics-400/600); infrared (LLVIP,
+  FLIR V1/V2); depth (NYU-D); audio (Audioset, ESC-50, VGGSound, Clotho,
+  Audiocaps); plus emergent retrieval on AVE / VGGS.</li>
+  <li><strong>Hardware / simulator:</strong> <em>not reported</em> (no robot — pure
+  representation-learning paper). Training cost reported in time/memory: LoRA run
+  ~0.8h and 132M memory vs. full-tuning 1.4h / 278M (Table 8c).</li>
+  <li><strong>Baselines:</strong> ImageBind, OpenCLIP, InterVideo, UMT, TVTSv2,
+  OmniVL, VideoCoca, CLIP4Clip, VALOR, AVFIC; CLIP4Clip with HowTo100M-380k vs.
+  VIDAL-100k for dataset validation.</li>
+  <li><strong>Compute:</strong> ViT-L/14 (1024-dim, 24-layer) modality encoders;
+  12-layer text encoder; LoRA + 0.5 mask ratio; single training epoch chosen for
+  cost/performance balance; batch size 1024 optimal. Absolute GPU count
+  <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: LanguageBind beats ImageBind across the board by routing through
+language instead of images, with especially large margins on the non-RGB
+modalities. Zero-shot X-Language classification (Table 4, top-1 unless noted):</p>
+
+<table>
+  <tr><th>Method</th><th>K400 (video)</th><th>LLVIP (infrared)</th><th>NYU-D (depth)</th><th>ESC-50 (audio)</th></tr>
+  <tr><td>ImageBind (Huge)</td><td>50.0</td><td>63.4</td><td>54.0</td><td>66.9</td></tr>
+  <tr><td>OpenCLIP (Large)</td><td>60.7</td><td>82.2</td><td>45.4</td><td>&mdash;</td></tr>
+  <tr><td><strong>LanguageBind (Large)</strong></td><td>64.0</td><td>87.2</td><td>65.1</td><td>91.8</td></tr>
+  <tr><td><strong>LanguageBind* (full-tune)</strong></td><td>&mdash;</td><td>&mdash;</td><td>&mdash;</td><td>94.0</td></tr>
+</table>
+
+<p>Against ImageBind specifically: +23.8% on LLVIP infrared, +11.1% on NYU-D
+depth, +23.9% on ESC-50 audio, +14.0% on video (K400). Zero-shot video-text
+retrieval (Table 2): SOTA on four datasets, e.g. MSR-VTT R@1 42.8 (10M) /
+44.8 (Huge), beating InterVideo by 1.9% on MSR-VTT, 8.8% on MSVD, 6.3% on DiDeMo,
+4.4% on ActivityNet. Audio-language retrieval (Table 5): on Clotho R@1 12.1 (16.7
+full-tune) vs. ImageBind 6.0 and even VALOR 8.4. Emergent zero-shot retrieval
+(Table 7): on never-trained cross-modal directions, LanguageBind beats ImageBind
+(AVE RGB&rarr;A R@1 10.6 vs 36.9 for ImageBind — note ImageBind wins this one;
+VGGS RGB&rarr;A 10.0 vs 28.7 — again ImageBind higher), and adding a second
+modality helps (NYU D+RGB&rarr;T 77.4, +1.4 over D&rarr;T alone; LLVIP
+I+RGB&rarr;T 79.3, +16.9 over RGB&rarr;T). Ablations (Table 8): LoRA beats full
+tuning on LLVIP/FLIRv1/Clotho while using ~1/2 the time and &lt;1/2 the memory;
+0.5 mask ratio is best; learnable temperature beats fixed.</p>
+
+<p><strong>Where it loses.</strong> On the two emergent RGB&rarr;Audio directions
+(AVE, VGGS) ImageBind actually scores higher (e.g. 36.9 vs 10.6) — unsurprising
+since ImageBind is image-anchored and those queries originate from images. On
+plain video R@5/R@10 some non-CLIP baselines remain competitive.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><strong>(a) Author-stated.</strong> Depth and infrared in VIDAL-10M are
+<em>model-generated</em> (GLPN / sRGB-TIR) rather than sensor-captured; the authors
+concede "some limitations may exist" but argue diversity reduces model bias. They
+note the focus is on depth/infrared as "visual and spatial" modalities, leaving
+truly non-visual sensing (true thermal, contact, IMU) underexplored. ImageBind
+covers six modalities including IMU; LanguageBind demonstrates five.</p>
+<p><strong>(b) What I noticed reading it.</strong> (i) The "direct language
+alignment beats image alignment" claim is partly confounded with scale and data:
+LanguageBind also introduces a brand-new, language-rich, ChatGPT-enhanced dataset,
+so it's hard to separate the <em>architecture</em> win (frozen-language anchor)
+from the <em>data</em> win (VIDAL-10M's better captions). The CLIP4Clip dataset
+ablation (Table 3) helps but only isolates VL, not the depth/audio claims.
+(ii) The generated-modality concern is real for robotics: a depth map predicted
+by GLPN from an internet video is not a sensor reading and may bake in the depth
+model's failure modes; the alignment is to <em>synthetic</em> depth. (iii) All
+"modalities" are coerced into the image ViT (depth/IR replicated to 3 channels,
+audio &rarr; spectrogram image) — so this is really still a vision backbone, not a
+native encoder per sensor; whether that survives genuinely non-image signals
+(force, raw audio waveforms, tactile gel images aside) is untested. (iv) The
+emergent cross-modal numbers, while a nice story, are weak in absolute terms
+(single-digit to low-teens R@1) and lose to ImageBind on the directions it was
+built for.</p>
+
+<h2>Why I care</h2>
+<p>This is an <strong>off-genre method anchor</strong>, not a manipulation paper —
+no robot, no policy, no contact. Its relevance to my thesis is structural and
+conditional. The big idea I'm chasing is that many manipulation predicates
+(<code>is_grasped</code>, <code>is_inserted</code>, <code>is_full</code>,
+<code>surface_is_rough</code>, <code>is_screwed_tight</code>) are <em>not visually
+evaluable</em> — they live in touch, force, and sound. LanguageBind matters
+<em>iff</em> language can serve as the binding hub across <em>those</em> sensors
+the way it does here for depth/IR/audio. That's an attractive hypothesis for
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>-style
+predicate learning: if a tactile or acoustic encoder is contrastively bound to a
+frozen language anchor, a predicate like <code>is_inserted</code> could in
+principle be read out as a language-space classifier over a non-visual embedding —
+exactly the gap where vision-only predicate classifiers fail. The contrast with
+<a href="imagebind_one_embedding_space.html">ImageBind</a> (image hub) is the live
+design question for any sensor-fusion stack: bind sensors through vision, or
+through language? LanguageBind argues language, because downstream tasks are
+language-shaped — and robot goals/instructions are too. The honest caveat: this
+paper only demonstrates the claim on <em>image-coercible, model-generated</em>
+modalities (depth/IR as fake-RGB, audio as spectrogram-image), so it's evidence
+the recipe <em>could</em> extend to touch/contact-audio, not proof. Adjacent, not
+load-bearing, but it sets the template the touch-language papers (UniTouch, TVL)
+build on.</p>
+
+<h2>Quotable</h2>
+<blockquote>"We thus propose LanguageBind, taking the language as the bind across
+different modalities because the language modality is well-explored and contains
+rich semantics."
+<span class="quote-cite">— Abstract / p.1</span></blockquote>
+<blockquote>"In our work, we propose LanguageBind, a direct alignment mechanism
+designed to align alternative modalities directly with the language modality,
+which has the highest information density."
+<span class="quote-cite">— §2 Related Work / p.3</span></blockquote>
+
+<h2>Related</h2>
+<p><strong>(a) Cited here, worth ingesting next:</strong></p>
+<ul>
+  <li><a href="../../raw/papers/lora_low_rank_adaptation.pdf">LoRA: Low-Rank Adaptation (Hu et al. 2021)</a>
+  — the parameter-efficient fine-tuning that makes per-modality adaptation cheap; the core efficiency lever.</li>
+  <li><a href="../../raw/papers/clip_radford.pdf">CLIP (Radford et al. 2021)</a>
+  — the frozen text encoder and contrastive recipe LanguageBind inherits; the binding-hub backbone.</li>
+</ul>
+<p><strong>(b) Newly ingested in 2026-06-24 batch — directly relevant:</strong></p>
+<ul>
+  <li><a href="imagebind_one_embedding_space.html">ImageBind</a> — the direct foil:
+  image-anchored binding; LanguageBind's whole pitch is "use language as the hub instead."</li>
+  <li><a href="meta_transformer_unified_modalities.html">Meta-Transformer</a> —
+  another N-modality unifier (12 modalities, shared encoder); contrasts with LanguageBind's
+  frozen-language-anchor + per-modality-encoder design.</li>
+  <li><a href="palm_e_embodied_multimodal_lm.html">PaLM-E</a> — embodied multimodal LM;
+  the downstream consumer of a language-aligned multimodal space in a robot setting.</li>
+  <li><a href="binding_touch_to_everything_unitouch.html">UniTouch</a> — binds the
+  <em>touch</em> modality into a shared space; the most direct test of "can the LanguageBind/ImageBind
+  recipe carry non-visual contact signals," which is the load-bearing question for my thesis.</li>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL (Touch-Vision-Language)</a> —
+  applies the touch&ndash;language alignment idea LanguageBind anticipates, with real sensor data.</li>
+  <li><a href="any2policy_any_modality_visuomotor.html">Any2Policy</a> — turns an
+  any-modality aligned space into a manipulation policy; the bridge from binding to control.</li>
+</ul>
+
+</body>
+</html>

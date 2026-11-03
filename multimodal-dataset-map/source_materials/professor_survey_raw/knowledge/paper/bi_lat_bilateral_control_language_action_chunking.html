@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Bi-LAT: Bilateral Control-Based Imitation Learning via Natural Language and Action Chunking with Transformers</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Kobayashi Takumi, Kobayashi Masato, Buamanee Thanpimon, Uranishi Yuki">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2504.01301">
+<meta name="url" content="https://arxiv.org/abs/2504.01301">
+<meta name="pdf" content="../../raw/papers/bi_lat_bilateral_control_language_action_chunking.pdf">
+<meta name="project_page" content="https://mertcookimg.github.io/bi-lat/">
+<meta name="tags" content="imitation-learning, force-control, learning-from-language, bilateral-control, contact-rich, vision-language-action, force-torque, robot-learning, multisensory">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Bi-LAT: Bilateral Control-Based Imitation Learning via Natural Language and Action Chunking with Transformers</h1>
+<p class="meta">
+  Takumi Kobayashi*, Masato Kobayashi*&dagger;, Thanpimon Buamanee, Yuki Uranishi
+  &middot; Univ. of Osaka / Kobe University
+  &middot; 2025 &middot; <a href="https://arxiv.org/abs/2504.01301">arXiv:2504.01301</a>
+  &middot; <a href="../../raw/papers/bi_lat_bilateral_control_language_action_chunking.pdf">PDF</a>
+  &middot; <a href="https://mertcookimg.github.io/bi-lat/">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> Bi-LAT bolts a language encoder onto a bilateral-control
+imitation-learning policy (Bi-ACT) so that everyday force adverbs &mdash; "<em>softly</em>
+grasp the cup" vs. "<em>strongly</em> grasp the cup" &mdash; map directly to graded
+grasp/twist <em>force</em> at execution, demonstrating that natural-language can modulate
+torque without any numeric threshold, with SigLIP the standout text encoder.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Most imitation-learning teleoperation is <em>unilateral</em>: the demonstrator sends
+only position commands and never feels contact force, so the data poorly captures the
+fine force interactions needed for fragile or deformable objects. <strong>Bilateral
+control</strong> fixes the data side &mdash; leader and follower exchange both position
+and force in real time, so the operator feels contact and the demos encode force. The
+gap Bi-LAT targets is the <em>command</em> side: prior force-conditioned policies still
+rely on numerically specified torque/position values, not on human-readable instructions.
+The paper asks how much language can substitute for explicit force thresholds. It builds
+directly on Bi-ACT [13] (bilateral control + Action Chunking with Transformers + vision),
+adding a language encoder so the same skill (grasp a cup, twist a sponge) can be executed
+at different force levels purely from a verbal cue.</p>
+
+<h2>Method</h2>
+<p><strong>Data collection &mdash; four-channel bilateral control (Fig 2).</strong> A
+human teleoperates a <em>leader</em> robot; a <em>follower</em> mirrors it in the
+environment. The control law couples them so joint angles match and torques oppose:
+<code>&theta;<sub>l</sub> &minus; &theta;<sub>f</sub> = 0</code> (Eq. 1) and
+<code>&tau;<sub>l</sub> + &tau;<sub>f</sub> = 0</code> (Eq. 2). Torque is estimated
+<em>sensorlessly</em> via a disturbance observer (DOB [20]) and reaction-force observer
+(RFOB [21]) &mdash; no force/torque sensor needed. The 1000&nbsp;Hz control loop logs
+joint angle, velocity, and torque for both robots; RGB images are logged at 100&nbsp;Hz.
+Crucially, each demonstration is paired with a natural-language instruction describing
+the desired force ("softly grasp the cup" / "strongly grasp the cup").</p>
+
+<p><strong>Learning model &mdash; language-conditioned CVAE (Fig 3).</strong> The
+backbone is a Transformer Conditional Variational Autoencoder (the ACT recipe). The CVAE
+<em>encoder</em> takes a [CLS] token plus the follower joints (angle/velocity/torque) and
+the action sequence to produce a style variable <code>z</code>. The <em>decoder</em>
+Transformer fuses four streams: (i) <code>z</code>, (ii) follower joint
+angle/velocity/torque, (iii) ResNet-18 features from RGB images, and (iv) a fixed-length
+embedding of the language instruction from a dedicated <strong>language encoder</strong>.
+The Transformer decoder then predicts a <em>chunk</em> of future <em>leader</em> actions
+&mdash; sequences of joint angle, velocity, and torque. Training minimizes the error
+between predicted leader joint data and the bilateral-control ground truth. Predicted
+actions are converted to per-joint current by the 1000&nbsp;Hz position-and-force
+controller (Fig 5).</p>
+
+<p><strong>Language encoder sweep (Fig 4).</strong> The central experimental variable.
+Four encoders are compared: <code>DistilBERT</code> [25] and <code>ModernBERT</code> [26]
+(BERT family, strong on language understanding) versus <code>CLIP</code> [22] and
+<code>SigLIP</code> [24] (CLIP family, strong at fusing visual + textual cues). CLIP-style
+prompt engineering ("a photo of a&hellip;") is applied during data collection to sharpen
+encoder responses to short/ambiguous instructions. All Bi-LAT models use 4 encoder layers
+and 7 decoder layers.</p>
+
+<p><strong>DABI augmentation [15].</strong> High-frequency (1000&nbsp;Hz) robot data and
+low-frequency (100&nbsp;Hz) image data are jointly downsampled, expanding the original 6
+demonstrations into 60 (a 10&times; increase) to feed the data-hungry Transformer.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> No public benchmark &mdash; two custom
+    real-world tasks. <em>Unimanual cup-stacking</em> (Pick &rarr; Move &rarr; Place with
+    deformable paper cups) and <em>bimanual sponge-twisting</em> (Grab &rarr; Lift &rarr;
+    Twist a deformable sponge). Each task has two force conditions paired with language
+    ("softly" / "strongly"); 6 demos per task expanded to 60 via DABI [15].</li>
+  <li><strong>Hardware / simulator:</strong> Real robots only. Unimanual: two OpenManipulator-X
+    (ROBOTIS) arms (4 arm joints + gripper = 5 joints), leader/follower pair, 3 ELP USB RGB
+    cameras (640&times;360: top, side, gripper). Bimanual: ALPHA-&alpha; platform [9] &mdash;
+    4 robots total (2 leaders + 2 followers), 6-DoF + gripper = 7 motors each, 4 RGB cameras.
+    1000&nbsp;Hz bilateral control loop, 100&nbsp;Hz cameras. Sensorless torque via DOB/RFOB.</li>
+  <li><strong>Baselines:</strong> Bi-ACT [13] with <em>no</em> language ("Bi-ACT (None)")
+    &mdash; the direct ablation showing what language buys. Within Bi-LAT, the four language
+    encoders (DistilBERT, ModernBERT, CLIP, SigLIP) are compared against each other.</li>
+  <li><strong>Compute:</strong> <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Task success is saturated; force accuracy is the real metric.</strong> Every
+method completes the cup-stacking task at 5/5 (100%) (Table I). The discriminating column
+is "Force Accuracy" &mdash; whether the policy actually distinguishes "softly" from
+"strongly" (judged by how closely inference joint-angle/torque histograms match the two
+training distributions, Fig 10).</p>
+
+<table>
+  <tr><th>Method (cup-stacking)</th><th>Success</th><th>Force Accuracy</th></tr>
+  <tr><td>Bi-ACT (None) [13]</td><td>5/5 (100%)</td><td>&times; (biased to "strong"; collapses both)</td></tr>
+  <tr><td>Bi-LAT (DistilBERT)</td><td>5/5 (100%)</td><td>&#9651; (partial)</td></tr>
+  <tr><td>Bi-LAT (ModernBERT)</td><td>5/5 (100%)</td><td>&times;</td></tr>
+  <tr><td>Bi-LAT (CLIP)</td><td>5/5 (100%)</td><td>&times;</td></tr>
+  <tr><td><strong>Bi-LAT (SigLIP)</strong></td><td>5/5 (100%)</td><td><strong>&#9711; (clearest separation)</strong></td></tr>
+</table>
+
+<p>Key findings:</p>
+<ul>
+  <li><strong>Language is necessary for force modulation.</strong> Bi-ACT with no language
+    merges "softly" and "strongly" data and infers a profile biased toward strong force
+    (joint angle ~2.75 rad, torque 0.10&ndash;0.20 Nm), unable to differentiate &mdash;
+    motivating the whole approach.</li>
+  <li><strong>SigLIP wins.</strong> Fig 10(e): SigLIP inference data for each instruction
+    most closely tracks its training distribution. DistilBERT shows some separation but with
+    inflated angles/torques; ModernBERT and CLIP show only weak max-value differences and
+    don't cleanly separate the two conditions.</li>
+  <li><strong>Bimanual generalization (Table II).</strong> Sponge-twisting with SigLIP:
+    "softly" hits 100% across Pick/Lift/Twist (overall 5/5). "Strongly" is 100% on Pick and
+    Lift but <strong>Twist drops to 4/5 (80%)</strong> &mdash; the sponge's higher internal
+    resistance under a strong grip caused one loss of secure grip during twisting (overall
+    4/5, 80%). Torque profiles for soft vs. strong runs diverge sharply during grasp/twist
+    while spatial trajectories stay similar (Fig 15).</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Evaluated only on deformable objects (paper cups, sponge); future work targets more
+    diverse object properties including rigid and deformable.</li>
+  <li>Force levels limited to a binary "softly" / "strongly"; varying task difficulty and a
+    richer continuum of force are flagged as future work.</li>
+  <li>Real-time language interaction needs refinement; larger-scale datasets are needed for
+    generalization.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Tiny-N statistics.</strong> Everything is 5/5 or 4/5 successes &mdash; counts,
+    not rates over seeds. The headline "100% success" is over 5 trials of a 2-condition task;
+    the SigLIP-vs-others ranking rests on <em>qualitative histogram-overlap judgments</em>
+    (&times;/&#9651;/&#9711;), not a quantified force-accuracy metric. No numeric force error,
+    no statistical test, no confidence intervals.</li>
+  <li><strong>Only 6 real demos per task</strong> (60 after DABI). The encoder comparison is
+    drawn from an extremely small data regime; whether SigLIP's edge holds with more data or
+    more force levels is untested.</li>
+  <li><strong>"Force accuracy" is never operationalized.</strong> It is inferred from whether
+    inference histograms visually match training histograms &mdash; which conflates "matches
+    the demo distribution" with "applied the correct force." A policy could match the
+    distribution without the force being task-appropriate.</li>
+  <li><strong>The language space is degenerate.</strong> Two instructions differing in one
+    adverb. This is closer to a learned 1-bit force selector conditioned on text than to
+    open-vocabulary force grounding; the claim of "everyday human instructions" is broader than
+    what is tested.</li>
+  <li><strong>Why SigLIP &gt; CLIP &gt; BERT is not mechanistically explained.</strong> The
+    paper observes the ranking but offers no ablation isolating why a vision-language sigmoid-loss
+    encoder beats a text-only one on a force-from-text task where no image disambiguation of the
+    adverb is obviously needed.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This paper is a clean, small-scale instantiation of the batch's central thesis: <strong>many
+manipulation predicates live in force, not pixels.</strong> "Softly grasped" vs. "strongly
+grasped" is precisely a predicate that is <em>not visually evaluable</em> &mdash; the cup looks
+the same; only the torque profile differs. Bi-LAT shows that such a force-level distinction can
+be (a) captured in demos via bilateral control's sensorless torque, and (b) <em>commanded</em>
+in language. Relative to <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>,
+this is the missing continuous-force layer: BLADE's abstraction is purely categorical, with all
+continuous parameters (including force) buried inside the diffusion policy and no language handle
+on them. Bi-LAT is the inverse &mdash; no symbolic abstraction, but a direct language&rarr;force
+mapping at the controller. A predicate like <code>is_grasped_firmly(cup)</code> would need
+exactly Bi-LAT's force signal to ground its truth value; the natural synthesis is BLADE-style
+operators whose <em>bodies</em> carry a language-modulated force argument rather than a single
+diffusion policy. The bilateral-control data-collection trick (force without an F/T sensor) is
+also directly relevant to anyone wanting force-labeled demos cheaply for predicate learning.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  By encoding human instructions such as "softly grasp the cup" or "strongly twist the sponge"
+  through a multimodal Transformer-based model, Bi-LAT learns to distinguish nuanced force
+  requirements in real-world tasks.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+<blockquote>
+  This integration enables robots to autonomously adjust force based on higher-level,
+  human-readable commands rather than relying on numerically defined torque thresholds.
+  <span class="quote-cite">&mdash; &sect;I Introduction / p.2</span>
+</blockquote>
+<blockquote>
+  Most notably, Fig. 10(e) shows that SigLIP provided the clearest separation, with the
+  inference data for each instruction closely matching the training distributions.
+  <span class="quote-cite">&mdash; &sect;IV-D Experiment Result / p.5</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next (forward-referenced):</p>
+<ul>
+  <li><strong>[13] Buamanee et al. 2024 &mdash; Bi-ACT</strong> (AIM) &mdash; the direct
+    predecessor: bilateral control + ACT + vision. Bi-LAT = Bi-ACT + language encoder. The
+    single most important dependency; not in this batch's cross-ref list, but a clear
+    next-ingest.</li>
+  <li><strong>[9] Kobayashi et al. 2025 &mdash; ALPHA-&alpha; and Bi-ACT</strong> (IEEE Access)
+    &mdash; the low-cost bimanual bilateral platform used for the sponge task.</li>
+  <li><strong>[24] Zhai et al. 2023 &mdash; SigLIP (Sigmoid loss for language-image pre-training)</strong>
+    (ICCV) &mdash; the winning language encoder; worth a stub as a method anchor.</li>
+  <li><strong>[14] Zhao et al. 2023 &mdash; ACT / ALOHA</strong> &mdash; the action-chunking
+    Transformer the CVAE backbone derives from.</li>
+  <li><strong>[15] Kobayashi et al. 2024 &mdash; DABI</strong> &mdash; the data-augmentation
+    method enabling training from 6 demos.</li>
+</ul>
+
+<p>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a> &mdash;
+    same Cluster C goal (language-commanded force/contact behavior) but via a VLA over tactile
+    rather than bilateral-control proprioception; closest sibling.</li>
+  <li><a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a> &mdash; force-aware
+    mixture-of-experts VLA for contact-rich tasks; the scaled-up VLA counterpart to Bi-LAT's
+    small CVAE.</li>
+  <li><a href="taf_vla_tactile_force_alignment_vla.html">TaF-VLA</a> and
+    <a href="favla_force_adaptive_fast_slow_vla.html">FAVLA</a> &mdash; tactile/force-alignment
+    and fast-slow force-adaptive VLAs; same force-conditioning thesis, different architectures.</li>
+  <li><a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a> and
+    <a href="beyond_sight_fuse_heterogeneous_sensors_language.html">FuSe (Beyond Sight)</a>
+    &mdash; multisensory language-conditioned policies fusing heterogeneous (incl. force/tactile)
+    sensors; the broader sensory-fusion framing Bi-LAT's two-stream force+vision is a minimal case of.</li>
+  <li><a href="vla_touch_dual_level_tactile_feedback.html">VLA-Touch</a> and
+    <a href="audio_vla_contact_audio_perception.html">Audio-VLA</a> &mdash; same cluster,
+    feeding a non-visual contact channel (touch / contact-audio) into a language-conditioned policy.</li>
+  <li><a href="forceful_robotic_foundation_models_survey.html">Towards Forceful Robotic
+    Foundation Models (survey)</a> &mdash; the survey that situates force-aware policies like
+    Bi-LAT in the foundation-model landscape.</li>
+  <li><a href="kinedex_tactile_kinesthetic_teaching.html">KineDex</a> and
+    <a href="mimictouch_human_tactile_demos.html">MimicTouch</a> &mdash; force/tactile-rich
+    demonstration collection; methodological cousins to bilateral-control's force-labeled demos.</li>
+</ul>
+
+</body>
+</html>

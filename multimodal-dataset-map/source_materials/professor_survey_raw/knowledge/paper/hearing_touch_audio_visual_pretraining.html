@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Hearing Touch: Audio-Visual Pretraining for Contact-Rich Manipulation</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Mejia, Dean, Hellebrekers, Gupta">
+<meta name="year" content="2024">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2405.08576">
+<meta name="url" content="https://arxiv.org/abs/2405.08576">
+<meta name="pdf" content="../../raw/papers/hearing_touch_audio_visual_pretraining.pdf">
+<meta name="tags" content="audio-visual, contact-audio, acoustic-sensing, representation-learning, self-supervised-learning, pretraining, contact-rich, multisensory, imitation-learning, robot-learning">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Hearing Touch: Audio-Visual Pretraining for Contact-Rich Manipulation</h1>
+<p class="meta">
+  Jared Mejia, Victoria Dean, Tess Hellebrekers, Abhinav Gupta
+  &middot; CMU / Olin / Meta AI
+  &middot; 2024 &middot; arXiv preprint
+  &middot; <a href="https://arxiv.org/abs/2405.08576">arXiv:2405.08576</a>
+  &middot; <a href="../../raw/papers/hearing_touch_audio_visual_pretraining.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Treat a cheap piezo contact microphone as an
+"audio-native" tactile sensor, and you can bootstrap its representation from
+2M+ internet audio-visual clips (AudioSet, via AVID) instead of training from
+scratch &mdash; the resulting contact-audio features measurably boost low-data
+behavior cloning and, surprisingly, make policies <em>more visually robust</em>
+despite a large domain gap between YouTube sounds and robot scraping noises.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Vision representations for robots get to ride internet-scale pretraining
+(R3M, VIP, MVP); every other modality &mdash; especially touch &mdash; is
+trained from scratch on a few hundred task-specific samples, because no
+internet-scale tactile corpus exists. The authors' wedge: a piezo
+<em>contact microphone</em> produces a signal that <em>is literally audio</em>
+(structural vibrations at 32&ndash;48 kHz, up to ~1000&times; the bandwidth of
+optical/magnetic tactile sensors). So the "no internet-scale tactile data"
+problem dissolves &mdash; you can pretrain the touch encoder on the enormous
+pool of internet audio-visual video. This is pitched as the first method to use
+large-scale <em>multisensory</em> (not vision-only) pretraining for robot
+manipulation, and it targets the low-data regime (&le;60 demos/task) where
+scratch-trained sensory encoders are weakest.</p>
+
+<h2>Method</h2>
+<p>Two-stage pipeline (Fig 2): large-scale pretraining of two encoders, then
+end-to-end behavior cloning on a handful of in-domain demos.</p>
+
+<p><strong>Sensors.</strong> Four piezo contact microphones mounted on the
+Franka gripper, each recording at 32 kHz; signals are averaged into one channel
+and downsampled to 16 kHz. Because they read structural vibration, they pick up
+not just direct gripper-object contact but <em>indirect</em> contact traveling
+along a grasped tool (spatula, spoon) &mdash; subtle surface interactions vision
+can't see. Per timestep the policy ingests an image <code>v_t</code> from a
+fixed third-person RealSense and a 2-second contact-audio clip
+<code>a_t</code>, rendered as a mel spectrogram (AVID's preprocessing).</p>
+
+<p><strong>Encoder pretraining.</strong> The <em>audio</em> encoder is lifted
+from <strong>AVID</strong> (Audio-Visual Instance Discrimination, Morgado et al.
+CVPR 2021), self-supervised with cross-modal instance discrimination on
+<strong>AudioSet</strong> (~2M 10-second internet clips). The <em>vision</em>
+encoder is <strong>R3M</strong> (ResNet18 pretrained on Ego4D with
+time-contrastive + video-language alignment) &mdash; deliberately a known-good
+robot vision representation, so any gain is attributable to the audio side.
+Both encoders are kept <em>unfrozen</em> during policy learning (following Dean
+et al., "Don't freeze your embedding").</p>
+
+<p><strong>Audio-visual behavior cloning.</strong> A sequence of 4 images
+spanning the same 2s window plus the single audio token (5 tokens total) get
+learned positional embeddings and pass through a single self-attention
+transformer block (the fusion mechanism, à la See-Hear-Feel [6]); the output is
+concatenated and fed to a 2-layer MLP head. The policy is <em>quasi
+open-loop</em>: at time <code>t</code> it predicts <code>H</code> actions and
+executes <code>h &le; H</code> (here <code>h = 2</code>) before re-predicting
+&mdash; balancing reactivity to audio against non-Markovian demo artifacts
+(pauses). Each action is a 6-D delta end-effector command (Cartesian xyz + Euler
+&alpha;&beta;&gamma;); standard MSE loss. ~20M params total.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Pretraining &mdash; AudioSet
+    (~2M clips, for AVID audio encoder) and Ego4D (for R3M vision encoder).
+    Downstream &mdash; three self-collected real-world tasks: flipping (40
+    demos), scooping (60 demos), zipping (50 demos), each teleoperated via an
+    Oculus Quest. Train/test splits use deliberately large visual differences
+    (different objects, backgrounds, pans).</li>
+  <li><strong>Hardware / simulator:</strong> Franka Emika Panda (7-DoF, IK from
+    6-DoF delta EE), end-effector commands at 30 Hz. Four piezo contact mics on
+    the gripper (32 kHz &rarr; averaged &rarr; 16 kHz). One Intel D435 RealSense,
+    fixed third-person, 480&times;640 at 30 Hz. Real-robot only; no simulator.</li>
+  <li><strong>Baselines:</strong> <em>Vision-Only</em> (same architecture,
+    image-only); <em>Scratch</em> (audio encoder randomly initialized);
+    <em>BYOL-A</em> (in-domain-only self-supervised audio pretraining). All
+    audio-using methods share the R3M-initialized image encoder.</li>
+  <li><strong>Compute:</strong> single GPU (RTX 3080Ti), 1&ndash;1.5 hours per
+    BC policy; batch 64, &le;100 epochs with early stopping. (Pretraining
+    compute for AVID/R3M not reported &mdash; inherited from prior work.)</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: across all three tasks the AVID-pretrained method beats every
+baseline, averaging <strong>+23% absolute 0-1 success rate</strong> and
+<strong>+76% reward</strong> over the next-best baseline, and wins or ties in
+8/9 task configurations. Table I (success %, plus reward where reported):</p>
+
+<table>
+  <tr><th>Method</th><th>Flipping (succ%)</th><th>Scooping (succ%)</th><th>Zipping (succ%)</th></tr>
+  <tr><td><strong>Ours (AVID/AudioSet)</strong></td><td><strong>50.0</strong></td><td><strong>78.1</strong></td><td><strong>88.9</strong></td></tr>
+  <tr><td>BYOL-A (in-domain audio SSL)</td><td>25.0</td><td>25.0</td><td>66.7</td></tr>
+  <tr><td>Scratch (random audio enc.)</td><td>15.4</td><td>50.0</td><td>72.2</td></tr>
+  <tr><td>Vision-Only</td><td>0.0</td><td>28.1</td><td>44.4</td></tr>
+</table>
+
+<p>Where it wins and how:</p>
+<ul>
+  <li><strong>Vision-Only is worst everywhere</strong> &mdash; direct evidence
+    contact audio carries action-relevant signal vision misses (e.g. whether the
+    spatula actually slid under the bagel, whether the zipper is snagged).</li>
+  <li><strong>Large-scale &gt; in-domain pretraining.</strong> BYOL-A (pretrained
+    only on the small in-domain contact-audio set) is mixed vs Scratch and
+    sometimes <em>worse</em> &mdash; its augmentation tricks don't transfer to
+    contact audio in the low-data regime. The AudioSet-scale aspect is the load-bearing component.</li>
+  <li><strong>Visual robustness is the surprise.</strong> Under train&rarr;test
+    visual shift on flipping, Vision-Only drops ~60% in success; Ours drops only
+    ~20% (Fig 6c). Good audio features appear to <em>regularize</em> the policy
+    against overfitting to visual detail. t-SNE (Fig 5) shows Ours' trajectory
+    embeddings converge over time across visually-different settings; baselines
+    stay scattered.</li>
+  <li><strong>Where it loses:</strong> it does <em>not</em> win one zipping
+    configuration outright (the only 1/9 miss). On scooping <em>reward</em>,
+    Scratch (6.9) edges close and the relative ordering is noisier than success%.</li>
+  <li><strong>Ablations:</strong> (a) frozen AVID encoder only slightly worse and
+    still beats next-best on zipping &mdash; representations transfer near
+    zero-shot; (b) scaling 30&rarr;90 demos improves steadily, tracking
+    Vision-Only's slope; (c) replacing the transformer with a param-matched MLP
+    drops success/reward ~50% &mdash; self-attention fusion is necessary but,
+    alone (with scratch features), insufficient.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Contact mics help only on <em>dynamic, vibration-emitting</em> contact.
+    They expect little benefit on quasi-static pick-and-place, when the robot
+    itself generates dominant vibration, or with deformable objects that don't
+    ring on contact.</li>
+  <li>Open: which properties of the pretraining dataset actually drive transfer
+    (they don't isolate this &mdash; AudioSet is just "big and diverse").</li>
+  <li>Future: combine contact mics with optical visuotactile sensors (e.g.
+    GelSight/DIGIT) under a shared pretrained audio/tactile representation.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Tiny-N, no seeds.</strong> Every success% is a count out of
+    16&ndash;36 rollouts per task (e.g. 50.0% = a handful of successes), single
+    training run, no multi-seed std reported. The +23% headline rests on
+    point estimates with no error bars &mdash; a much weaker statistical claim
+    than the bar charts' confidence suggests.</li>
+  <li><strong>Confound between modality and regularization.</strong> The biggest
+    selling point (visual robustness) may be partly an <em>auxiliary-input
+    regularization</em> effect: any extra non-visual token that's hard to overfit
+    might reduce visual overfitting. A noise-token or proprioception control
+    would sharpen the claim that it's <em>contact audio</em> specifically.</li>
+  <li><strong>Domain-gap hand-wave.</strong> "Surprisingly it works despite the
+    gap" is asserted, never measured &mdash; no analysis of what AudioSet
+    features the contact audio actually activates, so we don't know if AVID
+    transfer or just a better-conditioned init is doing the work. The frozen-AVID
+    ablation hints transfer is real but doesn't quantify it.</li>
+  <li><strong>Third-person vision, no wrist cam.</strong> The Vision-Only
+    baseline is handicapped by a fixed external camera that can't see
+    fine contact; a wrist-mounted view might close much of the gap. The audio
+    advantage may be partly an artifact of a weak vision setup.</li>
+  <li>No language anywhere &mdash; this is a representation/pretraining paper, not
+    a touch-language or VLA paper, despite living in the same batch.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This paper is a clean, direct datapoint for the batch thesis: <strong>many
+manipulation predicates are not visually evaluable &mdash; <code>is_scooped</code>,
+<code>spatula_is_under(bagel)</code>, <code>zipper_is_snagged</code>,
+<code>tool_is_in_contact</code> live in vibration, not pixels.</strong> Relative
+to <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>,
+where predicate classifiers <code>f<sub>&theta;</sub>(p): O &rarr; {T,F}</code>
+are learned purely over RGB crops, Hearing Touch is evidence that BLADE's
+own-stated limitation &mdash; "caging grasps and contact-rich tasks would need
+richer contact detection" &mdash; has a cheap sensory answer: a piezo mic gives
+a high-bandwidth contact channel a predicate classifier could read. The
+intriguing transfer story (internet audio &rarr; contact audio) also suggests a
+path to <em>pretrained</em> contact-predicate classifiers, which would attack
+BLADE's data-hungry classifier-learning step in the low-demo regime.</p>
+<p>Caveat for my purposes: this is a flat BC policy with end-to-end fused
+features, <em>not</em> a structured/abstraction method &mdash; there's no
+symbolic layer, no planning, no predicates as such. Its relevance to my
+long-horizon/planning-abstraction line is at the <em>sensor &amp;
+representation</em> level (feeding non-visual predicate grounding), not at the
+method level. I should treat it as a building block, not a competing
+architecture.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Our key insight is that contact microphones capture inherently audio-based
+  information, allowing us to leverage large-scale audio-visual pretraining to
+  obtain representations that boost the performance of robotic manipulation.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  Despite the domain gap between the audio in Audioset and contact audio
+  obtained through manipulation, we find that our approach improves performance
+  over visual-only policies&mdash;especially in test settings where objects and
+  locations differ significantly from the training data.
+  <span class="quote-cite">&mdash; &sect;I, Introduction</span>
+</blockquote>
+<blockquote>
+  Pre-trained audio features prevent the network from overfitting to visual
+  details in the training setting, hence attaining better generalization
+  abilities.
+  <span class="quote-cite">&mdash; &sect;IV-E.3, Generalization</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next (forward references):</p>
+<ul>
+  <li><strong>See, Hear, and Feel (SHF) [6]</strong> &mdash; the self-attention
+    multisensory-fusion mechanism this paper adapts; fuses camera + GelSight +
+    contact mic. Direct architectural ancestor.
+    <a href="../../raw/papers/see_hear_feel_sensory_fusion.pdf">see_hear_feel_sensory_fusion</a></li>
+  <li><strong>That Sounds Right [12]</strong> (Thankaraj &amp; Pinto) &mdash; the
+    closest competitor: also contact-audio pretraining for manipulation, but
+    in-domain SSL on 5,000 pts/task vs this paper's internet-scale + &lt;100
+    demos. The head-to-head framing.
+    <a href="../../raw/papers/that_sounds_right_auditory_self_supervision.pdf">that_sounds_right_auditory_self_supervision</a></li>
+  <li><strong>Play it by Ear [19]</strong> (Du et al.) &mdash; audio-visual
+    imitation through occlusion; sibling audio-for-manipulation work.
+    <a href="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">play_it_by_ear_audio_visual_imitation</a></li>
+  <li><strong>Making Sense of Vision and Touch [10]</strong> (Lee et al.) &mdash;
+    canonical self-supervised multimodal (vision+force) representation for
+    contact-rich tasks; the decoupled-representation lineage.
+    <a href="../../raw/papers/making_sense_of_vision_and_touch.pdf">making_sense_of_vision_and_touch</a></li>
+  <li><strong>GelSight [21]</strong> (Yuan et al.) &mdash; the optical tactile
+    sensor the authors propose to combine with contact mics; sensor foundation.
+    <a href="../../raw/papers/gelsight_high_resolution_tactile_sensors.pdf">gelsight_high_resolution_tactile_sensors</a></li>
+  <li><strong>DIGIT [22]</strong> (Lambeta et al.) &mdash; the low-cost
+    visuotactile sensor cited in the bandwidth comparison; sensor foundation.
+    <a href="../../raw/papers/digit_low_cost_compact_tactile_sensor.pdf">digit_low_cost_compact_tactile_sensor</a></li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="that_sounds_right_auditory_self_supervision.html">That Sounds Right</a>
+    &mdash; the direct contrast: in-domain contact-audio SSL vs this paper's
+    internet-scale audio-visual pretraining. Same Cluster D thesis.</li>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a>
+    &mdash; source of the self-attention sensory-fusion block; also fuses a
+    contact mic.</li>
+  <li><a href="play_it_by_ear_audio_visual_imitation.html">Play it by Ear</a>
+    &mdash; audio-visual imitation under occlusion; same audio-for-manipulation cluster.</li>
+  <li><a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a>
+    &mdash; in-the-wild audio-visual manipulation; closest follow-on in scaling
+    contact-audio policies.</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>
+    and <a href="active_acoustic_sensing_manipulation.html">Active Acoustic Sensing</a>
+    &mdash; acoustic/vibration sensing for in-hand and active manipulation; same
+    Cluster D sensing principle.</li>
+  <li><a href="making_sense_of_vision_and_touch.html">Making Sense of Vision and Touch</a>
+    &mdash; the multimodal self-supervised-representation predecessor for
+    contact-rich tasks.</li>
+</ul>
+
+</body>
+</html>

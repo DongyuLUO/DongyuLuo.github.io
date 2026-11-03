@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>RT-1 Robot Action Dataset</title>
+<meta name="type" content="paper">
+<meta name="authors" content="">
+<meta name="year" content="2022">
+<meta name="venue" content="datasets.bot public catalog">
+<meta name="arxiv_id" content="2212.06817">
+<meta name="url" content="https://arxiv.org/abs/2212.06817">
+<meta name="pdf" content="https://arxiv.org/abs/2212.06817">
+<meta name="tags" content="datasets-bot,open-data,mobile-manipulator,physical,ee-pose,language,proprioception,rgb,rlds">
+<meta name="status" content="datasets-bot-crosscheck">
+<meta name="ingested" content="2026-06-28">
+<meta name="source_prompt" content="datasets.bot public catalog cross-check">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 820px; margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em; border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  .meta { color: #777; font-size: 0.9em; }
+  a { color: #2962ff; text-decoration: none; }
+</style>
+</head>
+<body>
+<h1>RT-1 Robot Action Dataset</h1>
+<p class="meta">Google (Robotics at Google / Everyday Robots) &middot; 2022 &middot; datasets.bot &middot; <a href="https://datasets.bot/datasets/rt-1-fractal20220817">datasets.bot page</a></p>
+<p><strong>One-liner.</strong> Google RT-1 teleop demos: 87k+ episodes of Everyday Robots tabletop manipulation with language, RLDS format (OXE fractal).</p>
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> The RT-1 robot action dataset (fractal20220817_data in Open X-Embodiment) contains 87,212 human-teleoperated demonstration episodes of tabletop manipulation with 17 objects, collected on Google's Everyday Robots mobile manipulators. Each step pairs an RGB image and natural-language instruction with a discretized arm+base action, plus success/feasible/undesirable labels, stored in RLDS/TFDS format. License: CC-BY-4.0. Download: https://www.tensorflow.org/datasets/catalog/fractal20220817_data.</li>
+  <li><strong>Hardware / simulator:</strong> Embodiment: not listed. Environment: kitchen, tabletop. Realness: physical.</li>
+</ul>
+<h2>Schema</h2>
+<p>episodes -&gt; steps -&gt; {observation: {image(256x320x3), natural_language_instruction, natural_language_embedding(512), base_pose_tool_reached(7), gripper_closed, ...}, action: {world_vector(3), rotation_delta(3), gripper_closedness_action(1), base_displacement_vector(2), base_displacement_vertical_rotation(1), terminate_episode(3)}, aspects: {success, feasible, undesirable, already_success}}</p>
+<h2>Links</h2>
+<ul>
+  <li><a href="https://datasets.bot/datasets/rt-1-fractal20220817">datasets.bot page</a></li>
+  <li><a href="https://research.google/blog/rt-1-robotics-transformer-for-real-world-control-at-scale/">Homepage</a></li>
+  <li><a href="https://arxiv.org/abs/2212.06817">Paper</a></li>
+  <li><a href="https://www.tensorflow.org/datasets/catalog/fractal20220817_data">Download</a></li>
+</ul>
+</body>
+</html>

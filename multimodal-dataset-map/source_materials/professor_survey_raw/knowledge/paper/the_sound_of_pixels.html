@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>The Sound of Pixels</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Zhao, Gan, Rouditchenko, Vondrick, McDermott, Torralba">
+<meta name="year" content="2018">
+<meta name="venue" content="ECCV 2018">
+<meta name="arxiv_id" content="1804.03160">
+<meta name="url" content="https://arxiv.org/abs/1804.03160">
+<meta name="pdf" content="../../raw/papers/the_sound_of_pixels.pdf">
+<meta name="tags" content="audio-visual, self-supervised-learning, sound-separation, representation-learning, acoustic-sensing, multisensory, multimodal-binding">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>The Sound of Pixels</h1>
+<p class="meta">Hang Zhao, Chuang Gan, Andrew Rouditchenko, Carl Vondrick, Josh McDermott, Antonio Torralba (MIT / MIT-IBM Watson AI Lab / Columbia)
+  &middot; 2018 &middot; ECCV 2018 &middot;
+  <a href="https://arxiv.org/abs/1804.03160">arXiv</a> &middot;
+  <a href="../../raw/papers/the_sound_of_pixels.pdf">PDF</a></p>
+
+<p><strong>One-liner.</strong> Train on unlabeled instrument videos and the
+natural sync between picture and sound becomes a free supervisory signal:
+PixelPlayer learns to separate a mixed audio track into per-pixel sound
+components and ground each one in the image region that produced it &mdash; no
+labels, no manual annotation.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Sound source separation (the "cocktail party problem") is classically solved
+with audio-only signal processing (NMF, blind source separation) or supervised
+deep nets that need labeled sources. Separately, sound localization in vision
+("which pixels make this sound?") has been studied but does not separate a mixed
+signal into grounded components. This paper unifies the two: it wants to both
+<em>separate</em> a mono mixture into components and <em>spatially localize</em>
+each component in the video frame, and to do so <strong>self-supervised</strong>
+&mdash; learning only from the co-occurrence of vision and audio in raw videos,
+with no labels on what instruments are present, where, or how they sound.</p>
+
+<h2>Method</h2>
+<p>PixelPlayer (Fig. 2) has three networks fused by a <strong>Mix-and-Separate</strong>
+self-supervised objective.</p>
+<p><strong>Video analysis network.</strong> A dilated ResNet-18 variant maps
+<code>T&times;H&times;W&times;3</code> input frames to per-frame features of size
+<code>T&times;(H/16)&times;(W/16)&times;K</code>. After temporal max-pooling and a
+sigmoid, each pixel gets a <code>K</code>-dim visual feature <code>i_k(x,y)</code>.
+(Last avg-pool and fc layer removed; last residual block de-strided with dilation 2;
+a final 3&times;3 conv produces the <code>K</code> channels.)</p>
+<p><strong>Audio analysis network.</strong> A 7-down/7-up U-Net consumes the input
+mixture's log-frequency spectrogram (<code>256&times;256&times;1</code>) and emits
+<code>K</code> audio feature maps <code>s_k</code> &mdash; candidate spectral
+components of the mixed sound. Spectrograms (STFT, window 1022, hop 256, then
+re-sampled to a log-frequency scale) are used rather than raw waveforms because
+they work better empirically and give harmonic translation-invariance.</p>
+<p><strong>Audio synthesizer network.</strong> For a chosen pixel, it fuses that
+pixel's visual feature <code>i_k(x,y)</code> with the audio features <code>s_k</code>
+via a weighted sum (a tiny linear layer, <code>K</code> weights + 1 bias) to predict
+a spectrogram <strong>mask</strong> <code>M(x,y)</code>. The mask is multiplied onto
+the input spectrogram, and inverse STFT (using the input's phase) recovers that
+pixel's waveform &mdash; the "sound of the pixel."</p>
+<p><strong>Mix-and-Separate training (Fig. 3).</strong> The trick that gives free
+labels: sample <code>N</code> videos, add their audios into one mixture
+<code>S_mix = &Sigma; S_n</code>, and train <code>f</code> to recover each source
+<code>S&#770;_n = f(S_mix, I_n)</code> conditioned on the corresponding video. Since
+the constituent <code>S_n</code> are known by construction, supervision is exact yet
+requires no human labels. Targets are spectrogram masks, either <strong>binary</strong>
+(<code>M_n(u,v)=[[S_n &ge; S_m]]</code>, per-pixel sigmoid cross-entropy) or
+<strong>ratio</strong> (<code>M_n=S_n/S_mix</code>, per-pixel L1). At test time the
+same pipeline is applied per-pixel (with pixel-level rather than spatial-pooled
+features) to localize and separate real mixtures.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> <strong>MUSIC</strong> (Multimodal
+  Sources of Instrument Combinations), newly collected: 685 untrimmed YouTube
+  solo/duet videos (536 solos, 149 duets), 11 instrument categories (accordion,
+  acoustic guitar, cello, clarinet, erhu, flute, saxophone, trumpet, tuba, violin,
+  xylophone), ~2 min avg. Split: 500 train (solos+duets), 130 val (solos only),
+  84 test (duets only). Silent background images drawn from ADE20K to regularize
+  localization.</li>
+  <li><strong>Hardware / simulator:</strong> <em>not reported</em> (no robot; pure
+  ML/CV system). Best model: 3 visual frames, <code>K=16</code> feature channels;
+  audio sub-sampled to 11 kHz.</li>
+  <li><strong>Baselines:</strong> NMF (non-negative matrix factorization),
+  DeepConvSep (deep convolutional source separation) &mdash; both use audio +
+  ground-truth labels; plus internal variants: Spectral Regression, Ratio Mask
+  (linear / log scale), Binary Mask (linear / log scale).</li>
+  <li><strong>Compute:</strong> SGD, momentum 0.9; lr 0.001 for audio + synthesizer
+  nets, 0.0001 for the ImageNet-pretrained video net. Mixtures contained 0&ndash;4
+  instruments (<code>N&le;2</code> at a time, with silent backgrounds). Hardware /
+  training time <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>On synthetic Mix-and-Separate validation mixtures (NSDR / SIR / SAR via
+<code>mir_eval</code>), <strong>binary masking in log-frequency scale</strong> wins
+most metrics. Key takeaways: masking beats direct spectrogram regression; log-scale
+beats linear-scale; binary &asymp; ratio masking.</p>
+<table>
+<thead><tr><th>Metric</th><th>NMF</th><th>DeepConvSep</th><th>SpecReg</th><th>Ratio (log)</th><th>Binary (log)</th></tr></thead>
+<tbody>
+<tr><td>NSDR</td><td>3.14</td><td>6.12</td><td>5.12</td><td>8.56</td><td><strong>8.87</strong></td></tr>
+<tr><td>SIR</td><td>6.70</td><td>8.38</td><td>7.72</td><td>13.75</td><td><strong>15.02</strong></td></tr>
+<tr><td>SAR</td><td>10.10</td><td>11.02</td><td>10.43</td><td><strong>14.19</strong></td><td>12.28</td></tr>
+</tbody>
+</table>
+<p>Note where it <em>loses</em>: ratio-mask (log) edges out binary on SAR (14.19 vs
+12.28). In the AMT human study (Table 3), NMF's poor NSDR is <em>not</em> reflected
+perceptually &mdash; NMF gets 45.70% "Correct" vs binary mask's best 59.11% (ground-truth
+solos cap at 70.31%), confirming NSDR/SIR/SAR are weak perceptual proxies. Emergent
+representations: sorting channel activations to category labels gives 46.2% (vision)
+and 68.9% (audio) one-channel-per-class accuracy with <em>no</em> classifier trained;
+object localization from activation maps reaches 66.10% / 47.92% / 32.43% at IoU
+0.3/0.4/0.5 (Table 2). Visual-sound correspondence AMT "Yes" rate: binary mask 67.58%
+(Table 4). Specific channels emerge as violin/guitar/xylophone detectors in both
+modalities (Fig. 10).</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><strong>(a) Author-stated.</strong> Quantitative eval is on <em>synthetic</em>
+Mix-and-Separate mixtures; performance on natural in-the-wild mixtures "needs to be
+further investigated." NSDR/SIR/SAR are admitted to be poorly correlated with
+perceptual quality (motivating the AMT studies). The audio synthesizer is kept
+deliberately simple (linear) for interpretability rather than peak accuracy.</p>
+<p><strong>(b) What I noticed reading it.</strong> The whole approach assumes audio
+mixtures are approximately additive in the spectral domain &mdash; benign for sparse
+harmonic instruments, but contact/manipulation audio (impacts, friction, fluid) is
+far less additive, so Mix-and-Separate may not transfer cleanly. The 11-category MUSIC
+set is small and heavily skewed (e.g. almost no tuba+violin duets), so the emergent
+"detectors" may ride on dataset-specific harmonic templates. Test is duets-only and
+val is solos-only, so generalization across mixture-cardinality is asserted but not
+stress-tested at 3&ndash;4 sources. The masking framework presumes a single dominant
+source per T-F unit (binary mask = argmax), which breaks for overlapping harmonics &mdash;
+the ratio-mask SAR advantage hints at this. Localization is correlational (energy
+heatmaps), with no causal test that silencing the localized region removes the sound.</p>
+
+<h2>Why I care</h2>
+<p><strong>Adjacent / method anchor &mdash; this is an audio-visual ML/CV paper, not a
+robot-manipulation paper.</strong> No robot, no policy, no contact-rich control. Its
+relevance to my thesis is as a <em>foundational method anchor</em> for the audio branch
+of multisensory manipulation: it is the origin of the spectrogram-masking + self-supervised
+"co-occurrence is supervision" recipe that later robot-audio papers inherit. The thesis
+connection is real but indirect: many manipulation predicates &mdash; <code>is_grasped</code>,
+<code>is_inserted</code>, <code>is_full</code>, <code>surface_is_rough</code>,
+<code>is_screwed_tight</code> &mdash; are <em>not visually evaluable</em>; they live in
+touch, force, and <em>sound</em>. PixelPlayer establishes that sound carries
+object/material identity recoverable without labels, and that vision and audio can be
+mutually grounded &mdash; the precondition for ever reading such predicates off contact
+audio. For <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>,
+where predicate classifiers are currently visual, this is upstream evidence that an
+acoustic predicate channel is learnable self-supervised. The directly-applicable robot
+descendants in this batch are
+<a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a> and
+<a href="audio_vla_contact_audio_perception.html">Audio-VLA</a>; treat Sound of Pixels
+as the CV ancestor they build on, not as manipulation evidence itself.</p>
+
+<h2>Quotable</h2>
+<blockquote>Our approach capitalizes on the natural synchronization of the visual and
+audio modalities to learn models that jointly parse sounds and images, without requiring
+additional manual supervision.
+<span class="quote-cite">&mdash; Abstract / p.1</span></blockquote>
+<blockquote>The idea of the Mix-and-Separate training procedure is to artificially create
+a complex auditory scene and then solve the auditory scene analysis problem of separating
+and grounding sounds.
+<span class="quote-cite">&mdash; &sect;3.2 / p.5</span></blockquote>
+
+<h2>Related</h2>
+<p><strong>Cited here, worth ingesting next:</strong></p>
+<ul>
+  <li><a href="../../raw/papers/objects_that_sound.pdf">Objects that Sound</a> (Arandjelovi&cacute; &amp; Zisserman) &mdash; companion audio-visual correspondence / localization line; same self-supervised co-occurrence idea.</li>
+  <li><a href="../../raw/papers/visually_indicated_sounds.pdf">Visually Indicated Sounds</a> (Owens et al.) &mdash; predicting sound from silent video; the inverse grounding direction.</li>
+  <li>Arandjelovi&cacute; &amp; Zisserman, "Look, listen and learn" (ICCV 2017) &mdash; foundational audio-visual self-supervision; not in this batch's cross-ref list.</li>
+</ul>
+<p><strong>Newly ingested in 2026-06-24 batch &mdash; directly relevant:</strong></p>
+<ul>
+  <li><a href="objects_that_sound.html">Objects that Sound</a> &mdash; sibling audio-visual self-supervised correspondence/localization paper from the same era.</li>
+  <li><a href="visually_indicated_sounds.html">Visually Indicated Sounds</a> &mdash; the vision&rarr;sound generation counterpart in the same adjacent cluster.</li>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a> &mdash; robot descendant: uses contact/vibration audio for in-hand object property perception, the manipulation analogue of "sound carries object identity."</li>
+  <li><a href="audio_vla_contact_audio_perception.html">Audio-VLA</a> &mdash; brings contact-audio perception into a VLA policy; downstream of the audio-as-signal premise established here.</li>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a> &mdash; multisensory (vision+audio+touch) manipulation fusion that operationalizes audio grounding for policies.</li>
+</ul>
+
+</body>
+</html>

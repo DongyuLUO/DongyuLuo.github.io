@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Beyond Sight: Finetuning Generalist Robot Policies with Heterogeneous Sensors via Language Grounding</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Jones, Mees, Sferrazza, Stachowicz, Abbeel, Levine">
+<meta name="year" content="2025">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2501.04693">
+<meta name="url" content="https://arxiv.org/abs/2501.04693">
+<meta name="pdf" content="../../raw/papers/beyond_sight_fuse_heterogeneous_sensors_language.pdf">
+<meta name="tags" content="vision-language-action, multisensory, learning-from-language, sensory-fusion, tactile-sensing, audio-sensing, vla, foundation-models, multimodal-binding, contact-rich">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Beyond Sight: Finetuning Generalist Robot Policies with Heterogeneous Sensors via Language Grounding</h1>
+<p class="meta">
+  Joshua Jones*, Oier Mees*, Carmelo Sferrazza*, Kyle Stachowicz, Pieter Abbeel, Sergey Levine
+  &middot; UC Berkeley (BAIR)
+  &middot; 2025 (arXiv preprint, v3 14 Jan 2025)
+  &middot; <a href="https://arxiv.org/abs/2501.04693">arXiv:2501.04693</a>
+  &middot; <a href="../../raw/papers/beyond_sight_fuse_heterogeneous_sensors_language.pdf">PDF</a>
+  &middot; <a href="https://fuse-model.github.io">project page</a>
+</p>
+
+<p><strong>One-liner.</strong> FuSe finetunes an off-the-shelf generalist
+robot policy (Octo or a PaliGemma VLA) onto touch and audio &mdash; modalities
+with no large robot datasets &mdash; by adding two auxiliary losses (a CLIP-style
+cross-modal contrastive loss and a language-generation loss) that use
+natural language as a shared grounding space, unlocking zero-shot
+multimodal prompting, compositional cross-modal prompting, and verbal
+descriptions of touched objects, for +20% success over baselines.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Generalist robot policies (Octo, OpenVLA, RT-2, etc.) are trained almost
+exclusively on vision + proprioception, because that is what large robot
+datasets like Open X-Embodiment contain &mdash; almost none include touch or
+sound. Yet many manipulation tasks are <em>partially observable from
+vision alone</em>: reaching into a bag, pressing a button defined by the
+sound it makes, judging whether an object is squishy. Humans fill these
+gaps with touch and audio. The core question: how do you retain the
+internet-scale semantic knowledge of a pre-trained generalist policy while
+adding heterogeneous sensors for which you only have a <em>small</em>
+dataset? Naive MSE behavior-cloning finetuning on the extra channels
+fails &mdash; the model keeps relying on its pre-training modalities and
+ignores the new sensors. The paper's bet is that <strong>language is the
+common interface</strong> that can bind a weakly-represented new modality to
+the policy's existing semantic knowledge.</p>
+
+<h2>Method</h2>
+<p>FuSe tokenizes <em>all</em> heterogeneous modalities &mdash; workspace
+image, wrist image, touch (DIGIT tactile), audio (spectrogram), language &mdash;
+and passes them through a pre-trained transformer backbone with an action
+head (Fig 2). The recipe adds two auxiliary losses on top of the standard
+imitation loss; all three are summed during training.</p>
+
+<p><strong>Per-modality encoders.</strong> Because the finetuning dataset is
+small, the tactile channel reuses a <em>pre-trained</em> TVL encoder
+(itself trained via pairwise vision&ndash;language&ndash;touch contrastive
+learning) and finetunes it with the Octo backbone; both DIGIT sensors feed
+the same TVL encoder. Audio is converted to a spectrogram and treated as a
+regular image through a ResNet-26 encoder.</p>
+
+<p><strong>1. Multimodal contrastive loss</strong> (<code>L_contrast</code>).
+A CLIP-style contrastive loss that aligns language instructions with
+observations, built over <em>all modality-based instruction combinations</em>.
+An observation embedding is formed by re-passing all modalities through the
+transformer and combining via a multi-head attention layer; a CLIP-style
+loss is then computed for each instruction&times;modality combination and
+averaged. High-level goal: maximize mutual information between different
+modalities and the semantics of the same scene (e.g., pull
+&ldquo;feels squishy&rdquo; and &ldquo;feels corded&rdquo; tactile embeddings
+apart in the shared space).</p>
+
+<p><strong>2. Multimodal generative / language-generation loss</strong>
+(<code>L_gen</code>). A generative transformer head, added on top of the
+backbone, predicts the high-level language semantics of a given modality
+combination via cross-entropy against the appropriate instruction
+(e.g., observe touch+vision &rarr; generate &ldquo;grab the object that feels
+soft and looks round&rdquo;; observe audio &rarr; &ldquo;push the button that
+plays piano&rdquo;). A single shared transformer serves all modality
+combinations, with modality tokens distinguishing inputs.</p>
+
+<p>The final objective is
+<code>L = L_BC + &beta; L_gen + &lambda; L_contrast</code>,
+with <code>&beta; = 1, &lambda; = 1</code> in all experiments.</p>
+
+<p><strong>Language rephrasing.</strong> Trajectories are annotated
+after-the-fact with templated language built from multiple sensor inputs
+(&ldquo;the object feels squishy and is red&rdquo;). To support free-form
+test-time instructions, the templates are augmented by querying ChatGPT to
+rephrase while preserving semantics; the rephrasing buffer holds 20
+variants per modality combination.</p>
+
+<p><strong>Backbone-agnostic.</strong> The same recipe is shown on two very
+different generalist policies: the transformer diffusion-based Octo (main
+experiments) and a 3B-parameter PaliGemma VLA. For the VLA, the generative
+language loss folds directly into the existing language-model head rather
+than needing a separate generative head.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> A newly collected real-world
+    multi-task dataset of 27K (text says ~26,866) robot trajectories spanning
+    vision, touch, audio, proprioception (9-DoF IMU), and language
+    instructions across three tasks (tabletop grasping, shopping bag,
+    button pressing). First robot dataset of its kind to include touch +
+    audio <em>with robot action data</em>. All data, code, and models
+    open-sourced.</li>
+  <li><strong>Hardware / simulator:</strong> WidowX 250 6-DoF arm (real
+    robot only, no sim); delta-EE-position control at 5 Hz. Third-person
+    RGB (640&times;480), wrist RGB, two DIGIT tactile sensors on the gripper
+    fingers (320&times;240, with a static background subtracted), one
+    microphone (1 s of 44.1 kHz samples &rarr; spectrogram), 9-DoF IMU.
+    Six sound-making buttons in the button task.</li>
+  <li><strong>Baselines:</strong> Octo finetuned vision-only (Octo Vision FT);
+    Octo trained from scratch on the multimodal data (Octo Scratch);
+    ResNet-from-scratch with FiLM language conditioning (ResNet Scratch);
+    plus ablations (no generative loss, no CLIP loss, no auxiliary losses).
+    For the VLA: PaliGemma FuSe vs its Octo-FuSe counterpart.</li>
+  <li><strong>Compute:</strong> All models trained 50,000 steps on a v5e-128
+    TPU pod, batch size 1024, cosine LR schedule with 2000 warmup steps,
+    peak LR 3&times;10<sup>-4</sup>.</li>
+</ul>
+
+<h2>Results</h2>
+<p>Headline: FuSe increases success rates by <strong>over 20%</strong> versus
+all considered baselines, averaged across tasks (Fig 5). The largest gap
+is on the <em>shopping bag</em> task &mdash; the most visually partially
+observable setting (occlusions + poor wrist-camera lighting once the
+gripper enters the bag) &mdash; where vision-only finetuning is
+&ldquo;considerably inferior&rdquo; because visual features stop being
+discriminative. Octo-from-scratch and ResNet-from-scratch both fall well
+short, confirming the pre-trained-policy initialization is necessary given
+the small dataset.</p>
+
+<p><strong>Multimodal prompting (Table I).</strong> On objects that are
+<em>ambiguous in one modality but unique in another</em>, adding the
+complementary modality lifts success. On vision-ambiguous objects,
+Visual+Tactile beats Visual alone on average (Reach 0.53 vs 0.37, Grasp
+0.37 vs 0.34); on touch-ambiguous objects, Visual+Tactile beats Tactile
+alone (Reach 0.45 vs 0.38, Grasp 0.35 vs 0.35).</p>
+
+<table>
+  <tr><th>Prompt scenario</th><th>Modality</th><th>Avg Reach</th><th>Avg Grasp</th></tr>
+  <tr><td rowspan="2">Vision-ambiguous objects</td><td>Visual</td><td>0.37</td><td>0.34</td></tr>
+  <tr><td>Visual + Tactile</td><td><strong>0.53</strong></td><td><strong>0.37</strong></td></tr>
+  <tr><td rowspan="2">Touch-ambiguous objects</td><td>Tactile</td><td>0.38</td><td>0.35</td></tr>
+  <tr><td>Visual + Tactile</td><td><strong>0.45</strong></td><td>0.35</td></tr>
+</table>
+
+<p><strong>Compositional cross-modal prompting (Fig 6).</strong> On a simple
+task (&ldquo;grab the object the same color as the button that plays
+piano&rdquo;) FuSe beats all baselines. On a multi-step task that chains two
+subtasks through the generative head (press a button visually &rarr; feed the
+resulting sound back &rarr; press the button that plays the same sound), FuSe
+beats Octo-with-all-sensors-and-losses-from-scratch, especially on full
+task completion; the from-scratch model shows poor language grounding and
+fails to fulfill the audio-based instruction.</p>
+
+<p><strong>Ablation (Fig 7).</strong> On the shopping-bag task, including
+<em>both</em> auxiliary losses outperforms either-one-alone or neither;
+performance deteriorates most on unseen test objects when the losses are
+dropped &mdash; the losses are key to actually exploiting the new sensors.</p>
+
+<p><strong>VLA generalization (Fig 8).</strong> The 3B PaliGemma FuSe VLA is
+competitive with the Octo-based FuSe and outperforms it on the hard
+shopping-bag task &mdash; claimed as the first open-source VLA finetuned on
+heterogeneous (non-visual) sensory inputs.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Training with additional modalities increases training resource cost,
+    which currently caps the observation history at 0.4 s &mdash; too short to
+    reason well about sparse signals like tactile data. More training
+    efficiency / longer context is flagged as future work.</li>
+  <li>OXE pre-training generally improves low-level grasping vs original
+    PaliGemma weights, but over-training on OXE during pre-training
+    <em>harms</em> the policy's language understanding &mdash; a delicate
+    pre-training balance.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Statistics are thin.</strong> Each scenario is run for only 5
+    rollouts; Table I numbers are averages over very small N (the per-cell
+    values like 0.43, 0.5 imply ~7&ndash;ish trials). The headline
+    &ldquo;+20%&rdquo; is an average over noisy small-sample tasks &mdash; no
+    confidence intervals or seeds reported, unlike a cleaner
+    success-rate-with-seeds protocol.</li>
+  <li><strong>The tactile encoder is borrowed, not trained here.</strong>
+    FuSe leans on the pre-trained TVL encoder for touch. So the
+    &ldquo;language grounds touch&rdquo; claim partly rides on TVL's prior
+    vision&ndash;language&ndash;touch alignment; how much of the gain is the
+    FuSe losses vs the inherited TVL encoder is not cleanly disentangled.</li>
+  <li><strong>Audio is shallow.</strong> 1 s spectrogram through a ResNet,
+    used mostly to identify which button plays which sound &mdash; a
+    classification-flavored use of audio, not contact-event / vibration
+    reasoning. The harder &ldquo;continuous acoustic state&rdquo; question
+    (pour fullness, scraping, screwing tight) is untouched.</li>
+  <li><strong>No symbolic / predicate layer.</strong> Everything is implicit
+    in the policy + language head; there is no explicit
+    <code>is_squishy(x)</code> predicate the model can plan over. The
+    cross-modal &ldquo;reasoning&rdquo; is end-to-end and one-shot, not a
+    compositional planner.</li>
+  <li>Real-robot only, single embodiment (WidowX) &mdash; the cross-embodiment
+    generalization that motivates generalist policies isn't tested for the
+    new sensors.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This paper is a direct, concrete instance of the batch's big thesis:
+<strong>many manipulation predicates are not visually evaluable</strong> &mdash;
+<code>feels_squishy</code>, <code>feels_corded</code>, <code>plays_piano</code>
+(an acoustic property), <code>is_grasped-but-occluded-in-bag</code> all live in
+touch/sound, not pixels. FuSe shows that you can graft those non-visual
+senses onto a pre-trained generalist policy <em>cheaply</em> by using
+language as the binding glue. That is the mirror image of
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>'s
+program: BLADE learns <em>explicit</em> visual predicate classifiers and
+composes them with a symbolic planner; FuSe learns an <em>implicit</em>
+multimodal&ndash;language alignment and prompts it zero-shot. The interesting
+research gap sits exactly between them: BLADE's predicate-classifier layer
+is purely visual today (its own &ldquo;Why I care&rdquo; flags force/continuous
+parameters as a missing contribution area). FuSe's tactile/audio grounding
+is precisely the perceptual substrate a BLADE-style predicate like
+<code>is_inserted</code> or <code>surface_is_rough</code> would need &mdash; but
+FuSe stops short of giving it a symbolic, plannable form. A natural
+follow-up to my own line: learn <em>tactile/acoustic predicate classifiers</em>
+(FuSe-style language-grounded encoders) and feed them into BLADE-style
+abstract operators so the planner can reason over non-visual state. FuSe
+also strengthens the &ldquo;language as the universal cross-modal interface&rdquo;
+view that BLADE's LLM-translation step already relies on.</p>
+<p>This is squarely on-theme (learning from language, sensory grounding,
+manipulation), with the caveat that it is a scale/implicit-policy paper, not
+a planning-abstractions paper &mdash; the complement to BLADE rather than a
+peer method.</p>
+
+<h2>Quotable</h2>
+
+<blockquote>
+  Our key insight is that by grounding all modalities in a single common
+  natural-language modality by way of an auxiliary loss, we can achieve
+  joint reasoning over all modalities.
+  <span class="quote-cite">&mdash; &sect;I / p.2</span>
+</blockquote>
+
+<blockquote>
+  We combine a multimodal contrastive loss with a sensory-grounded language
+  generation loss to encode high-level semantics. &hellip; FuSe is able to
+  increase success rates by over 20% compared to all considered baselines.
+  <span class="quote-cite">&mdash; Abstract / p.1</span>
+</blockquote>
+
+<blockquote>
+  To our knowledge, VLA FuSe is the first open-source VLA finetuned on
+  heterogeneous (non-visual) sensory inputs.
+  <span class="quote-cite">&mdash; &sect;IV-G / p.7</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited that should likely be ingested next:</p>
+<ul>
+  <li><strong>[4] Octo Model Team 2024 &mdash; Octo</strong> (RSS) &mdash;
+    the generalist backbone FuSe finetunes; foundational dependency.</li>
+  <li><strong>[14] Fu et al. 2024 &mdash; TVL: A Touch, Vision, and Language
+    Dataset for Multimodal Alignment</strong> (ICML) &mdash; supplies the
+    pre-trained tactile encoder. See
+    <a href="../../raw/papers/touch_vision_language_dataset_multimodal_alignment.pdf">TVL</a>.</li>
+  <li><strong>[28] Beyer et al. &mdash; PaliGemma</strong> &mdash; the 3B VLM
+    backbone for the VLA variant.</li>
+  <li><strong>[3] Du et al. 2022 &mdash; Play it by Ear</strong> &mdash; audio-visual
+    imitation; see
+    <a href="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">Play it by Ear</a>.</li>
+  <li><strong>[36] Li et al. 2022 &mdash; See, Hear, and Feel</strong> &mdash;
+    sensory fusion; see
+    <a href="../../raw/papers/see_hear_feel_sensory_fusion.pdf">See, Hear, and Feel</a>.</li>
+  <li><strong>[39] Lee et al. 2020 &mdash; Making Sense of Vision and Touch</strong>
+    (T-RO) &mdash; see
+    <a href="../../raw/papers/making_sense_of_vision_and_touch.pdf">Making Sense of Vision and Touch</a>.</li>
+  <li><strong>[40] Guzey et al. 2024 &mdash; See to Touch</strong> &mdash; see
+    <a href="../../raw/papers/see_to_touch_tactile_dexterity_visual_incentives.pdf">See to Touch</a>.</li>
+  <li><strong>[44] Yu et al. 2024 &mdash; Octopi</strong> &mdash; tactile-language
+    object property reasoning; see
+    <a href="../../raw/papers/octopi_object_property_reasoning_tactile_language.pdf">Octopi</a>.</li>
+  <li><strong>[35] Mejia et al. 2024 &mdash; Hearing Touch</strong> &mdash; see
+    <a href="../../raw/papers/hearing_touch_audio_visual_pretraining.pdf">Hearing Touch</a>.</li>
+  <li><strong>[24] Binding Touch to Everything (UniTouch)</strong> &mdash; see
+    <a href="../../raw/papers/binding_touch_to_everything_unitouch.pdf">UniTouch</a>.</li>
+</ul>
+
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant to this work:</p>
+<ul>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html"><strong>BLADE</strong></a>
+    &mdash; Weiyu's anchor paper; the symbolic-planning counterpoint to FuSe's
+    implicit multimodal policy. FuSe supplies the non-visual perceptual
+    grounding BLADE's purely-visual predicate layer lacks.</li>
+  <li><a href="touch_vision_language_dataset_multimodal_alignment.html">TVL</a>
+    &mdash; the vision&ndash;language&ndash;touch dataset/encoder FuSe builds its
+    tactile channel on; the most direct dependency.</li>
+  <li><a href="tactile_vla_physical_knowledge_generalization.html">Tactile-VLA</a>,
+    <a href="omnivtla_vision_tactile_language_action.html">OmniVTLA</a>,
+    <a href="forcevla_force_aware_moe_contact_rich.html">ForceVLA</a>,
+    <a href="vlas_speech_instructions_vla.html">VLAS</a>,
+    <a href="audio_vla_contact_audio_perception.html">Audio-VLA</a>
+    &mdash; sibling Cluster C multisensory VLA policies; FuSe is the
+    backbone-agnostic, language-grounded recipe most of these can be read
+    against.</li>
+  <li><a href="imagebind_one_embedding_space.html">ImageBind</a> /
+    <a href="languagebind_language_anchored.html">LanguageBind</a> /
+    <a href="meta_transformer_unified_modalities.html">Meta-Transformer</a>
+    &mdash; the multimodal-binding anchors; FuSe is essentially
+    binding-via-language applied at the robot-policy layer.</li>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a>,
+    <a href="play_it_by_ear_audio_visual_imitation.html">Play it by Ear</a>,
+    <a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a>
+    &mdash; the audio-for-manipulation neighbors FuSe's audio channel sits
+    among.</li>
+</ul>
+
+</body>
+</html>

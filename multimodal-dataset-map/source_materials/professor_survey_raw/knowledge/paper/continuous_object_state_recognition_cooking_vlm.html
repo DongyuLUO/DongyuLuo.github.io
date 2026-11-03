@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Continuous Object State Recognition for Cooking Robots Using Pre-Trained Vision-Language Models and Black-box Optimization</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Kawaharazuka, Kanazawa, Obinata, Okada, Inaba">
+<meta name="year" content="2024">
+<meta name="venue" content="arXiv preprint">
+<meta name="arxiv_id" content="2403.08239">
+<meta name="url" content="https://arxiv.org/abs/2403.08239">
+<meta name="pdf" content="../../raw/papers/continuous_object_state_recognition_cooking_vlm.pdf">
+<meta name="tags" content="vlm, object-state-recognition, state-change, cooking, process-monitoring, temporal-reasoning, foundation-models, robot-learning, state-estimation">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-25">
+<meta name="source_prompt" content="related-work ingest: dynamic state-change concept grounding for manipulation">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+</style>
+</head>
+<body>
+
+<h1>Continuous Object State Recognition for Cooking Robots Using Pre-Trained Vision-Language Models and Black-box Optimization</h1>
+<p class="meta">
+  Kento Kawaharazuka, Naoaki Kanazawa, Yoshiki Obinata, Kei Okada, Masayuki Inaba
+  &middot; The University of Tokyo (JSK)
+  &middot; 2024
+  &middot; arXiv preprint
+  &middot; <a href="https://arxiv.org/abs/2403.08239">arXiv:2403.08239</a>
+  &middot; <a href="../../raw/papers/continuous_object_state_recognition_cooking_vlm.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Treats a cooking object's state change (water
+boiling, butter melting, egg cooking, onion stir-frying) not as a one-shot
+classification but as a <em>continuous</em> time-series signal &mdash; the
+cosine similarity between live images and a set of state-describing text
+prompts &mdash; and uses black-box optimization over per-prompt weights
+(fit to a sigmoid) to turn that noisy similarity trace into a sharp,
+threshold-able "the change just happened" detector, all from a frozen
+pre-trained VLM with zero task-specific training or image annotation.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Robot state recognition is usually framed as classification at a single
+time point (door open/closed, light on/off). Cooking breaks this: food
+state changes happen <em>continuously over time</em>, are complex enough to
+defy manual programming, and vary with the specific food, heat power, and
+recipe. Prior cooking-robot systems either time the heat application rather
+than sense the food state directly, or train per-state CNN classifiers on
+image datasets (sliced/chopped/etc.) that (a) only handle discrete
+predefined classes, (b) can't capture the <em>degree</em> or <em>onset</em>
+of change, and (c) require a separate dataset, model, and program per state
+&mdash; a code- and compute-management burden. The authors want a single
+frozen model that captures the continuous trajectory of a state change from
+language, with no annotation and no per-state training.</p>
+
+<h2>Method</h2>
+<p>The pipeline (Fig. 2) has three pieces: continuous similarity tracking,
+sigmoid fitting, and black-box weight optimization.</p>
+
+<p><strong>1. Continuous similarity from a frozen VLM.</strong> Among VLM
+task types only Image-to-Text Retrieval (ITR) yields a continuous scalar (a
+cosine similarity), so it is the operative primitive. Images <em>V<sub>t</sub></em>
+are acquired at 10&nbsp;Hz; each is encoded to <em>v<sub>t</sub></em>, each
+text prompt <em>Q<sub>i</sub></em> to <em>q<sub>i</sub></em>, and the
+similarity <em>v<sub>t</sub><sup>T</sup>q<sub>i</sub></em> is plotted over
+time. A rising trace (e.g. similarity to "boiled water") indicates the state
+change. Prompts come in positive sets <em>Q<sup>1</sup></em> (change
+occurred, e.g. "boiled water") and negative sets <em>Q<sup>-1</sup></em>
+(not occurred, e.g. "unboiled water"); a sign variable <em>p<sub>i</sub></em>
+flips negatives.</p>
+
+<p><strong>2. Weighted aggregate + sigmoid fit.</strong> The aggregate
+signal is a weighted average <em>a<sub>w</sub><sup>t</sup> = &Sigma; p<sub>i</sub>w<sub>i</sub>v<sub>t</sub><sup>T</sup>q<sub>i</sub> / &Sigma; w<sub>i</sub></em>
+(Eq. 1), min-max scaled into [0,1] using a 3-second moving average (Eq. 3),
+then fit to a sigmoid <em>f(t) = 1 / (1 + e<sup>-&alpha;(t-&beta;)</sup>)</em>
+(Eq. 2) by nonlinear least squares with <em>&alpha;,&beta; &ge; 0</em>. The
+sigmoid is justified as covering the four qualitative shapes of state-change
+curves (Fig. 3) and giving a natural [0,1]-range threshold (e.g. detect at
+the 0.8 / 80%-change point).</p>
+
+<p><strong>3. Black-box optimization of prompt weights.</strong> The core
+trick: different prompts have wildly different recognition quality, and using
+all of them uniformly lets bad prompts drag down the signal. So they
+optimize the weight vector <em>w</em> (each <em>w<sub>i</sub> &isin; [0,1]</em>)
+to maximize an evaluation function <em>E(w) = &alpha;&beta;/&sigma;</em>
+(Eq. 4) &mdash; reward a steep change (large <em>&alpha;</em>), occurring
+late in the process (large <em>&beta;</em>), with small sigmoid fitting error
+<em>&sigma;</em>. Optimization is done <em>once</em> on a calibration dataset
+<em>D<sub>opt</sub></em> via a genetic algorithm (DEAP: 300 individuals, 300
+generations, blend crossover, Gaussian mutation, tournament selection); TPE
+and CMA-ES were tried with no significant difference. No image annotation is
+needed &mdash; only the captured time series and the text set.</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> Self-collected. Four state
+    changes &mdash; water boiling, butter melting, egg cooking (fried egg),
+    onion stir-frying. Each has an optimization set <em>D<sub>opt</sub></em>
+    and an evaluation set <em>D<sub>eval</sub></em>; the true change-end time
+    <em>t<sub>data</sub></em> is annotated for evaluation only. Up to ~50
+    text prompts per state, generated by varying article ("a"/"the"/"this"/
+    "that"/none), state word (boiled/unboiled, melted/not-melted synonyms and
+    antonyms), and phrasing form. No public benchmark.</li>
+  <li><strong>Hardware / simulator:</strong> Real PR2 mobile robot observing a
+    stove at 10&nbsp;Hz; for onion, an image taken each time the PR2 stirs
+    with a spatula. Closed-loop cooking demo: PR2 boils water, detects
+    boiling (ImageBind+OPT), blanches broccoli, detects butter melt, then
+    stir-fries.</li>
+  <li><strong>Baselines:</strong> No external baseline. Three internal
+    settings compared: <strong>OPT</strong> (proposed black-box-optimized
+    weights), <strong>ONE</strong> (single best prompt, the one maximizing
+    <em>E</em>), <strong>ALL</strong> (all prompts weighted equally). Two
+    frozen VLMs compared: CLIP and ImageBind.</li>
+  <li><strong>Compute:</strong> <em>not reported</em> (only GA hyperparameters
+    given).</li>
+</ul>
+
+<h2>Results</h2>
+<p>Metrics: <em>E</em> (higher = sharper, better-fit change) and
+<em>t<sub>diff</sub> = |t<sub>detected</sub> - t<sub>data</sub>|</em> (lower
+= more accurate onset, threshold <em>C<sub>thre</sub></em>=0.8).</p>
+<ul>
+  <li><strong>OPT consistently wins.</strong> Water boiling, CLIP: ALL
+    <em>E</em>=0.0 / <em>t<sub>diff</sub></em>=61.0&nbsp;s &rarr; ONE
+    <em>E</em>=44.4 / 26.6&nbsp;s &rarr; OPT <em>E</em>=207.3 /
+    <strong>1.8&nbsp;s</strong> (Fig. 6); ImageBind OPT reaches
+    <em>t<sub>diff</sub></em>=1.1&nbsp;s on <em>D<sub>eval</sub></em>. Butter
+    melting and onion stir-frying similarly recognized with high accuracy.</li>
+  <li><strong>ONE &gt; ALL usually</strong>, but not always &mdash; uniform
+    use of all prompts often gives <em>E</em>&asymp;0 and large
+    <em>t<sub>diff</sub></em> because noisy prompts dominate.</li>
+  <li><strong>Egg cooking is the failure case.</strong> The egg white turns
+    white abruptly at the very start (curve shape (iii) in Fig. 3), then only
+    subtle yolk change follows; neither CLIP nor ImageBind detects the later
+    change well, so <em>t<sub>diff</sub></em> stays large (often &gt;80&nbsp;s).</li>
+  <li><strong>ImageBind &gt; CLIP on stability</strong> overall (less
+    <em>D<sub>opt</sub></em>/<em>D<sub>eval</sub></em> divergence), though CLIP
+    sometimes wins; the authors suggest combining both.</li>
+  <li><strong>Closed-loop cooking succeeded</strong> (Fig. 10): boiling- and
+    melting-detection triggered the next manipulation step end to end.</li>
+</ul>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Abrupt-then-subtle changes (egg cooking) are not captured &mdash; bottle-
+    necked on the VLM's sensitivity to fine-grained change; expect future VLMs
+    to help.</li>
+  <li>Recognition uses only image&ndash;text correspondence; video, audio, and
+    heatmaps ("indispensable for cooking") are unused and could be integrated.</li>
+  <li>The text set <em>Q</em> is hand-authored; an LLM could auto-generate
+    synonyms/antonyms for a more practical system.</li>
+  <li>Neither single model dominates; multi-model fusion is left to future work.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Recognition only, no control coupling beyond a trigger.</strong>
+    The output is a scalar onset signal that flips one downstream step; there
+    is no symbolic predicate, no precondition/effect structure, no replanning
+    &mdash; just "fire when similarity crosses 0.8."</li>
+  <li><strong>Calibration is supervised-by-the-back-door.</strong> "No image
+    annotation" is true, but <em>D<sub>opt</sub></em> must be collected per
+    state and <em>E</em>'s design (reward late, steep change) bakes in the
+    assumption that the change happens once and near the end &mdash; which is
+    exactly why egg cooking (early change) breaks. The method is tuned to
+    monotone end-loaded transitions.</li>
+  <li><strong>The interesting move is hiding in plain sight:</strong> ImageBind
+    can bind audio, depth, heatmaps, and IMU, yet only the image modality is
+    used. The whole multimodal-sensing payoff is left on the table.</li>
+  <li>Per-state recalibration and threshold choice (0.8) are manual knobs; no
+    transfer across foods or heat settings is shown.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is the closest pure <em>change-tracking-for-robots</em> work to my
+target idea: it explicitly reframes object state from a static classification
+to a <em>continuous, temporally-monitored</em> signal of transition
+("boiling now", "melted now"), which is precisely the dynamic, change-oriented
+concept axis I want to ground. On that axis it is squarely on-theme &mdash; it
+monitors a process over time and even closes a coarse loop (boil-detected
+&rarr; add broccoli) in the cooking demo.</p>
+<p>But it is on the <em>wrong side</em> of two of my axes. (1) <strong>Vision/VLM
+only</strong>: the entire signal is image&ndash;text cosine similarity; the
+non-visual modalities where many transitions actually announce themselves
+(the <em>sound</em> of a rolling boil, the thermal jump, the change in
+stirring force) are unused &mdash; ImageBind could bind them, yet doesn't.
+(2) <strong>Recognition, not closed-loop semantic correction</strong>: the
+output is a threshold-crossing trigger, not a learned predicate with
+preconditions/effects that a planner can reason over and replan against. So
+versus <a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+BLADE learns <em>visual</em> predicate classifiers that are <em>static
+snapshots</em> (true/false at a frame) but embeds them in a symbolic
+precondition/effect structure with bi-level replanning; this paper learns a
+<em>dynamic temporal</em> signal but with <em>no</em> symbolic structure and
+only a trigger-level loop. The synthesis I want &mdash; <em>dynamic
+transition concepts, grounded on non-visual sensing, expressed as
+replanning-ready predicates</em> &mdash; sits exactly between them. This paper
+proves the continuous-temporal framing is tractable with frozen foundation
+models; my contribution is to push it onto multimodal sensing and into the
+symbolic/closed-loop layer it stops short of. It pairs naturally with its own
+follow-up
+<a href="../../raw/papers/heat_induced_food_state_changes_time_series_vlm.pdf">Recognition of Heat-Induced Food State Changes (Kanazawa et al.)</a>
+and contrasts with sound-centric monitors like
+<a href="../../raw/papers/hear_vision_sound_language_action_sound_centric_manipulation.pdf">HEAR</a>.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  State changes of food in cooking happen continuously and need to be captured
+  not only at a certain time point but also continuously over time.
+  <span class="quote-cite">&mdash; Abstract</span>
+</blockquote>
+<blockquote>
+  These all deal with classification problems based on convolutional neural
+  networks &hellip; and cannot capture continuous changes in the state of
+  food. &hellip; it is difficult to understand the degree of change.
+  <span class="quote-cite">&mdash; &sect;I, Introduction</span>
+</blockquote>
+<blockquote>
+  In this study, continuous state recognition is based only on the
+  correspondence between images and texts, and there are still many unused
+  modalities. In particular, video, audio, and heatmaps are indispensable
+  information for cooking.
+  <span class="quote-cite">&mdash; &sect;IV, Discussion</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Cited papers worth ingesting next:</p>
+<ul>
+  <li><strong>Kanazawa et al. &mdash; Recognition of Heat-Induced Food State
+    Changes by Time-Series Use of VLM</strong> [15] &mdash; the authors' own
+    direct precursor; the antonym-set, single-model version this paper
+    optimizes. Already targeted as
+    <a href="../../raw/papers/heat_induced_food_state_changes_time_series_vlm.pdf">heat_induced_food_state_changes_time_series_vlm</a>.</li>
+  <li><strong>Radford et al. 2021 &mdash; CLIP</strong> [12] &mdash; one of the
+    two frozen VLM backbones.</li>
+  <li><strong>Girdhar et al. 2023 &mdash; ImageBind</strong> [13] &mdash; the
+    other backbone; binds audio/depth/heatmap/IMU, the modalities this paper
+    leaves unused but my idea needs.</li>
+  <li><strong>Kawaharazuka et al. 2023 &mdash; VQA-based Robotic State
+    Recognition Optimized with Genetic Algorithm</strong> [3] &mdash; sibling
+    GA-optimized state recognizer from the same group.</li>
+  <li><strong>Junge et al. 2020 &mdash; Improving Robotic Cooking Using Batch
+    Bayesian Optimization</strong> [5] &mdash; the time-based (not
+    state-sensed) cooking baseline this paper argues against.</li>
+</ul>
+<p>Related ingested papers:</p>
+<ul>
+  <li><a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>
+    &mdash; the anchor: symbolic predicate classifiers + replanning; the
+    static-but-structured counterpoint to this paper's dynamic-but-unstructured
+    recognition.</li>
+  <li><a href="real_world_cooking_robot_system_from_recipes_with_foundation_models_and_pddl.html">Kanazawa cooking robot (food-state &rarr; PDDL)</a>
+    &mdash; same JSK/UTokyo group; turns food-state recognition into PDDL
+    planning &mdash; the symbolic layer this recognition-only paper stops
+    short of.</li>
+</ul>
+
+</body>
+</html>

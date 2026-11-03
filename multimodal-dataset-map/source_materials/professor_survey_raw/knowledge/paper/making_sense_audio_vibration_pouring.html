@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Making Sense of Audio Vibration for Liquid Height Estimation in Robotic Pouring</title>
+<meta name="type" content="paper">
+<meta name="authors" content="Liang, Li, Ma, Hendrich, Gerkmann, Sun, Zhang">
+<meta name="year" content="2019">
+<meta name="venue" content="ICRA 2019">
+<meta name="arxiv_id" content="1903.00650">
+<meta name="url" content="https://arxiv.org/abs/1903.00650">
+<meta name="pdf" content="../../raw/papers/making_sense_audio_vibration_pouring.pdf">
+<meta name="tags" content="audio-sensing, acoustic-sensing, state-estimation, pouring, robot-learning, contact-audio, multimodal-dataset, learning-from-demonstration">
+<meta name="status" content="summarized">
+<meta name="ingested" content="2026-06-24">
+<meta name="source_prompt" content="targeted search: language + multimodal sensing for manipulation 2026-06-24">
+<style>
+  body { font-family: -apple-system, system-ui, sans-serif; max-width: 760px;
+         margin: 2em auto; padding: 0 1em; line-height: 1.55; color: #222; }
+  h1 { font-size: 1.6em; }
+  h2 { font-size: 1.15em; margin-top: 1.8em;
+       border-bottom: 1px solid #ddd; padding-bottom: 0.2em; }
+  blockquote { border-left: 3px solid #ccc; margin: 1em 0;
+               padding: 0.2em 1em; color: #555; }
+  a { color: #2962ff; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { background: #f5f5f5; padding: 0.1em 0.3em; border-radius: 3px;
+         font-size: 0.95em; }
+  .meta { color: #777; font-size: 0.9em; }
+  .quote-cite { color: #999; font-size: 0.85em; }
+  table { border-collapse: collapse; margin: 1em 0; font-size: 0.92em; }
+  th, td { border: 1px solid #ddd; padding: 0.35em 0.7em; text-align: left; }
+  th { background: #f5f5f5; }
+  .own-paper { background: #fff8e1; border-left: 4px solid #ffc107;
+               padding: 0.5em 0.9em; margin: 1em 0; font-size: 0.92em; }
+</style>
+</head>
+<body>
+
+<h1>Making Sense of Audio Vibration for Liquid Height Estimation in Robotic Pouring</h1>
+<p class="meta">
+  Hongzhuo Liang, Shuang Li, Xiaojian Ma, Norman Hendrich, Timo Gerkmann, Fuchun Sun, Jianwei Zhang
+  &middot; Universit&auml;t Hamburg / UCLA / Tsinghua
+  &middot; 2019 &middot; ICRA 2019
+  &middot; <a href="https://arxiv.org/abs/1903.00650">arXiv:1903.00650</a>
+  &middot; <a href="../../raw/papers/making_sense_audio_vibration_pouring.pdf">PDF</a>
+</p>
+
+<p><strong>One-liner.</strong> Pour water into an opaque cup and the rising
+liquid shortens the air column inside, sweeping a resonance up the spectrum
+like blowing across a bottle &mdash; PouringNet is an RNN that reads that
+microphone sweep in real time to estimate liquid height closed-loop, no camera
+or force sensor needed, the canonical "this predicate lives in sound, not
+pixels" result for manipulation.</p>
+
+<h2>Problem &amp; motivation</h2>
+<p>Robotic pouring needs accurate, real-time perception of how full the target
+container is, so the robot can stop before spilling. The two standard
+modalities both break: <strong>vision</strong> fails on opaque containers (you
+can't see the liquid line) and is sensitive to lighting and liquid color, with
+reported mean height errors &gt;4&nbsp;mm even on transparent liquids;
+<strong>haptic/force</strong> sensing on the source container measures
+how much liquid <em>left</em> the source (a volume integral), but cannot read
+the liquid <em>height</em> in an unseen target container, and the force-to-fill
+mapping varies with end-effector and container. The paper's insight, borrowed
+from how humans pour by ear, is that the air cavity above the liquid acts like
+an organ pipe: as the column shortens the air resonates faster, so the
+instantaneous resonance frequency directly encodes the current fill level &mdash;
+an <em>immediate</em> readout that needs no temporal integration and so
+accumulates no integration drift.</p>
+
+<h2>Method</h2>
+<p><strong>Air column, not liquid height, as the label.</strong> The key
+modeling move (Fig 4): the regression target is the <em>length of the air
+column</em> <code>H<sub>a</sub></code> above the liquid, not the liquid height
+itself. Two differently-shaped containers filled to different liquid heights
+but sharing the same air-column length produce a similar air resonance &mdash;
+so air-column length is the container-agnostic quantity the resonance actually
+determines. Using liquid height as the label would map one acoustic feature to
+many labels; using air-column length makes the target single-valued and
+transfers across container shapes. This also gives free overfill protection:
+the controller just stops when <code>H<sub>a</sub></code> hits a small
+threshold, regardless of the target container's geometry.</p>
+
+<p><strong>Audio front-end.</strong> Raw audio (recorded at 44.1&nbsp;kHz) is
+resampled to 16&nbsp;kHz; spectrograms use a 0.032&nbsp;s window with half-window
+overlap and a 512-point FFT, yielding 257-bin slices. A 4&nbsp;s clip becomes a
+<code>257&times;251</code> time-frequency input. In the spectrograms (Fig 3) a
+single high-energy rising curve between ~256&ndash;2048&nbsp;Hz is the air
+resonance; the authors note it tracks liquid height and is largely invariant to
+pouring speed, while the container's own (slightly falling) resonance is not
+clearly visible in their data.</p>
+
+<p><strong>PouringNet (Fig 5).</strong> A recurrent encoder &mdash; one layer of
+LSTM or GRU &mdash; consumes each time-slice of the spectrogram progressively,
+producing a 256-d recurrent feature; a 2-layer MLP height predictor regresses
+the instantaneous air-column length. Recurrence is chosen for two reasons: it
+suits the sequential nature of audio, and it implicitly bakes in the prior that
+liquid level rises <em>monotonically</em>, smoothing predictions. Two losses:
+an MSE term <code>L<sub>height</sub> = &#8741;&#x124;<sub>a</sub> &minus; H<sub>a</sub>&#8741;&sup2;</code>
+and an auxiliary monotonicity penalty
+<code>L<sub>mono</sub> = &sum;<sub>t</sub> max(0, &#x124;<sub>a,t+1</sub> &minus; &#x124;<sub>a,t</sub>)</code>
+that punishes any predicted <em>increase</em> in air-column length (since it
+should only shrink). Combined as
+<code>L<sub>audio</sub> = L<sub>height</sub> + &alpha; &middot; L<sub>mono</sub></code>
+with <code>&alpha; = 0.01</code>. Data augmentation: random 4&nbsp;s crops from
+each full pouring sequence, count proportional to trial length.</p>
+
+<p><strong>Deployment.</strong> The AudioLSTM model trained on the human dataset
+is fine-tuned on a small spout-equipped robot dataset (the spout slows pouring
+and reduces spillage from the high gripper), then used as a closed-loop
+feedback signal that terminates pouring the moment the desired
+<code>H<sub>a</sub></code> is reached. One feedback loop runs in ~21&nbsp;ms
+(~20&nbsp;ms of which is spectrogram processing).</p>
+
+<h2>Setup</h2>
+<ul>
+  <li><strong>Datasets / benchmarks:</strong> A self-collected multimodal pouring
+    dataset &mdash; the paper claims the first multimodal dataset for the pouring
+    perception task &mdash; with &gt;3000 human pouring recordings (1000 trials
+    &times; 3 target containers, 2 subjects), each containing audio, force/torque,
+    video, motion-tracking trajectories, and scale-derived height labels.
+    Training used water only; recordings ran 4&ndash;11&nbsp;s. Height
+    ground truth comes from a digital scale plus a per-container quadratic
+    weight&rarr;height polynomial. A separate 30-trial-per-container spout
+    dataset is collected for robot fine-tuning. Code/data/video released at the
+    project page.</li>
+  <li><strong>Hardware / simulator:</strong> Real-world only (no simulator).
+    Collection rig (Fig 2): Behringer B-5 mic (44.1&nbsp;kHz), ATI Mini40 F/T
+    sensor (500&nbsp;Hz), Maul Logic digital scale (1&nbsp;Hz), Logitech webcam
+    (30&nbsp;Hz), PhaseSpace Impulse X2E motion tracker (240&nbsp;Hz); three
+    training containers (glass 127&nbsp;mm, thermos 150&nbsp;mm, mug 99&nbsp;mm).
+    Robot experiments on a UR5 with a spout-equipped source container; three
+    unseen containers (red mug, blue mug, plastic cup).</li>
+  <li><strong>Baselines:</strong> Internal architecture ablation only &mdash;
+    AudioFC (feed-forward MLP) vs AudioLSTM vs AudioGRU; plus single-container
+    vs all-container training. For the robot pouring precision, an informal
+    comparison to prior vision-based pouring numbers (Schenck mean error
+    38&nbsp;ml; Do 22.53&nbsp;ml). No external learned audio/vision/haptic
+    baseline is re-run on the same setup.</li>
+  <li><strong>Compute:</strong> Inference machine: 20-core Intel i9-7900X CPU +
+    two GTX 1080Ti GPUs. Training compute and time <em>not reported</em>.</li>
+</ul>
+
+<h2>Results</h2>
+<p><strong>Headline.</strong> On the human test set both recurrent models reach
+<strong>90% of sequences below 2&nbsp;mm air-column error</strong> with absolute
+mean length error <strong>below 1.5&nbsp;mm</strong>; AudioLSTM slightly beats
+AudioGRU and both crush the AudioFC feed-forward baseline (Fig 6), confirming
+that recurrence (and its implicit monotonic prior) matters and that audio alone
+suffices to infer height across containers. The all-container model beats any
+single-container model, i.e. it benefits from data scale and generalizes better.
+Among containers, the stainless-steel thermos is easiest ("crispest sound") and
+the glass hardest.</p>
+
+<p><strong>Robot closed-loop (Fig 8).</strong> Absolute mean height error and
+std are both <strong>below 3&nbsp;mm on the three seen containers</strong> and
+<strong>below 4.5&nbsp;mm on three unseen containers</strong>, despite a large
+human-to-robot domain gap (different trajectories, noisier environment).
+Accuracy improves as the target air column gets shorter (liquid higher) &mdash;
+a useful property since spill risk is highest there. Converted to amount error
+(Table I):</p>
+
+<table>
+  <tr><th>Container</th><th>Mean amount error &plusmn; std</th><th>Seen?</th></tr>
+  <tr><td>Glass</td><td>9.54 &plusmn; 7.81 ml</td><td>seen</td></tr>
+  <tr><td>Thermos</td><td>9.91 &plusmn; 8.48 ml</td><td>seen</td></tr>
+  <tr><td>Mug</td><td>13.79 &plusmn; 11.04 ml</td><td>seen</td></tr>
+  <tr><td>Red Mug</td><td>7.92 &plusmn; 7.14 ml</td><td>unseen</td></tr>
+  <tr><td>Blue Mug</td><td>6.42 &plusmn; 6.31 ml</td><td>unseen</td></tr>
+  <tr><td>Plastic Cup</td><td>10.72 &plusmn; 8.70 ml</td><td>unseen</td></tr>
+</table>
+
+<p>These amount errors are reported as lower than prior vision-based pouring
+work (Schenck 38&nbsp;ml; Do 22.53&nbsp;ml), though on a different setup.</p>
+
+<p><strong>Generalization sweeps.</strong> The method holds up across eight
+microphone positions (Fig 9 &mdash; including varying distance to the noisy UR5
+control box, the main noise source), across initial liquid heights
+{10,20,30,40&nbsp;mm} (Fig 10a), and across liquid types: pure water,
+carbonated water, and orange juice generalize well. <strong>Where it loses:</strong>
+1.8% milk fails &mdash; higher viscosity weakens the pouring sound and degrades
+the recording; the authors conclude generalization is negatively correlated with
+liquid viscosity.</p>
+
+<h2>Limitations &amp; open questions</h2>
+<p><em>From the authors:</em></p>
+<ul>
+  <li>Fails on high-viscosity liquids (milk) because the sound is too weak to
+    record/analyze cleanly.</li>
+  <li>The human-to-robot transfer needs a spout-equipped re-collection and
+    fine-tuning; the robot pour is slowed and the gripper is fixed high above
+    the scale for sound quality.</li>
+  <li>Sensitive to environment assumptions: data collected in a quiet room;
+    future work is flagged for noisier environments with human voice and for
+    variable source&ndash;target distance.</li>
+  <li>The rich force/trajectory/video channels of the dataset are collected but
+    unused here; multimodal fusion is left as future work.</li>
+</ul>
+<p><em>What I noticed reading it:</em></p>
+<ul>
+  <li><strong>Tiny robot-test statistics.</strong> Every robot generalization
+    result is five pours per condition. Means &plusmn; std on n=5 are weak
+    evidence; the std bars (Fig 8c, e.g. thermos ranges roughly &minus;1 to
+    9&nbsp;mm) are wide relative to the headline means.</li>
+  <li><strong>No external baseline on the same setup.</strong> The 90%@2mm and
+    sub-3mm numbers have no competing vision/force/audio method run on this rig;
+    the Schenck/Do comparison is cross-paper, cross-container, cross-metric, so
+    "higher precision" is suggestive, not controlled.</li>
+  <li><strong>Distance/geometry are quietly fixed.</strong> Source&ndash;target
+    and mic&ndash;target distances are constrained to dataset-like ranges; the
+    air-resonance signal almost certainly depends on mic placement and pour
+    geometry, and the mic-position sweep only spans two distances on the
+    collision-free side.</li>
+  <li><strong>The container-resonance term is asserted but not observed.</strong>
+    The physical model invokes two resonances, but the paper admits the
+    container's own resonance "cannot be clearly seen" in their data &mdash; so
+    the model leans entirely on the air resonance, which may limit transfer to
+    very different container materials/wall stiffness.</li>
+  <li><strong>No quantitative ablation of <code>L<sub>mono</sub></code>.</strong>
+    The monotonicity loss is motivated and a single &alpha; is reported, but
+    there's no with/without comparison showing how much it actually helps.</li>
+</ul>
+
+<h2>Why I care</h2>
+<p>This is a clean, early (2019) instance of the thesis behind the whole
+2026-06-24 batch and the reason it matters for
+<a href="learning_compositional_behaviors_from_demonstration_and_language.html">BLADE</a>:
+<strong>a manipulation state variable that is not visually evaluable</strong>.
+BLADE learns predicate classifiers from <em>vision</em> (e.g.
+<code>turned-on(faucet)</code>) by cropping to the relevant object &mdash; but a
+predicate like <code>is_full(cup)</code> or <code>fill_level(cup, h)</code> on an
+<em>opaque</em> container is precisely the case where a visual classifier has no
+signal to read. This paper shows that quantity lives in the audio channel: the
+air-resonance sweep <em>is</em> the fill-level estimator. So PouringNet is a
+concrete worked example of a continuous predicate / state estimator grounded in
+sound rather than pixels, exactly the gap BLADE's purely-visual predicate layer
+leaves open. It also speaks to BLADE's noted limitation that "continuous
+parameters (pour amount...) sit entirely inside the diffusion policy" &mdash;
+audio gives an explicit, plannable readout of pour fill that a symbolic
+precondition (<code>not is_full</code>) could be grounded against. Relative to
+BLADE the paper is narrow (single task, single fixed trajectory, no planning,
+no language) and is best read as a <em>sensing primitive</em>, not a manipulation
+framework; its value to my line of work is as the audio-grounded-predicate
+existence proof.</p>
+<p>Directly related batch papers:
+<a href="../../raw/papers/sonicsense_in_hand_acoustic_vibration.pdf">SonicSense</a>
+and <a href="../../raw/papers/active_acoustic_sensing_manipulation.pdf">Active Acoustic Sensing</a>
+push the same acoustic-sensing-for-manipulation idea to in-hand object/property
+estimation;
+<a href="../../raw/papers/play_it_by_ear_audio_visual_imitation.pdf">Play it by Ear</a>,
+<a href="../../raw/papers/maniwav_in_the_wild_audio_visual.pdf">ManiWAV</a>, and
+<a href="../../raw/papers/see_hear_feel_sensory_fusion.pdf">See, Hear, and Feel</a>
+fold contact/pouring audio into policies rather than a standalone estimator;
+<a href="../../raw/papers/clarke_learning_audio_feedback_granular.pdf">Clarke et al. (granular material audio)</a>
+[19] is the closest prior cited here.</p>
+
+<h2>Quotable</h2>
+<blockquote>
+  Inspired by how human judge the liquid height during pouring with their
+  hearing, we try to design a model that can estimate the position of liquid
+  height with audio vibration.
+  <span class="quote-cite">&mdash; &sect;I / p.1</span>
+</blockquote>
+<blockquote>
+  To make sense of audio vibration, using the length of the air column as
+  groundtruth could be more generative and indicative than using the height of
+  the liquid level.
+  <span class="quote-cite">&mdash; &sect;IV / p.4</span>
+</blockquote>
+<blockquote>
+  The generalization performances of our PouringNet are negatively correlated to
+  the viscosity of the liquid.
+  <span class="quote-cite">&mdash; &sect;V-B4 / p.7</span>
+</blockquote>
+
+<h2>Related</h2>
+<p>Papers cited here that could be ingested next:</p>
+<ul>
+  <li><strong>[19] Clarke et al., CoRL 2018 &mdash; Learning audio feedback for
+    estimating amount and flow of granular material</strong> &mdash; the closest
+    prior; audio-from-shaking for granular weight, which this paper distinguishes
+    from liquid-height regression.</li>
+  <li><strong>[2] Schenck &amp; Fox, ICRA 2017 &mdash; Visual closed-loop control
+    for pouring liquids</strong> &mdash; the vision-based pouring baseline whose
+    error this paper undercuts.</li>
+  <li><strong>[18,20] Do &amp; Burgard &mdash; RGB-D liquid-level / accurate
+    pouring</strong> &mdash; the vision-perception comparison points.</li>
+  <li><strong>[6] Rozo et al. 2013 &mdash; Force-based pouring via parametric
+    HMM</strong> &mdash; the haptic-pouring counterpoint.</li>
+</ul>
+<p>Newly ingested in the 2026-06-24 batch &mdash; directly relevant:</p>
+<ul>
+  <li><a href="sonicsense_in_hand_acoustic_vibration.html">SonicSense</a>
+    &mdash; in-hand acoustic vibration sensing for object/property estimation;
+    same "structure lives in sound" thesis at the object level.</li>
+  <li><a href="active_acoustic_sensing_manipulation.html">Active Acoustic Sensing for Robot Manipulation</a>
+    &mdash; injects/probes acoustic signals to sense contact state; active
+    counterpart to this passive pouring-sound readout.</li>
+  <li><a href="play_it_by_ear_audio_visual_imitation.html">Play it by Ear</a>
+    and <a href="maniwav_in_the_wild_audio_visual.html">ManiWAV</a>
+    &mdash; audio-(visual) imitation policies; use contact/pouring sound inside a
+    policy rather than as an explicit state estimator.</li>
+  <li><a href="see_hear_feel_sensory_fusion.html">See, Hear, and Feel</a>
+    &mdash; multisensory fusion including audio for contact-rich manipulation.</li>
+  <li><a href="objectfolder_2_multisensory_sim2real.html">ObjectFolder 2.0</a>
+    &mdash; multisensory (incl. acoustic) object dataset/simulator; the
+    representation-learning backdrop for acoustic property sensing.</li>
+</ul>
+
+</body>
+</html>
