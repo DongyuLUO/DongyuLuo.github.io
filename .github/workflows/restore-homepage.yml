@@ -1,0 +1,33 @@
+name: Restore homepage
+on:
+  push:
+    branches: [main]
+    paths: [.github/workflows/restore-homepage.yml]
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore homepage content and CV
+        run: |
+          set -euo pipefail
+          git fetch --no-tags origin 954493d83dbf2f0a59d3097335cbe0dd5cd31148
+          git restore --source=954493d83dbf2f0a59d3097335cbe0dd5cd31148 --staged --worktree -- _pages/about.md files/Dongyu_Luo_CV.pdf .gitignore
+          python3 - <<'PYTHON'
+          from pathlib import Path
+          path = Path("_pages/about.md")
+          text = path.read_text()
+          old = 'Supervisor: Mr. <a href="https://openreview.net/profile?id=~Kaifeng_Zhang1">Kaifeng Zhang</a> and Prof. <a href="https://www.weiyuliu.com/">Weiyu Liu</a>'
+          new = 'Supervisor: Prof. <a href="https://www.weiyuliu.com/">Weiyu Liu</a> and Mr. <a href="https://openreview.net/profile?id=~Kaifeng_Zhang1">Kaifeng Zhang</a>'
+          assert old in text
+          path.write_text(text.replace(old, new))
+          PYTHON
+          git add _pages/about.md
+          git rm .github/workflows/restore-homepage.yml
+          git config user.name "Dongyu Luo"
+          git config user.email "125868359+DongyuLUO@users.noreply.github.com"
+          git diff --cached --check
+          git commit -m "Restore homepage content and CV"
+          git push origin HEAD:main
