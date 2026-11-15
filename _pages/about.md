@@ -33,8 +33,8 @@ redirect_from:
       <a href="https://colinyu1.github.io/">Kelin Yu</a> and
       Prof. <a href="https://ruohangao.github.io/">Ruohan Gao</a>, at the
       Multisensory Machine Intelligence Lab at the <strong>University of Maryland</strong>. I am
-      deeply grateful to Dr. <a href="https://tangshixiang.github.io/">Shixiang Tang</a>
-      and Prof. <a href="https://wlouyang.github.io/">Wanli Ouyang</a> for
+      deeply grateful to Dr. <a href="https://scholar.google.com/citations?user=TJ4ihdkAAAAJ&amp;hl=en">Shixiang Tang</a>
+      and Prof. <a href="https://scholar.google.com/citations?user=pw_0Z_UAAAAJ&amp;hl=en">Wanli Ouyang</a> for
       introducing me to research and guiding me through the early stages of my
       academic journey.
     </p>
@@ -75,7 +75,7 @@ redirect_from:
         <strong>Dongyu Luo*</strong>, <a href="https://colinyu1.github.io/">Kelin Yu*</a>,
         <a href="https://amirshahid.github.io/">Amir-Hossein Shahidzadeh</a>,
         <a href="https://users.umiacs.umd.edu/~fermulcm/">Cornelia Fermuler</a>,
-        <a href="https://robotics.umd.edu/clark/faculty/350/Yiannis-Aloimonos">Yiannis Aloimonos</a>,
+        <a href="https://users.umiacs.umd.edu/~yiannis/">Yiannis Aloimonos</a>,
         <a href="https://ruohangao.github.io/">Ruohan Gao</a>.
       </p>
       <p class="publication__links">
@@ -115,7 +115,7 @@ redirect_from:
       <div class="timeline__content">
         <strong class="timeline__institution">Shanghai Artificial Intelligence Laboratory</strong>
         <span class="timeline__role">Research Intern</span>
-        <span class="timeline__meta">Supervisor: Prof. <a href="https://wlouyang.github.io/">Wanli Ouyang</a> and Dr. <a href="https://tangshixiang.github.io/">Shixiang Tang</a></span>
+        <span class="timeline__meta">Supervisor: Prof. <a href="https://scholar.google.com/citations?user=pw_0Z_UAAAAJ&amp;hl=en">Wanli Ouyang</a> and Dr. <a href="https://scholar.google.com/citations?user=TJ4ihdkAAAAJ&amp;hl=en">Shixiang Tang</a></span>
       </div>
     </div>
   </div>
